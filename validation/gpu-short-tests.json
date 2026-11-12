@@ -1,0 +1,168 @@
+{
+  "date": "2026-11-12",
+  "status": "historical, before public probe cleanup; not rerun after instability",
+  "deployment": "diagnostic process only",
+  "posh_source_sha256": "2b0966e02d73721579b0cc66b8cfcbbbe5c03af4a18c55934cc07129180c4587",
+  "cases": [
+    {
+      "case": "empty-stock",
+      "malloc_growth_bytes": 156034624,
+      "results": [
+        {
+          "completed": true,
+          "data_valid": true,
+          "seconds": 0.098,
+          "freed": 0,
+          "rejected": 0
+        }
+      ]
+    },
+    {
+      "case": "empty-deferred",
+      "malloc_growth_bytes": 427392,
+      "results": [
+        {
+          "completed": true,
+          "data_valid": true,
+          "seconds": 0.066,
+          "freed": 0,
+          "rejected": 0
+        },
+        {
+          "deferred": true,
+          "tracked": 2000,
+          "detached": 2000,
+          "disposed": 2000,
+          "rejected": 0,
+          "completions": 2000
+        }
+      ]
+    },
+    {
+      "case": "texture-stock",
+      "malloc_growth_bytes": 156304640,
+      "results": [
+        {
+          "mode": "texture",
+          "candidate": "stock",
+          "submitted": 2000,
+          "completed": 2000,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 1.677,
+          "tracked": 0,
+          "detached": 0,
+          "disposed": 0,
+          "rejected": 0,
+          "dealloc_inflight": 0,
+          "uncommitted": 0
+        }
+      ]
+    },
+    {
+      "case": "texture-deferred",
+      "malloc_growth_bytes": 509632,
+      "results": [
+        {
+          "mode": "texture",
+          "candidate": "deferred",
+          "submitted": 2000,
+          "completed": 2000,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 2.054,
+          "tracked": 2002,
+          "detached": 2002,
+          "disposed": 2002,
+          "rejected": 0,
+          "dealloc_inflight": 0,
+          "uncommitted": 0
+        }
+      ]
+    },
+    {
+      "case": "mixed-stock",
+      "malloc_growth_bytes": 156306816,
+      "results": [
+        {
+          "mode": "mixed",
+          "candidate": "stock",
+          "submitted": 2000,
+          "completed": 2000,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 2.236,
+          "tracked": 0,
+          "detached": 0,
+          "disposed": 0,
+          "rejected": 0,
+          "dealloc_inflight": 0,
+          "uncommitted": 0
+        }
+      ]
+    },
+    {
+      "case": "mixed-deferred",
+      "malloc_growth_bytes": 676784,
+      "results": [
+        {
+          "mode": "mixed",
+          "candidate": "deferred",
+          "submitted": 2000,
+          "completed": 2000,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 2.673,
+          "tracked": 2002,
+          "detached": 2002,
+          "disposed": 2002,
+          "rejected": 0,
+          "dealloc_inflight": 0,
+          "uncommitted": 0
+        }
+      ]
+    },
+    {
+      "case": "compute-deferred",
+      "malloc_growth_bytes": 498064,
+      "results": [
+        {
+          "completed": true,
+          "data_valid": true,
+          "seconds": 0.23,
+          "freed": 0,
+          "rejected": 0
+        },
+        {
+          "deferred": true,
+          "tracked": 1000,
+          "detached": 1000,
+          "disposed": 1000,
+          "rejected": 0,
+          "completions": 1000
+        }
+      ]
+    },
+    {
+      "case": "draw-deferred",
+      "malloc_growth_bytes": 346336,
+      "results": [
+        {
+          "completed": true,
+          "data_valid": true,
+          "seconds": 0.3,
+          "freed": 0,
+          "rejected": 0
+        },
+        {
+          "deferred": true,
+          "tracked": 1000,
+          "detached": 1000,
+          "disposed": 1000,
+          "rejected": 0,
+          "completions": 1000
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+name: Build diagnostics and validate CPU contracts
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostics:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build only; do not submit GPU work
+        run: make all
+      - name: CPU lifecycle and submission-limit contracts
+        run: make cpu-test
+      - name: Inherited driver CPU and mock contracts
+        working-directory: driver/WhateverXe
+        run: python3 tools/test.py

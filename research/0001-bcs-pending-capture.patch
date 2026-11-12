@@ -1,0 +1,133 @@
+diff --git a/WhateverXe/kern_tgl_hang_pending.hpp b/WhateverXe/kern_tgl_hang_pending.hpp
+index 9205c3b..7e2f47f 100644
+--- a/WhateverXe/kern_tgl_hang_pending.hpp
++++ b/WhateverXe/kern_tgl_hang_pending.hpp
+@@ -29,9 +29,18 @@ void collect(Capture &c,uint64_t address,const uint8_t *regs,const uint8_t *ring
+   return kernelRange(p,n) && read(p,out,n)==n;
+  };
+  c.q[2]=1;
+- if(regs[0x94] || ring[0x40] || c.q[7]>=64 || c.q[10]>=64 ||
++ // The same native submit-bank layout is used by the BCS ring. Admit only
++ // matching RCS/BCS engine snapshots; never decode a different engine's cache.
++ const uint8_t engine=regs[0x94];
++ if((engine!=0 && engine!=2) || ring[0x40]!=engine || c.q[7]>=64 || c.q[10]>=64 ||
+     !kernelRange(address,0x8a8) || !kernelRange(c.q[4],0x80)) return;
+  uint32_t owner=0,retired=0;const uint64_t stamps=u64(ring+0x30);
++ // RCS retains its existing contract. Before adding BCS capture require the
++ // context's engine, owner and ring backlink to agree with the saved ring.
++ uint8_t contextEngine=0;uint64_t contextOwner=0,contextRing=0;
++ if(engine==2 && (!copy(c.q[4]+0x6c,&contextEngine,1) || contextEngine!=engine ||
++    !copy(c.q[4]+0x50,&contextOwner,8) || !contextOwner || contextOwner!=u64(ring+0x10) ||
++    !copy(c.q[4]+0xb0,&contextRing,8) || contextRing!=address)) return;
+  c.q[2]=2;
+  if(!copy(c.q[4]+0x7c,&owner,4) || !kernelRange(stamps,4096) ||
+     !copy(stamps+c.q[7]*64,&retired,4)) return;
+@@ -63,6 +72,14 @@ void collect(Capture &c,uint64_t address,const uint8_t *regs,const uint8_t *ring
+  c.q[9]=finalRetired;c.q[2]=5;
+  if(context!=c.q[4] || stampBase!=stamps || index!=c.q[7] || write!=c.q[10] ||
+     finalOwner!=owner || finalRetired!=retired) return;
++ if(engine==2) {
++  uint8_t finalEngine=0,finalContextEngine=0;uint64_t finalContextOwner=0,finalContextRing=0,finalRingOwner=0;
++  if(!copy(address+0x40,&finalEngine,1) || finalEngine!=engine ||
++     !copy(address+0x10,&finalRingOwner,8) || finalRingOwner!=contextOwner ||
++     !copy(context+0x6c,&finalContextEngine,1) || finalContextEngine!=engine ||
++     !copy(context+0x50,&finalContextOwner,8) || finalContextOwner!=contextOwner ||
++     !copy(context+0xb0,&finalContextRing,8) || finalContextRing!=address) return;
++ }
+  c.q[2]=0;
+ }
+ }
+diff --git a/WhateverXe/kern_xe.cpp b/WhateverXe/kern_xe.cpp
+index b18630b..0b1012f 100644
+--- a/WhateverXe/kern_xe.cpp
++++ b/WhateverXe/kern_xe.cpp
+@@ -15694,14 +15694,18 @@ void XE::wrapTGLHangRingDump(void *ring,void *registers) {
+    }
+    char key[32];snprintf(key,sizeof(key),"TGLHangBatch%u",slot);
+    IORegistryEntry::getRegistryRoot()->setProperty(key,c,sizeof(*c));
+-   if (slot==0 && c->q[3]==sizeof(c->regs) && c->q[4]==sizeof(c->ring)) {
++   // Keep the existing first RCS detail report, and retain bounded BCS pending
++   // evidence on its own native dump. Do not run the RCS command/PPGTT decoder
++   // against copy-engine packets. The global four-slot failure budget remains.
++   const bool bcs=c->regs[0x94]==2 && c->ring[0x40]==2;
++   if ((slot==0 || bcs) && c->q[3]==sizeof(c->regs) && c->q[4]==sizeof(c->ring)) {
+     struct PendingWork {TGLHangPending::Capture pending;TGLHangSelect::Selection selection;uint8_t ring[0x8a8];};
+     auto work=static_cast<PendingWork *>(IOMalloc(sizeof(PendingWork)));
+     if(work) {
+      bzero(work,sizeof(*work));auto &pending=work->pending;auto &selection=work->selection;
+      tglHostClock(pending.q+1);
+      auto boundedRead=[&](uint64_t address,void *out,unsigned count)->uint64_t {return read(address,out,count);};
+-     if(tglHangDetailKernel())TGLHangSelect::select(selection,c->q[2],reinterpret_cast<uint64_t>(tglCSBEngines[0].streamer),c->regs,boundedRead);
++     if(!bcs && tglHangDetailKernel())TGLHangSelect::select(selection,c->q[2],reinterpret_cast<uint64_t>(tglCSBEngines[0].streamer),c->regs,boundedRead);
+      uint64_t selected=c->q[2];const uint8_t *ringBytes=c->ring;
+      if(selection.q[0] && !selection.q[1] && selection.q[4]!=selected) {
+       if(read(selection.q[4],work->ring,sizeof(work->ring))==sizeof(work->ring)) {
+@@ -15709,8 +15713,13 @@ void XE::wrapTGLHangRingDump(void *ring,void *registers) {
+       } else selection.q[1]=7;
+      }
+      TGLHangPending::collect(pending,selected,c->regs,ringBytes,boundedRead);
+-     IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPending0",&pending,sizeof(pending));
+-     tglCaptureHangDetail(pending,c->regs,selection);
++     if(bcs) {
++      char key[32];snprintf(key,sizeof(key),"TGLHangPendingBCS%u",slot);
++      IORegistryEntry::getRegistryRoot()->setProperty(key,&pending,sizeof(pending));
++     } else {
++      IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPending0",&pending,sizeof(pending));
++      tglCaptureHangDetail(pending,c->regs,selection);
++     }
+      IOFree(work,sizeof(*work));
+     }
+    }
+diff --git a/tests/tgl_hang_pending.cpp b/tests/tgl_hang_pending.cpp
+index 1f7317e..93765d2 100644
+--- a/tests/tgl_hang_pending.cpp
++++ b/tests/tgl_hang_pending.cpp
+@@ -8,10 +8,10 @@ constexpr uint64_t Ring=0xffff800000010000ULL,Context=Ring+0x10000,Stamps=Ring+0
+ struct Fixture {
+  std::array<uint8_t,0x8a8> ring{};
+  std::array<uint8_t,0xb0> regs{};
+- std::array<uint8_t,0x80> context{};
++ std::array<uint8_t,0xc0> context{};
+  std::array<uint8_t,4096> stamps{};
+  std::array<uint8_t,128> bytes{};
+- bool partial{},mutateCache{},mutateOwner{},mutateRetired{},mutateWrite{},deny{};
++ bool partial{},mutateCache{},mutateOwner{},mutateRetired{},mutateWrite{},deny{},mutateEngine{},mutateBacklink{},mutateContextOwner{};
+  unsigned dataReads{};
+  template<class T> static void put(uint8_t *p,unsigned offset,T value) {memcpy(p+offset,&value,sizeof(value));}
+  Fixture() {
+@@ -34,6 +34,9 @@ struct Fixture {
+    if(mutateOwner)context[0x7c]^=1;
+    if(mutateRetired)stamps[64]^=1;
+    if(mutateWrite)ring[0x8a0]^=1;
++   if(mutateEngine)context[0x6c]^=1;
++   if(mutateBacklink)context[0xb0]^=8;
++   if(mutateContextOwner)context[0x50]^=8;
+    const unsigned count=partial?n-1:n;memcpy(out,bytes.data(),count);return count;
+   }
+   auto copy=[&](uint64_t base,const auto &v)->bool {
+@@ -49,6 +52,25 @@ struct Fixture {
+ };
+ }
+ int main() {
++ // BCS captures use the common cache but must qualify engine/ownership both
++ // before copying and after it. They remain pending candidates, not active BBs.
++ for(unsigned failure=0;failure<8;++failure) {
++  Fixture f;f.regs[0x94]=2;f.ring[0x40]=2;f.context[0x6c]=2;
++  Fixture::put(f.context.data(),0x50,uint64_t(Ring+0x50000));
++  Fixture::put(f.ring.data(),0x10,uint64_t(Ring+0x50000));
++  Fixture::put(f.context.data(),0xb0,Ring);
++  if(failure==1)f.ring[0x40]=0;
++  if(failure==2)f.context[0x6c]=0;
++  if(failure==3)Fixture::put(f.context.data(),0xb0,Ring+8);
++  if(failure==4)Fixture::put(f.context.data(),0x50,uint64_t(Ring+0x50008));
++  if(failure==5)f.mutateEngine=true;
++  if(failure==6)f.mutateBacklink=true;
++  if(failure==7)f.mutateContextOwner=true;
++  auto c=f.run();
++  if(!failure)assert(!c->q[2] && c->q[11]==1 && c->entries[0].stable);
++  else if(failure<=4)assert(c->q[2] && !f.dataReads);
++  else assert(c->q[2]==5);
++ }
+  {Fixture f;auto c=f.run();assert(c->q[2]==0 && c->q[11]==1 && f.dataReads==1);
+   assert(c->entries[0].stable && c->entries[0].copied==128);
+   assert(!memcmp(c->entries[0].bytes,f.bytes.data(),128));}
