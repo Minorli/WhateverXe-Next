@@ -1,0 +1,279 @@
+{
+  "date": "2026-11-12",
+  "state": "process_local_atomic_claim_validated_no_global_install",
+  "globally_installed": false,
+  "scope": "Official fixed-fingerprint MTL versus process-private atomic native counter instructions, optionally with queue-owned cache. Same unchanged running downstream kernel stack for every group.",
+  "metal_driver_sha256": "1e5e4f5bd76ff567a102125dfa3c74a255934d45c753a88aedcbfac7dab53c6c",
+  "cpu_checks": {
+    "make_all_exit": 0,
+    "make_cpu_test_exit": 0,
+    "sanitizers": [
+      "address",
+      "undefined"
+    ],
+    "emitted_instruction_rounds": 300,
+    "workers": 4,
+    "executes_emitted_x86_instructions": true,
+    "gpu_commits": 0,
+    "inherited_driver_suite_rerun_this_change": false
+  },
+  "native_concurrency": [
+    {
+      "mode": "stock",
+      "concurrent_rounds": 300,
+      "workers": 4,
+      "cache_alias_rounds": 0,
+      "zero_cache_borrower_rounds": 0,
+      "max_cache_borrowers": 0,
+      "max_only_active_buffers": 2,
+      "private_aliases": 0,
+      "active_count_failures": 0,
+      "allocated": 0,
+      "destroyed": 0,
+      "refused": 0,
+      "gpu_commits": 0,
+      "exit_code": 8
+    },
+    {
+      "mode": "atomic",
+      "concurrent_rounds": 300,
+      "workers": 4,
+      "cache_alias_rounds": 0,
+      "zero_cache_borrower_rounds": 0,
+      "max_cache_borrowers": 0,
+      "max_only_active_buffers": 1,
+      "private_aliases": 0,
+      "active_count_failures": 0,
+      "allocated": 0,
+      "destroyed": 0,
+      "refused": 0,
+      "gpu_commits": 0,
+      "exit_code": 0
+    },
+    {
+      "mode": "queue-cache-atomic",
+      "concurrent_rounds": 300,
+      "workers": 4,
+      "cache_alias_rounds": 0,
+      "zero_cache_borrower_rounds": 0,
+      "max_cache_borrowers": 1,
+      "max_only_active_buffers": 1,
+      "private_aliases": 0,
+      "active_count_failures": 0,
+      "allocated": 400,
+      "destroyed": 400,
+      "refused": 0,
+      "gpu_commits": 0,
+      "exit_code": 0
+    }
+  ],
+  "concurrent_gpu_runs": [
+    {
+      "mode": "stock",
+      "exit_code": 8,
+      "phases": [
+        {
+          "mode": "stock",
+          "rounds": 100,
+          "workers": 4,
+          "gpu_commits": 0,
+          "capacity_probe_commits": 2,
+          "capacity_probe_blocked": false,
+          "active_count_failures": 0,
+          "only_active_failures": 1,
+          "pre_submit_failure_round": 0,
+          "last_cohort_active_count": 4,
+          "last_cohort_only_active": 2,
+          "data_mismatches": 0,
+          "gpu_errors": 0,
+          "new_gpu_report": false
+        }
+      ]
+    },
+    {
+      "mode": "atomic",
+      "exit_code": 0,
+      "phases": [
+        {
+          "phase": "stream",
+          "workers": 4,
+          "requested_per_worker": 100,
+          "completed": 400,
+          "data_mismatches": 0,
+          "gpu_errors": 0,
+          "stopped": 0,
+          "final_active_count": 0
+        },
+        {
+          "mode": "atomic",
+          "rounds": 100,
+          "workers": 4,
+          "gpu_commits": 400,
+          "capacity_probe_commits": 2,
+          "capacity_probe_blocked": false,
+          "active_count_failures": 0,
+          "only_active_failures": 0,
+          "pre_submit_failure_round": -1,
+          "last_cohort_active_count": 4,
+          "last_cohort_only_active": 1,
+          "data_mismatches": 0,
+          "gpu_errors": 0,
+          "new_gpu_report": false
+        }
+      ]
+    },
+    {
+      "mode": "queue-cache-atomic",
+      "exit_code": 0,
+      "phases": [
+        {
+          "phase": "stream",
+          "workers": 4,
+          "requested_per_worker": 100,
+          "completed": 400,
+          "data_mismatches": 0,
+          "gpu_errors": 0,
+          "stopped": 0,
+          "final_active_count": 0
+        },
+        {
+          "mode": "queue-cache-atomic",
+          "rounds": 100,
+          "workers": 4,
+          "gpu_commits": 400,
+          "capacity_probe_commits": 2,
+          "capacity_probe_blocked": false,
+          "active_count_failures": 0,
+          "only_active_failures": 0,
+          "pre_submit_failure_round": -1,
+          "last_cohort_active_count": 4,
+          "last_cohort_only_active": 1,
+          "data_mismatches": 0,
+          "gpu_errors": 0,
+          "new_gpu_report": false
+        }
+      ]
+    }
+  ],
+  "surface_runs": [
+    {
+      "mode": "stock",
+      "frames": 300,
+      "pixel_mismatches": 0,
+      "malloc_before": 708608,
+      "malloc_after": 24279664,
+      "allocated": 0,
+      "refused": 0,
+      "new_gpu_report": false,
+      "result": 0,
+      "start_unix": 1794492410.242,
+      "end_unix": 1794492417.375,
+      "elapsed_seconds": 7.131329,
+      "cpu_seconds": 0.396514,
+      "frame_work_p50_ms": 1.7473,
+      "frame_work_p95_ms": 3.1358,
+      "order": "A_to_B",
+      "malloc_delta_mib": 22.479110717773438
+    },
+    {
+      "mode": "queue-cache-atomic",
+      "frames": 300,
+      "pixel_mismatches": 0,
+      "malloc_before": 795200,
+      "malloc_after": 1000160,
+      "allocated": 1,
+      "refused": 0,
+      "new_gpu_report": false,
+      "result": 0,
+      "start_unix": 1794492417.574,
+      "end_unix": 1794492424.592,
+      "elapsed_seconds": 7.015874,
+      "cpu_seconds": 0.317638,
+      "frame_work_p50_ms": 1.4757,
+      "frame_work_p95_ms": 2.8278,
+      "order": "A_to_B",
+      "malloc_delta_mib": 0.195465087890625
+    },
+    {
+      "mode": "queue-cache-atomic",
+      "frames": 300,
+      "pixel_mismatches": 0,
+      "malloc_before": 796288,
+      "malloc_after": 1009760,
+      "allocated": 1,
+      "refused": 0,
+      "new_gpu_report": false,
+      "result": 0,
+      "start_unix": 1794492482.913,
+      "end_unix": 1794492489.899,
+      "elapsed_seconds": 6.983769,
+      "cpu_seconds": 0.336563,
+      "frame_work_p50_ms": 1.5692,
+      "frame_work_p95_ms": 2.918,
+      "order": "B_to_A",
+      "malloc_delta_mib": 0.203582763671875
+    },
+    {
+      "mode": "stock",
+      "frames": 300,
+      "pixel_mismatches": 0,
+      "malloc_before": 713728,
+      "malloc_after": 24279728,
+      "allocated": 0,
+      "refused": 0,
+      "new_gpu_report": false,
+      "result": 0,
+      "start_unix": 1794492490.039,
+      "end_unix": 1794492497.125,
+      "elapsed_seconds": 7.084792,
+      "cpu_seconds": 0.388225,
+      "frame_work_p50_ms": 1.7678,
+      "frame_work_p95_ms": 3.2323,
+      "order": "B_to_A",
+      "malloc_delta_mib": 22.474288940429688
+    }
+  ],
+  "watch": {
+    "duration_seconds": 180,
+    "samples": 19,
+    "max_recovery_calls": 0,
+    "max_new_gpu_reports": 0,
+    "all_report_monitors_available": true
+  },
+  "power": {
+    "samples": 180,
+    "cpu_c_min": 37.0,
+    "cpu_c_max": 58.0,
+    "temperature_reduction_claimed": false
+  },
+  "source_sha256": {
+    "src/POSHAtomicClaim.h": "7e68aa5b7b443ec1cb78e47e270b053455b9b91818543f8f0d32aae387a756b9",
+    "src/POSHAtomicClaim.mm": "faa9b673558178be75f79a8cc63e9a45954d54907cfca21d8dae24cea063dc80",
+    "src/POSHAtomicCode.hpp": "0c4560774a2966cbffe9958957bb6cb2688ae356a59675ecd6a9474e07006b03",
+    "src/POSHQueueCache.h": "0e607a095c7b93bd551b2ee89ef389fc7e768f07cbda67fa304685c7aadb0789",
+    "src/POSHQueueCache.mm": "fbaec81a56590391d467ce9c9bdffaa2ca7b9cceff6c14ad697425d0b26bcfd7",
+    "tests/posh-atomic-code.cpp": "1dac45f1e4c450ff3705b3af6565796c76d26f40fcf0336e030d089d32a0b359",
+    "tests/posh-queue-check.mm": "27975589ee4768569a2cb6b91781da287f13aa2122118d2e66083b5dcf78fa4e",
+    "tests/posh-concurrent-gpu.mm": "9ecad6dff0e76b6b8553c0b255d4b6eca48d8fce3d6c71714fe33f39e09f1655",
+    "tests/metal-surface-check.mm": "a60800858563e1290dab73c2ab63b8d7b9188617fb3af30c52ad01af3223d379",
+    "Makefile": "7683d10aa247bfc7f8b66cb45710e057a2e2b73cf3aabceb1ceac8c29a2e5c94"
+  },
+  "binary_sha256": {
+    "build/posh-atomic-code": "cfc5338d83697b7f2bcf5d4244b76a10636f891acb30c220a0952c00903fc13d",
+    "build/posh-queue-check": "748376e3e49b2ad243a420f4c9471e00a65da61a857ed05e68ccd2a6ddd1fa87",
+    "build/posh-concurrent-gpu": "f2dfce0953a33ec2c05860faa0c92af129ba17fadef4059449b9631143fa2d36",
+    "build/metal-surface-check": "a0b2cca065a59eca110ccf19ed149faaebc61051c6c837963f079fe77fd56b1d"
+  },
+  "fingerprint_note": "Binary hashes identify the exact final comparison builds. Only safety comments and documentation changed after those runs; source hashes include that final comment update.",
+  "limits": [
+    "AtomicClaim repairs the native concurrent zero-test/increment and commit decrement; it is not a complete cache ownership lease.",
+    "The initial maxCommandBufferCount=1 probe did not block on this donor. It performed two empty commits but does not establish blocked-capacity coverage.",
+    "Each successful concurrent run has 400 cohort and 400 streaming workload commits, plus two empty capacity-probe commits.",
+    "Stock stopped at cohort zero with two only-active flags; no work from that invalid cohort was submitted. Two capacity-probe empty commits preceded it.",
+    "Uncommitted destruction accounting and POSH allocation exception rollback remain outside this implementation.",
+    "Cache access across native commit/descriptor cleanup, GPU use, errors and recovery still needs proof.",
+    "No global install, reboot acceptance, UU/WindowServer injection, original BCS causal closure, panel scanout or temperature improvement is claimed.",
+    "malloc size_in_use delta is not RSS, VRAM or whole-system memory.",
+    "Historical stock/cache failures remain in queue-cache-tests.json and are not invalidated by scheduler-dependent passing runs."
+  ]
+}

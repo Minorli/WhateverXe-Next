@@ -7,7 +7,8 @@
 
 1. `Findings.md`：三个主要问题的证据和反证。
 2. `Provenance.md` 与 `Validation.md`：源版本、当前加载版本与测试层级。
-3. `src/POSHQueueCache.mm` 与 `POSH.md`：当前队列所有权候选；
+3. `src/POSHAtomicClaim.mm`、`src/POSHAtomicCode.hpp` 与 `Concurrency.md`：原子计数候选和同版失败 / 通过对照；
+   `src/POSHQueueCache.mm` 与 `POSH.md`：队列所有权候选；
    `src/POSHLifetime.hpp`、`src/POSHDeferred.mm` 是独立的较早原型。
 4. `research/0001-bcs-pending-capture.patch` 及对应三个源码文件：BCS 采集增强。
 5. `Deployment.md`：不能越过的整机验证门槛。
@@ -19,7 +20,12 @@
 
 - 首先审查已复现的并发失败：`posh-queue-check --concurrent`。原版 active 计数丢失，
   队列实验还会让两个未提交 CB 同时借用缓存。only-active 也进入 GPU 等待 token，
-  不能只修 free 分支；如何在不引入原生构造 / 提交锁等待死锁的前提下修正所有权？
+  不能只修 free 分支。新原子候选已通过进程内对照，请核对领取点的寄存器存活、ZF、
+  新线性化位置、移除的晚增加，以及 commit 减计数范围；CPU 测试执行实际生成指令。
+- 原子领取在 POSH allocation 前发生，分配异常尚无回滚；原生未提交析构不减计数仍未改。
+  这些路径怎样完成明确的生命周期契约？不要将一次原子操作当作所有权设计完成。
+- 跨 commit 的缓存重用是否早于旧 CB / descriptor 最后一次 CPU 访问，或 GPU 消费结束？
+  交错提交短测通过不构成完整证明。容量探针没有观测到实际阻塞，覆盖不足需保留。
 
 - 队列缓存是否在返回给调用方前完成发布？匹配的原生 init / dealloc、所有消费者和
   descriptor 清理是否真的支持该共享生命周期？active 数量在 commit 时下降，不能当作 GPU 在飞数量。

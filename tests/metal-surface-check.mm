@@ -20,6 +20,7 @@
 #include <memory>
 #include "../src/BoundedCount.hpp"
 #include "../src/POSHQueueCache.h"
+#include "../src/POSHAtomicClaim.h"
 
 static uint32_t pattern(unsigned x,unsigned y,unsigned frame) {
     const unsigned b=(x*3+frame*7)&255, g=(y*5+frame*11)&255;
@@ -69,8 +70,10 @@ static bool temperatureOK(NSString *path) {
 int main(int argc,char **argv) {
     @autoreleasepool {
         int count=60;
-        const bool candidate=argc>1 && !strcmp(argv[1],"queue-cache");
-        if ((argc>1 && !candidate && strcmp(argv[1],"stock")) ||
+        const char *mode=argc>1?argv[1]:"stock";
+        const bool candidate=!strcmp(mode,"queue-cache") || !strcmp(mode,"queue-cache-atomic");
+        const bool atomic=!strcmp(mode,"atomic") || !strcmp(mode,"queue-cache-atomic");
+        if ((!candidate && !atomic && strcmp(mode,"stock")) ||
             (argc>2 && !xe::boundedCount(argv[2],600,count))) return 2;
         NSString *powerLog=nil; bool present=false;
         for (int n=3;n<argc;++n) {
@@ -84,6 +87,7 @@ int main(int argc,char **argv) {
         NSSet<NSString *> *baseline=[NSSet setWithArray:names];
         id<MTLDevice> device=MTLCreateSystemDefaultDevice(); if (!device) return 3;
         if (candidate && !installPOSHQueueCache(device.registryID)) return 4;
+        if (atomic && !installPOSHAtomicClaim(device.registryID)) return 4;
         id<MTLCommandQueue> queue=[device newCommandQueue]; if (!queue) return 5;
         NSError *error=nil;
         NSString *shader=@"#include <metal_stdlib>\nusing namespace metal;\n"
@@ -248,7 +252,7 @@ int main(int argc,char **argv) {
                 presentation->callbacks.load(),presentation->valid.load(),presentationDrained?"true":"false",intervals.size(),p95);
         }
         printf("{\"mode\":\"%s\",\"frames\":%u,\"pixel_mismatches\":%u,\"malloc_before\":%zu,\"malloc_after\":%zu,\"allocated\":%llu,\"refused\":%llu,\"new_gpu_report\":%s,\"result\":%d,\"start_unix\":%.3f,\"end_unix\":%.3f,\"elapsed_seconds\":%.6f,\"cpu_seconds\":%.6f,\"frame_work_p50_ms\":%.4f,\"frame_work_p95_ms\":%.4f}\n",
-            candidate?"queue-cache":"stock",completed,mismatches,before,after,stats.allocated,stats.refused,noNewGPUReport(baseline)?"false":"true",result,
+            mode,completed,mismatches,before,after,stats.allocated,stats.refused,noNewGPUReport(baseline)?"false":"true",result,
             startUnix,[NSDate date].timeIntervalSince1970,elapsed,cpuSeconds,percentile(.5),percentile(.95));
         CFRelease(pool); CFRelease(cache);
         if (candidate && (!stats.allocated || stats.refused)) return 10;

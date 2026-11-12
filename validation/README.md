@@ -13,6 +13,9 @@ fingerprints, not raw logs or driver payloads.
 - `queue-cache-tests.json`: native serial lifetime checks, forward/reverse IOSurface
   memory comparisons, presentation timing refusal, and **known failing concurrent
   construction**. Queue-cache is blocked from global deployment despite serial gains.
+- `atomic-claim-tests.json`: later same-build stock/candidate native concurrency,
+  actual emitted CPU instructions, concurrent render/stream work and two-order
+  IOSurface memory comparisons. Process-local validation only; no global install.
 - `gpu-short-tests.json`: selected historical process-local runs, before removal of
   legacy probe entry points and stricter argument parsing. Later controlled GPU
   comparisons are recorded separately in `queue-cache-tests.json`.

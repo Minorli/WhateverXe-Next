@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Restore the donor's queue-owned cache path instead of altering CB disposal.
 // Diagnostic-process candidate only; not a globally deployable component.
-// Concurrent native constructors have reproduced shared-storage aliasing.
-// This experiment is retained for diagnosis, not promoted on serial A/B results.
+// Unmodified concurrent native constructors reproduce shared-storage aliasing.
+// AtomicClaim is a separate process-local experiment, not a global acceptance.
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <IOKit/IOKitLib.h>
@@ -33,7 +33,7 @@ bool installed;
 bool diagnosticProcess() {
     const char *name=getprogname();
     return name && (!strcmp(name,"metal-memory-check") || !strcmp(name,"metal-async-check") ||
-        !strcmp(name,"posh-queue-check") || !strcmp(name,"metal-surface-check"));
+        !strcmp(name,"posh-queue-check") || !strcmp(name,"metal-surface-check") || !strcmp(name,"posh-concurrent-gpu"));
 }
 bool physicalDevice(uint64_t registryID) {
     io_registry_entry_t entry=IOServiceGetMatchingService(kIOMainPortDefault,IORegistryEntryIDMatching(registryID));
@@ -94,8 +94,9 @@ id init(id object,SEL selector,id device,NSUInteger maximum) {
     if (!marker) { ::operator delete(storage); ++refused; return result; }
     objc_setAssociatedObject(result,&markerKey,marker,OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [marker release];
-    // Native CB init now borrows this allocation only for its only-active
-    // path. Overlapping CBs still allocate/delete their own native storage.
+    // Native CB init borrows this allocation for its only-active path.
+    // Non-only-active CBs allocate/delete their own native storage. Unmodified
+    // constructors can race that predicate; see the separate AtomicClaim test.
     // Native queue dealloc remains the sole cache disposer. No completion is
     // invented, no CB flag is changed, and no early free is added.
     memcpy(bytes+sharedOffset,&storage,sizeof(storage));
