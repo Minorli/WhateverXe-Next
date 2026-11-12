@@ -17,6 +17,19 @@ MALLOC_LARGE resident / dirty 约 3.6 G，region count 52,217。
 该汇总支持“真实合成进程内存持续增长”，**不能单独证明每个大分配都是 POSH**。
 独立分配测试与真实进程之间仍需按分配来源建立更精确的对应。
 
+后续受控 UU 复现中，同一 `top MEM` 口径的 WindowServer 从约 7,495MiB 增至 8,178MiB。
+连接前 GUI 加载动画期间 CPU 已约 100% 单核，远程画面期间约 107–119%；
+退出后回落。后续堆摘要发现 109,189 个 77,824 字节 non-object 分配，而仅有一个存活
+MTLIGAccelCommandBuffer，另有一个仍被 CB 字段引用的相同尺寸 POSH 块。
+尺寸分布与独立泄漏相符，但未启用分配栈记录，不能逐一给非对象块追溯分配来源。
+RSS、top MEM、physical footprint 和 malloc 不同；不能把约 2GiB RSS 与约 8GiB footprint
+直接相减，作为本次新增泄漏。
+
+后续无 GPU 提交的原生四线程检查复现 active 计数错误；补齐队列缓存的实验还出现了
+两个存活 CB 共享同一可变块。only-active 标志同时参与 POSH semaphore wait 的生成，
+不能通过随意翻转标志修 free。该并发缺陷已保留为失败复现，候选禁止全局部署；
+尚未证明它就是本机 BCS 卡死根因。详细边界见 `Concurrency.md`。
+
 ## 2. BCS 卡死与恢复失败
 
 较早一次 panic 为 `submitToRing: Work queue failure detected`。
@@ -38,6 +51,12 @@ MALLOC_LARGE resident / dirty 约 3.6 G，region count 52,217。
 没有新增 panic 不代表没有卡死：强制断电未必留下 panic 文件。
 CPU 侧看到全零的 ring bytes 也不能单独证明 use-after-free。
 本项目的 BCS 改动是诊断补全，未修改提交、MMIO、完成语义或恢复算法。
+
+18:25–18:28 的 9 份 BCS hung 报告均记录 IPEHR `0x0e009002`，对应 PPGTT polling/GTE
+semaphore wait。报告没有保留足以可靠解码其等待目标的数据，不能选择“死锁”或“陈旧映射”
+中的某一项作为确定根因。新增 `kern_tgl_hang_bcs_wait.hpp` 在原生失败上报时，
+采集有界的 head 附近指令候选、上下文身份、软件 PTE 和等待值，全部 nofault 读取并重查。
+未部署，不能称已取得新故障现场；细节见 `BCS.md`。
 
 ## 3. UU 远端呈现触发闪屏
 
@@ -65,3 +84,18 @@ VA bundle 已隔离，VideoToolbox 仍可能软解后用 GPU 呈现。
 
 现用下游 WEX README 将用户空间修复限定到 Sequoia。
 Tahoe 上 boot-args 里出现泄漏参数，不构成该修复已应用的证据。
+
+## 5. 其他日志的分级
+
+同次巡检的近 10 分钟定向硬件 / 超时查询没有命中记录；新增 600 秒只读监听中，
+recovery calls 与新增 GPU 报告均为 0。这只是当前窗口，不否定先前真实故障。
+
+`MTLCompilerService` 的 XeCompilerAdapter sandbox deny 行需要结合实际返回与编译结果判断。
+现用内核发布 `WhateverXeDataAccess=True`；继承源码的 wrapper 先调用原生策略，再对
+固定路径作限定放行，原生 deny 日志本身不能证明最终访问失败。同一探针的运行时 shader
+编译与像素检查通过，因此未采取关闭 sandbox 或重签系统服务的操作。
+
+`EXC_GUARD` 中的 `tgl_hang_*` / `xelp_memory_layout` 是 CPU 测试进程名，不能按名字
+解释为 GPU 硬件模块再次崩溃。Wi-Fi RSSI=0 的统计错误、Chrome 的 host_statistics64 参数
+数量警告、taskgated 的 DetachedSignatures 查询失败分别保留，尚无与 BCS 卡死的因果证据。
+这些行不作为删除系统数据库、关闭同步或停用工作软件的依据。

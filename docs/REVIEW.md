@@ -7,13 +7,26 @@
 
 1. `Findings.md`：三个主要问题的证据和反证。
 2. `Provenance.md` 与 `Validation.md`：源版本、当前加载版本与测试层级。
-3. `src/POSHLifetime.hpp`、`src/POSHDeferred.mm` 和 `POSH.md`：POSH 所有权原型。
+3. `src/POSHQueueCache.mm` 与 `POSH.md`：当前队列所有权候选；
+   `src/POSHLifetime.hpp`、`src/POSHDeferred.mm` 是独立的较早原型。
 4. `research/0001-bcs-pending-capture.patch` 及对应三个源码文件：BCS 采集增强。
 5. `Deployment.md`：不能越过的整机验证门槛。
+6. `BCS.md`：等待指令现场采集的限定、拒绝条件和待回答的问题。
 
 ## 希望审查者重点回答
 
 ### POSH
+
+- 首先审查已复现的并发失败：`posh-queue-check --concurrent`。原版 active 计数丢失，
+  队列实验还会让两个未提交 CB 同时借用缓存。only-active 也进入 GPU 等待 token，
+  不能只修 free 分支；如何在不引入原生构造 / 提交锁等待死锁的前提下修正所有权？
+
+- 队列缓存是否在返回给调用方前完成发布？匹配的原生 init / dealloc、所有消费者和
+  descriptor 清理是否真的支持该共享生命周期？active 数量在 commit 时下降，不能当作 GPU 在飞数量。
+- 原生 render encoder 对计数表的重置能否覆盖 compute、blit、多 encoder 和跨提交路径？
+  并发创建 CB、尚未完成的旧 CB 析构、错误恢复可能怎样干扰共享缓存？
+- 正反两次 IOSurface 对照只验证内存斜率和正确性；呈现时间戳全零，不能计为显示时序通过。
+- 后续问题针对 deferred 原型；不要将它们与队列方案混为一种析构补丁。
 
 - 初始化时的私有分配是否在所有路径都保持私有？`m_isOnlyActiveCommandBuffer`
   是否可能改变？与队列的共享块比较，足以排除别名和迁移吗？

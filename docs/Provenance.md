@@ -32,8 +32,10 @@ BCS 变更相对**未修改的 git archive 基线**生成，涉及
 macOS 26.7.3（25G342）/ Darwin 25.6.0、OpenCore 1.0.8、Lilu 1.7.2。
 UUID 是二进制构建标识，不是机器身份。没有发布 serial、硬件 UUID、MAC 或用户账号。
 
-官方 v0.4.1 的 Tahoe accelerator 与表中 SHA 相同；7 项 native replay 的旧指纹拒绝
-不构成本机文件被意外修改的证据。官方 pkg 只解包对比，没有在该轮重新安装。
+官方 v0.4.1 的 Tahoe accelerator 与表中 SHA 相同；首次 7 项 native replay 的旧指纹拒绝
+不构成本机文件被意外修改的证据。核实官方 payload 并加入精确完整 SHA 后，216 项
+已全部通过。新增 BCS wait 单项另行通过，未冒称 217 项整套重跑。
+官方 pkg 只解包对比，没有在该轮重新安装。
 
 ## 构建步骤与复现限制
 

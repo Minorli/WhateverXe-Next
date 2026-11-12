@@ -5,11 +5,17 @@ fingerprints, not raw logs or driver payloads.
 
 - `driver-build-manifest.json`: historical RELEASE build of the BCS diagnostic change;
   outputs were not installed. Paths inside the manifest are source-relative labels.
-- `driver-tests.json`: complete names and exit codes for the historical 216-test run.
-  Seven native replay entries refused an incompatible full driver fingerprint.
+- `driver-tests.json`: complete names and exit codes for the 216-test run after
+  independently verifying the official Tahoe full-file identity. All passed;
+  the added BCS-wait sanitizer test passed separately, outside that full run.
+- `driver-bcs-wait-build-manifest.json`: a later RELEASE diagnostic build including
+  bounded semaphore wait witnesses. It was not installed or boot-tested.
+- `queue-cache-tests.json`: native serial lifetime checks, forward/reverse IOSurface
+  memory comparisons, presentation timing refusal, and **known failing concurrent
+  construction**. Queue-cache is blocked from global deployment despite serial gains.
 - `gpu-short-tests.json`: selected historical process-local runs, before removal of
-  legacy probe entry points and stricter argument parsing. No new GPU tests were run
-  after the machine showed instability. The POSH source fingerprint is included.
+  legacy probe entry points and stricter argument parsing. Later controlled GPU
+  comparisons are recorded separately in `queue-cache-tests.json`.
 
 Current checkout compilation, CLI rejection and CPU model checks are described in
 `docs/Validation.md`. A CI CPU/mock pass does not replace the unresolved native,

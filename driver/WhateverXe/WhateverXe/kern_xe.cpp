@@ -75,6 +75,7 @@
 #include "kern_xelp_queue_memory.hpp"
 #include "kern_tgl_hang_refs.hpp"
 #include "kern_tgl_hang_pending.hpp"
+#include "kern_tgl_hang_bcs_wait.hpp"
 #include "kern_tgl_hang_detail.hpp"
 #include "kern_tgl_hang_ggtt.hpp"
 #include "kern_tgl_hang_prestop.hpp"
@@ -15716,6 +15717,19 @@ void XE::wrapTGLHangRingDump(void *ring,void *registers) {
      if(bcs) {
       char key[32];snprintf(key,sizeof(key),"TGLHangPendingBCS%u",slot);
       IORegistryEntry::getRegistryRoot()->setProperty(key,&pending,sizeof(pending));
+      // Small, no-fault CPU witnesses for the semaphore waits seen in BCS
+      // reset reports. This observes failure only, never completes a wait.
+      auto wait=static_cast<TGLHangBCSWait::Capture *>(IOMalloc(sizeof(TGLHangBCSWait::Capture)));
+      if(wait) {
+       bzero(wait,sizeof(*wait));tglHostClock(wait->q+2);
+       if(tglVM.enabled && tglVM.nofault)
+        TGLHangBCSWait::collect(*wait,selected,c->regs,tglPPGTTClass,tglVM.directBase,tglVM.directEnd,boundedRead);
+       else {wait->q[0]=1;wait->q[1]=5;wait->q[4]=selected;}
+       tglHostClock(wait->q+3);
+       snprintf(key,sizeof(key),"TGLHangBCSWait%u",slot);
+       IORegistryEntry::getRegistryRoot()->setProperty(key,wait,sizeof(*wait));
+       IOFree(wait,sizeof(*wait));
+      }
      } else {
       IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPending0",&pending,sizeof(pending));
       tglCaptureHangDetail(pending,c->regs,selection);

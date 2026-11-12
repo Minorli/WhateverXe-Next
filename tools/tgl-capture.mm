@@ -42,11 +42,17 @@ int main(int argc,char **argv) {
         NSSet<NSString *> *knownReports=gpuReports(reportsReadable);
         NSMutableSet<NSString *> *newReports=[NSMutableSet new];
         const char *keys[]={"TGLRecoveryLive","TGLRecoverySinglePassReady","TGLHangFrozenState","TGLHangPreStop0","TGLHangBatch0","TGLHangBatch1","TGLHangBatch2","TGLHangBatch3","TGLHangPending0","TGLHangPendingBCS0","TGLHangPendingBCS1","TGLHangPendingBCS2","TGLHangPendingBCS3","TGLHangAddress0","TGLHangAddress1","TGLHangAddress2","TGLHangAddress3","TGLHangDetail0","TGLHangDetailStatus","TGLHangGGTT0","TGLHangGraph0","TGLHangRefs0","TGLSubmitHistory0","TGLSameTail0","TGLCSB12Live","TGLCSBFailure0","TGLGSYNC0","TGLRPCSPower0","TGLBlitDeferredInitLive","TGLSemaphoreTLBLive","TGLAcceleratorAdmissionReady","WEXTGLMTLLeakReady"};
+        const char *bcsKeys[]={"TGLHangBCSWait0","TGLHangBCSWait1","TGLHangBCSWait2","TGLHangBCSWait3"};
         bool failedBefore=false;
         for (int elapsed=0;elapsed<=seconds && !stopped;elapsed+=2) {
             @autoreleasepool {
                 NSMutableDictionary *snapshot=[NSMutableDictionary new];
                 for (auto key:keys) {
+                    CFStringRef name=CFStringCreateWithCString(nullptr,key,kCFStringEncodingUTF8);
+                    CFTypeRef value=IORegistryEntryCreateCFProperty(root,name,kCFAllocatorDefault,0); CFRelease(name);
+                    if (value) snapshot[@(key)]=CFBridgingRelease(value);
+                }
+                for (auto key:bcsKeys) {
                     CFStringRef name=CFStringCreateWithCString(nullptr,key,kCFStringEncodingUTF8);
                     CFTypeRef value=IORegistryEntryCreateCFProperty(root,name,kCFAllocatorDefault,0); CFRelease(name);
                     if (value) snapshot[@(key)]=CFBridgingRelease(value);
