@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include "../src/POSHDeferred.h"
+#include "../src/POSHQueueCache.h"
 #include "../src/BoundedCount.hpp"
 
 static void report(const char *phase, int count) {
@@ -28,8 +29,9 @@ int main(int argc, char **argv) {
         int count = 200;
         if (argc > 2 && !xe::boundedCount(argv[2],12000,count)) return 2;
         bool deferred = argc > 3 && strcmp(argv[3], "deferred") == 0;
+        bool queueCache = argc > 3 && strcmp(argv[3], "queue-cache") == 0;
         if (argc > 4 || count < 1 || count > 12000 ||
-            (argc > 3 && !deferred && strcmp(argv[3], "stock") != 0)) return 2;
+            (argc > 3 && !deferred && !queueCache && strcmp(argv[3], "stock") != 0)) return 2;
         bool blit = strcmp(mode, "blit") == 0;
         bool drawOverlap = strcmp(mode, "draw-overlap") == 0;
         bool draw = strcmp(mode, "draw") == 0 || drawOverlap;
@@ -39,6 +41,7 @@ int main(int argc, char **argv) {
         if (!blit && !render && !overlap && !compute && strcmp(mode, "empty") != 0) return 2;
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (!device) return 3;
+        if (queueCache && !installPOSHQueueCache(device.registryID)) { fprintf(stderr,"Queue-cache guard refused\n"); return 4; }
         id<MTLCommandQueue> queue = [device newCommandQueue];
         if (!queue) { fprintf(stderr, "Command queue creation failed\n"); return 8; }
         printf("{\"queue_class\":\"%s\"}\n", class_getName(object_getClass(queue)));
@@ -150,6 +153,11 @@ int main(int argc, char **argv) {
             printf("{\"deferred\":true,\"tracked\":%llu,\"detached\":%llu,\"disposed\":%llu,\"rejected\":%llu,\"completions\":%llu}\n",
               s.tracked,s.detached,s.disposed,s.rejected,s.completions);
             if (s.rejected || !s.tracked || s.detached!=s.disposed) return 10;
+        }
+        if (queueCache) {
+            const auto s=poshQueueCacheStats();
+            printf("{\"queue_cache\":true,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu}\n",s.allocated,s.destroyed,s.refused);
+            if (!s.allocated || s.refused) return 10;
         }
         return valid ? 0 : 7;
     }

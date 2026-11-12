@@ -2,7 +2,7 @@ CXX := xcrun clang++
 CXXFLAGS := -std=c++17 -O2 -g -Wall -Wextra
 PREFIX_MAP := -ffile-prefix-map=$(CURDIR)=/WhateverXe-Next
 .PHONY: all cpu-test clean
-all: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-lifetime build/bounded-count build/tgl-capture
+all: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-lifetime build/bounded-count build/tgl-capture build/posh-queue-check build/metal-surface-check
 
 build:
 	mkdir -p build
@@ -10,11 +10,20 @@ build:
 build/POSHDeferred.o: src/POSHDeferred.mm src/POSHDeferred.h src/POSHLifetime.hpp | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc -Wno-deprecated-declarations -c $< -o $@
 
-build/metal-memory-check: tests/metal-memory-check.mm build/POSHDeferred.o src/BoundedCount.hpp | build
-	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHDeferred.o -framework Foundation -framework Metal -o $@
+build/POSHQueueCache.o: src/POSHQueueCache.mm src/POSHQueueCache.h | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc -Wno-deprecated-declarations -c $< -o $@
 
-build/metal-async-check: tests/metal-async-check.mm build/POSHDeferred.o src/BoundedCount.hpp | build
-	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHDeferred.o -framework Foundation -framework Metal -o $@
+build/metal-memory-check: tests/metal-memory-check.mm build/POSHDeferred.o build/POSHQueueCache.o src/BoundedCount.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHDeferred.o build/POSHQueueCache.o -framework Foundation -framework Metal -framework IOKit -o $@
+
+build/metal-async-check: tests/metal-async-check.mm build/POSHDeferred.o build/POSHQueueCache.o src/BoundedCount.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHDeferred.o build/POSHQueueCache.o -framework Foundation -framework Metal -framework IOKit -o $@
+
+build/posh-queue-check: tests/posh-queue-check.mm build/POSHQueueCache.o | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc $< build/POSHQueueCache.o -framework Foundation -framework Metal -framework IOKit -o $@
+
+build/metal-surface-check: tests/metal-surface-check.mm build/POSHQueueCache.o src/BoundedCount.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHQueueCache.o -framework Foundation -framework Metal -framework CoreVideo -framework IOKit -framework AppKit -framework QuartzCore -o $@
 
 build/tgl-capture: tools/tgl-capture.mm | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< -framework Foundation -framework IOKit -o $@
