@@ -8,10 +8,10 @@ constexpr uint64_t Ring=0xffff800000010000ULL,Context=Ring+0x10000,Stamps=Ring+0
 struct Fixture {
  std::array<uint8_t,0x8a8> ring{};
  std::array<uint8_t,0xb0> regs{};
- std::array<uint8_t,0x80> context{};
+ std::array<uint8_t,0xc0> context{};
  std::array<uint8_t,4096> stamps{};
  std::array<uint8_t,128> bytes{};
- bool partial{},mutateCache{},mutateOwner{},mutateRetired{},mutateWrite{},deny{};
+ bool partial{},mutateCache{},mutateOwner{},mutateRetired{},mutateWrite{},deny{},mutateEngine{},mutateBacklink{},mutateContextOwner{};
  unsigned dataReads{};
  template<class T> static void put(uint8_t *p,unsigned offset,T value) {memcpy(p+offset,&value,sizeof(value));}
  Fixture() {
@@ -34,6 +34,9 @@ struct Fixture {
    if(mutateOwner)context[0x7c]^=1;
    if(mutateRetired)stamps[64]^=1;
    if(mutateWrite)ring[0x8a0]^=1;
+   if(mutateEngine)context[0x6c]^=1;
+   if(mutateBacklink)context[0xb0]^=8;
+   if(mutateContextOwner)context[0x50]^=8;
    const unsigned count=partial?n-1:n;memcpy(out,bytes.data(),count);return count;
   }
   auto copy=[&](uint64_t base,const auto &v)->bool {
@@ -49,6 +52,25 @@ struct Fixture {
 };
 }
 int main() {
+ // BCS captures use the common cache but must qualify engine/ownership both
+ // before copying and after it. They remain pending candidates, not active BBs.
+ for(unsigned failure=0;failure<8;++failure) {
+  Fixture f;f.regs[0x94]=2;f.ring[0x40]=2;f.context[0x6c]=2;
+  Fixture::put(f.context.data(),0x50,uint64_t(Ring+0x50000));
+  Fixture::put(f.ring.data(),0x10,uint64_t(Ring+0x50000));
+  Fixture::put(f.context.data(),0xb0,Ring);
+  if(failure==1)f.ring[0x40]=0;
+  if(failure==2)f.context[0x6c]=0;
+  if(failure==3)Fixture::put(f.context.data(),0xb0,Ring+8);
+  if(failure==4)Fixture::put(f.context.data(),0x50,uint64_t(Ring+0x50008));
+  if(failure==5)f.mutateEngine=true;
+  if(failure==6)f.mutateBacklink=true;
+  if(failure==7)f.mutateContextOwner=true;
+  auto c=f.run();
+  if(!failure)assert(!c->q[2] && c->q[11]==1 && c->entries[0].stable);
+  else if(failure<=4)assert(c->q[2] && !f.dataReads);
+  else assert(c->q[2]==5);
+ }
  {Fixture f;auto c=f.run();assert(c->q[2]==0 && c->q[11]==1 && f.dataReads==1);
   assert(c->entries[0].stable && c->entries[0].copied==128);
   assert(!memcmp(c->entries[0].bytes,f.bytes.data(),128));}

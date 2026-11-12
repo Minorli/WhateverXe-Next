@@ -15694,14 +15694,18 @@ void XE::wrapTGLHangRingDump(void *ring,void *registers) {
    }
    char key[32];snprintf(key,sizeof(key),"TGLHangBatch%u",slot);
    IORegistryEntry::getRegistryRoot()->setProperty(key,c,sizeof(*c));
-   if (slot==0 && c->q[3]==sizeof(c->regs) && c->q[4]==sizeof(c->ring)) {
+   // Keep the existing first RCS detail report, and retain bounded BCS pending
+   // evidence on its own native dump. Do not run the RCS command/PPGTT decoder
+   // against copy-engine packets. The global four-slot failure budget remains.
+   const bool bcs=c->regs[0x94]==2 && c->ring[0x40]==2;
+   if ((slot==0 || bcs) && c->q[3]==sizeof(c->regs) && c->q[4]==sizeof(c->ring)) {
     struct PendingWork {TGLHangPending::Capture pending;TGLHangSelect::Selection selection;uint8_t ring[0x8a8];};
     auto work=static_cast<PendingWork *>(IOMalloc(sizeof(PendingWork)));
     if(work) {
      bzero(work,sizeof(*work));auto &pending=work->pending;auto &selection=work->selection;
      tglHostClock(pending.q+1);
      auto boundedRead=[&](uint64_t address,void *out,unsigned count)->uint64_t {return read(address,out,count);};
-     if(tglHangDetailKernel())TGLHangSelect::select(selection,c->q[2],reinterpret_cast<uint64_t>(tglCSBEngines[0].streamer),c->regs,boundedRead);
+     if(!bcs && tglHangDetailKernel())TGLHangSelect::select(selection,c->q[2],reinterpret_cast<uint64_t>(tglCSBEngines[0].streamer),c->regs,boundedRead);
      uint64_t selected=c->q[2];const uint8_t *ringBytes=c->ring;
      if(selection.q[0] && !selection.q[1] && selection.q[4]!=selected) {
       if(read(selection.q[4],work->ring,sizeof(work->ring))==sizeof(work->ring)) {
@@ -15709,8 +15713,13 @@ void XE::wrapTGLHangRingDump(void *ring,void *registers) {
       } else selection.q[1]=7;
      }
      TGLHangPending::collect(pending,selected,c->regs,ringBytes,boundedRead);
-     IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPending0",&pending,sizeof(pending));
-     tglCaptureHangDetail(pending,c->regs,selection);
+     if(bcs) {
+      char key[32];snprintf(key,sizeof(key),"TGLHangPendingBCS%u",slot);
+      IORegistryEntry::getRegistryRoot()->setProperty(key,&pending,sizeof(pending));
+     } else {
+      IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPending0",&pending,sizeof(pending));
+      tglCaptureHangDetail(pending,c->regs,selection);
+     }
      IOFree(work,sizeof(*work));
     }
    }

@@ -29,9 +29,18 @@ void collect(Capture &c,uint64_t address,const uint8_t *regs,const uint8_t *ring
   return kernelRange(p,n) && read(p,out,n)==n;
  };
  c.q[2]=1;
- if(regs[0x94] || ring[0x40] || c.q[7]>=64 || c.q[10]>=64 ||
+ // The same native submit-bank layout is used by the BCS ring. Admit only
+ // matching RCS/BCS engine snapshots; never decode a different engine's cache.
+ const uint8_t engine=regs[0x94];
+ if((engine!=0 && engine!=2) || ring[0x40]!=engine || c.q[7]>=64 || c.q[10]>=64 ||
     !kernelRange(address,0x8a8) || !kernelRange(c.q[4],0x80)) return;
  uint32_t owner=0,retired=0;const uint64_t stamps=u64(ring+0x30);
+ // RCS retains its existing contract. Before adding BCS capture require the
+ // context's engine, owner and ring backlink to agree with the saved ring.
+ uint8_t contextEngine=0;uint64_t contextOwner=0,contextRing=0;
+ if(engine==2 && (!copy(c.q[4]+0x6c,&contextEngine,1) || contextEngine!=engine ||
+    !copy(c.q[4]+0x50,&contextOwner,8) || !contextOwner || contextOwner!=u64(ring+0x10) ||
+    !copy(c.q[4]+0xb0,&contextRing,8) || contextRing!=address)) return;
  c.q[2]=2;
  if(!copy(c.q[4]+0x7c,&owner,4) || !kernelRange(stamps,4096) ||
     !copy(stamps+c.q[7]*64,&retired,4)) return;
@@ -63,6 +72,14 @@ void collect(Capture &c,uint64_t address,const uint8_t *regs,const uint8_t *ring
  c.q[9]=finalRetired;c.q[2]=5;
  if(context!=c.q[4] || stampBase!=stamps || index!=c.q[7] || write!=c.q[10] ||
     finalOwner!=owner || finalRetired!=retired) return;
+ if(engine==2) {
+  uint8_t finalEngine=0,finalContextEngine=0;uint64_t finalContextOwner=0,finalContextRing=0,finalRingOwner=0;
+  if(!copy(address+0x40,&finalEngine,1) || finalEngine!=engine ||
+     !copy(address+0x10,&finalRingOwner,8) || finalRingOwner!=contextOwner ||
+     !copy(context+0x6c,&finalContextEngine,1) || finalContextEngine!=engine ||
+     !copy(context+0x50,&finalContextOwner,8) || finalContextOwner!=contextOwner ||
+     !copy(context+0xb0,&finalContextRing,8) || finalContextRing!=address) return;
+ }
  c.q[2]=0;
 }
 }
