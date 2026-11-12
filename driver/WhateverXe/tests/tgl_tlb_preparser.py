@@ -4,10 +4,11 @@ No GPU execution claim. Includes pending-bit recursion, both native WA branches,
 address modes, reservation accounting, ring end and unchanged native payload.
 """
 from pathlib import Path
-import hashlib,re,subprocess,sys,tempfile
+import re,subprocess,sys,tempfile
+from accelerator_fingerprint import require_accelerator
 repo=Path(__file__).resolve().parents[1]
 s=(repo/'WhateverXe/kern_xe.cpp').read_text(); b=Path(sys.argv[1]).read_bytes()
-assert hashlib.sha256(b).hexdigest()=='bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0'
+require_accelerator(b)
 for name,at in [('tlbSpaceBody',0x8507c),('tlbWriteHead',0x8509c),('tlbReserveCall',0x4177c),('tlbPendingCall',0x41eca)]:
  vals=re.search(r'const uint8_t '+name+r'\[\] \{([^}]+)',s)[1]
  want=bytes(int(v.strip(),0) for v in vals.split(',')); assert b[at:at+len(want)]==want,name

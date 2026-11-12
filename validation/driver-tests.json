@@ -1,17 +1,32 @@
 {
   "date": "2026-11-12",
-  "source_base": "db438fdf4d5fe903f5dfbc65537ed3884e2ea980",
+  "upstream_source_base": "db438fdf4d5fe903f5dfbc65537ed3884e2ea980",
+  "integration_base": "be95a2e6953297c4357cfa29143121fbdd19119c",
   "total": 216,
-  "exit_zero": 209,
-  "native_replay_refusals": [
-    "dsi_backing_adapter_native",
-    "dsi_backing_native",
-    "xelp_forcewake_irq_native",
-    "tgl_rpcs_native",
-    "small_gt_urb_native",
-    "tgl_tlb_preparser_native",
-    "tgl_semaphore_tlb_native"
-  ],
+  "exit_zero": 216,
+  "native_replay_refusals": [],
+  "accelerator_sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+  "scope": "CPU/mock and x86_64 native instruction replay; no real GPU submissions or boot validation.",
+  "suite_source_sha256": {
+    "driver/WhateverXe/tests/accelerator_fingerprint.py": "1226d8bc3d9bbc2bf18239e09b2f8f84f2173671b5ad70e15242a005bf75cd0e",
+    "driver/WhateverXe/tests/dsi_backing_adapter.py": "05786e0993c1bee35294f50f9933553b362aa3938a321c6f75a3f55db1db5c6f",
+    "driver/WhateverXe/tests/dsi_backing_native.py": "ca868e4484675875e80ebf737a47f897ffd80df3fbe72486796bf94f8eb6ad67",
+    "driver/WhateverXe/tests/small_gt_urb.py": "d152b863ae54f1cf1c30b6a17adda64550eb0b652d681ebbc7447a054f726dad",
+    "driver/WhateverXe/tests/tgl_rpcs_native.py": "2df084b9a9eda794497385b2fc2bcf83ed683fbeef501c71a33e5057c5bb174f",
+    "driver/WhateverXe/tests/tgl_semaphore_tlb.py": "828398436db8ad8de3f14c1544b5ed3ae5b59617ce98902b38f5d6fd1ab26446",
+    "driver/WhateverXe/tests/tgl_tlb_preparser.py": "5b48db904146e8f15c1aebf2cf558b861dd2e4ff531ddce1512ffc0606face61",
+    "driver/WhateverXe/tests/xelp_forcewake_irq.py": "3b4952cc06d8910622400cd38fb98070249ce037cc720d8d35d130ee46e9fb5a"
+  },
+  "added_after_full_run": {
+    "tgl_hang_bcs_wait": {
+      "standalone_exit_code": 0,
+      "sanitizers": [
+        "address",
+        "undefined"
+      ],
+      "included_in_216": false
+    }
+  },
   "results": {
     "adlp_resources": 0,
     "adls_boot": 0,
@@ -221,13 +236,13 @@
     "released_physical_admission": 0,
     "released_topology": 0,
     "accelerator_resources": 0,
-    "dsi_backing_adapter_native": 1,
-    "dsi_backing_native": 1,
-    "xelp_forcewake_irq_native": 1,
-    "tgl_rpcs_native": 1,
-    "small_gt_urb_native": 1,
-    "tgl_tlb_preparser_native": 1,
-    "tgl_semaphore_tlb_native": 1,
+    "dsi_backing_adapter_native": 0,
+    "dsi_backing_native": 0,
+    "xelp_forcewake_irq_native": 0,
+    "tgl_rpcs_native": 0,
+    "small_gt_urb_native": 0,
+    "tgl_tlb_preparser_native": 0,
+    "tgl_semaphore_tlb_native": 0,
     "tgl_iosurface_compression_native": 0
   }
 }

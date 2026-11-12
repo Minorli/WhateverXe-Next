@@ -2,7 +2,8 @@
 """Execute the real wrapper and exact donor wake code with deterministic IRQ injection.
 MMIO/ACK waits and native spinlocks are modeled; no GPU or kernel execution.
 """
-import argparse,ctypes as C,hashlib,mmap,pathlib,struct,subprocess,tempfile,sys,re
+import argparse,ctypes as C,mmap,pathlib,struct,subprocess,tempfile,sys,re
+from accelerator_fingerprint import require_accelerator
 r=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--donor',type=pathlib.Path);a=p.parse_args()
 s=(r/'WhateverXe/kern_xe.cpp').read_text()
@@ -18,7 +19,7 @@ assert 'tglCSBForceWake[0](renderWakeOwner,false,1)' in s
 if a.donor is None:
  print('PASS: common TGL/ADL-N routing and exact-entry guards; use --donor for native reentry execution')
  sys.exit(0)
-data=a.donor.read_bytes();assert hashlib.sha256(data).hexdigest() in ['890735a93a19d3ddda24ff31bda3075dbd145fb7b26c11769f33c4564a8027ac','bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0']
+data=a.donor.read_bytes();require_accelerator(data,allow_forcewake_legacy=True)
 prologue=bytes.fromhex('554889e541574156415541545350');assert data[0x28c2a:0x28c2a+len(prologue)]==prologue
 prefix=r'''
 #include <cstdint>

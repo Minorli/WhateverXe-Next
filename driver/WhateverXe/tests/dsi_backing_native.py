@@ -5,10 +5,11 @@ Requires the exact accelerator; stores no Apple bytes. This establishes record
 and display-pipe reference behavior, not GPU allocation or live PTE validity.
 """
 from pathlib import Path
-import hashlib, subprocess, sys, tempfile
+import subprocess, sys, tempfile
+from accelerator_fingerprint import require_accelerator
 root=Path(__file__).resolve().parents[1]
 donor=Path(sys.argv[1]).resolve()
-assert hashlib.sha256(donor.read_bytes()).hexdigest()=='bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0'
+require_accelerator(donor.read_bytes())
 code=r'''
 #include "kern_dsi_native_backing.hpp"
 #include <cassert>

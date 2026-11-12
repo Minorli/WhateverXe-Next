@@ -5,10 +5,11 @@ Proves a mapping published after reservation skips native invalidation, and
 checks the real wrappers, both WA branches, early flush, and ring wrap.
 """
 from pathlib import Path
-import hashlib,re,subprocess,sys,tempfile
+import re,subprocess,sys,tempfile
+from accelerator_fingerprint import require_accelerator
 repo=Path(__file__).resolve().parents[1]
 s=(repo/'WhateverXe/kern_xe.cpp').read_text(); b=Path(sys.argv[1]).read_bytes()
-assert hashlib.sha256(b).hexdigest()=='bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0'
+require_accelerator(b)
 for name,at in [('baseSpaceBody',0x428ec),('tlbWriteHead',0x4290c),('semSpaceBody',0x425f8),('semCommandHead',0x4249e),('semMapCall',0x42644)]:
  vals=re.search(r'const uint8_t '+name+r'\[\] \{([^}]+)',s)[1]
  want=bytes(int(v.strip(),0) for v in vals.split(',')); assert b[at:at+len(want)]==want,name

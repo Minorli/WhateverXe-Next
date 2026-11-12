@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Replay production URB patch selection and its native store on CPU, no GPU."""
-import hashlib,re,subprocess,sys,tempfile
+import re,subprocess,sys,tempfile
+from accelerator_fingerprint import require_accelerator
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
 s=(r/'WhateverXe/kern_xe.cpp').read_text()
@@ -8,7 +9,7 @@ a=s.index('static const uint8_t urbFind[]');b=s.index('auto gpuInfo=',a)
 body=s[a:b]
 if len(sys.argv)>1:
     donor=Path(sys.argv[1]).read_bytes()
-    assert hashlib.sha256(donor).hexdigest()=='bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0'
+    require_accelerator(donor)
     old=bytes(int(x,0) for x in re.search(r'urbFind\[\] \{([^}]+)',body)[1].split(','))
     assert donor[0x28781:0x28781+len(old)]==old
 code=r'''#include "kern_xelp_platform.hpp"

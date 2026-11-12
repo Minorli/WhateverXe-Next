@@ -1,6 +1,6 @@
 """Replay the exact constructor's one RPCS store. No GPU or whole constructor."""
 import ctypes as C
-import hashlib
+from accelerator_fingerprint import require_accelerator
 import json
 import mmap
 import platform
@@ -12,7 +12,7 @@ from pathlib import Path
 if len(sys.argv) != 2 or platform.machine().lower() not in ('x86_64', 'amd64'):
     raise SystemExit('usage: x86_64 python3 tgl_rpcs_native.py EXACT_ACCELERATOR')
 data = Path(sys.argv[1]).read_bytes()
-assert hashlib.sha256(data).hexdigest() == 'bd1a21f5e622aadabdab6441f6b5c38ed73fa3053c783fdf0fb7e4b309f273d0'
+require_accelerator(data)
 header = (Path(__file__).resolve().parents[1]/'WhateverXe/kern_tgl_rpcs.hpp').read_text()
 def array(name):
     body = re.search(r'constexpr uint8_t '+name+r'\[\]\s*\{([^}]+)\}', header)[1]
