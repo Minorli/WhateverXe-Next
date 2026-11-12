@@ -7,10 +7,13 @@ permissions:
   contents: read
 jobs:
   diagnostics:
-    runs-on: macos-15
+    # Some inherited CPU fixtures execute x86 machine code directly.
+    runs-on: macos-15-intel
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require the Intel fixture ABI
+        run: test "$(uname -m)" = x86_64
       - name: Build only; do not submit GPU work
         run: make all
       - name: CPU lifecycle and submission-limit contracts
@@ -18,3 +21,18 @@ jobs:
       - name: Inherited driver CPU and mock contracts
         working-directory: driver/WhateverXe
         run: python3 tools/test.py
+      - name: Print failed CPU contract logs
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          directory = Path('driver/WhateverXe/build/tests')
+          results = directory / 'results.json'
+          if results.is_file():
+              for name, status in json.loads(results.read_text()).items():
+                  if status:
+                      log = directory / (name + '.log')
+                      print(f'--- {name}: exit {status} ---')
+                      print(log.read_text()[-12000:] if log.is_file() else 'No test log')
+          PY
