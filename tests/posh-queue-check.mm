@@ -11,6 +11,7 @@
 #include <dispatch/dispatch.h>
 #include "../src/POSHQueueCache.h"
 #include "../src/POSHAtomicClaim.h"
+#include "../src/GPUHealth.hpp"
 
 static void *pointer(id object,const char *name) {
     Ivar ivar=class_getInstanceVariable(object_getClass(object),name); assert(ivar);
@@ -24,17 +25,20 @@ static bool only(id object) {
 }
 int main(int argc,char **argv) {
     const bool concurrent=argc>=2 && !strcmp(argv[1],"--concurrent");
-    const bool stock=argc==3 && !strcmp(argv[2],"stock");
-    const bool atomic=argc==3 && (!strcmp(argv[2],"atomic") || !strcmp(argv[2],"queue-cache-atomic"));
-    const bool cache=!stock && !(argc==3 && !strcmp(argv[2],"atomic"));
+    const char *mode=argc==3?argv[2]:"queue-cache";
+    const bool stock=!strcmp(mode,"stock");
+    const bool reclaim=!strcmp(mode,"lifecycle") || !strcmp(mode,"queue-cache-lifecycle");
+    const bool atomic=reclaim || !strcmp(mode,"atomic") || !strcmp(mode,"queue-cache-atomic");
+    const bool cache=!stock && strcmp(mode,"atomic") && strcmp(mode,"lifecycle");
     if (argc>3 || (argc>=2 && !concurrent) ||
         (argc==3 && !stock && !atomic && strcmp(argv[2],"queue-cache"))) return 2;
+    if (!xe::noGPURecovery()) return 14;
     @autoreleasepool {
         id<MTLDevice> device=MTLCreateSystemDefaultDevice(); if (!device) return 3;
         assert(!installPOSHQueueCache(0));
         assert(!installPOSHAtomicClaim(0));
         if (cache && !installPOSHQueueCache(device.registryID)) { fprintf(stderr,"Queue-cache guard refused\n"); return 4; }
-        if (atomic && !installPOSHAtomicClaim(device.registryID)) { fprintf(stderr,"Atomic-claim guard refused\n"); return 4; }
+        if (atomic && !installPOSHAtomicClaim(device.registryID,reclaim)) { fprintf(stderr,"Atomic-claim guard refused\n"); return 4; }
         for (unsigned n=0;n<100;++n) {
             @autoreleasepool {
                 id<MTLCommandQueue> queue=[device newCommandQueue]; assert(queue);
@@ -101,10 +105,13 @@ int main(int argc,char **argv) {
                 }
             }
             const auto s=poshQueueCacheStats();
-            printf("{\"mode\":\"%s\",\"concurrent_rounds\":%u,\"workers\":%u,\"cache_alias_rounds\":%u,\"zero_cache_borrower_rounds\":%u,\"max_cache_borrowers\":%u,\"max_only_active_buffers\":%u,\"private_aliases\":%u,\"active_count_failures\":%u,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu,\"gpu_commits\":0}\n",
-                atomic?(cache?"queue-cache-atomic":"atomic"):stock?"stock":"queue-cache",rounds,workers,aliases,zeroBorrowers,maxBorrowers,maxOnly,privateAliases,wrongCount,s.allocated,s.destroyed,s.refused);
+            const auto claims=poshActiveStats();
+            printf("{\"mode\":\"%s\",\"concurrent_rounds\":%u,\"workers\":%u,\"cache_alias_rounds\":%u,\"zero_cache_borrower_rounds\":%u,\"max_cache_borrowers\":%u,\"max_only_active_buffers\":%u,\"private_aliases\":%u,\"active_count_failures\":%u,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu,\"gpu_commits\":0,\"tracked\":%llu,\"abandoned\":%llu,\"destroyed_tokens\":%llu}\n",
+                mode,rounds,workers,aliases,zeroBorrowers,maxBorrowers,maxOnly,privateAliases,wrongCount,s.allocated,s.destroyed,s.refused,
+                claims.tracked,claims.abandoned,claims.destroyed);
             const uint64_t expectedQueues=cache?100+rounds:0;
-            return aliases || zeroBorrowers || maxOnly!=1 || privateAliases || wrongCount || s.allocated!=expectedQueues || s.destroyed!=expectedQueues || s.refused ? 8:0;
+            return aliases || zeroBorrowers || maxOnly!=1 || privateAliases || wrongCount || s.allocated!=expectedQueues || s.destroyed!=expectedQueues || s.refused ||
+                (reclaim && (claims.tracked!=1400 || claims.committed || claims.abandoned!=1400 || claims.destroyed!=1400)) ? 8:0;
         }
         const auto s=poshQueueCacheStats();
         printf("{\"queues\":100,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu,\"gpu_commits\":0}\n",s.allocated,s.destroyed,s.refused);

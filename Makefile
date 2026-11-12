@@ -2,7 +2,7 @@ CXX := xcrun clang++
 CXXFLAGS := -std=c++17 -O2 -g -Wall -Wextra
 PREFIX_MAP := -ffile-prefix-map=$(CURDIR)=/WhateverXe-Next
 .PHONY: all cpu-test clean
-all: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-lifetime build/bounded-count build/tgl-capture build/posh-queue-check build/metal-surface-check build/posh-concurrent-gpu build/posh-atomic-code
+all: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-lifetime build/bounded-count build/tgl-capture build/posh-queue-check build/metal-surface-check build/posh-concurrent-gpu build/posh-atomic-code build/posh-abandon-check
 
 build:
 	mkdir -p build
@@ -22,10 +22,13 @@ build/metal-memory-check: tests/metal-memory-check.mm build/POSHDeferred.o build
 build/metal-async-check: tests/metal-async-check.mm build/POSHDeferred.o build/POSHQueueCache.o src/BoundedCount.hpp | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHDeferred.o build/POSHQueueCache.o -framework Foundation -framework Metal -framework IOKit -o $@
 
-build/posh-queue-check: tests/posh-queue-check.mm build/POSHQueueCache.o build/POSHAtomicClaim.o | build
+build/posh-queue-check: tests/posh-queue-check.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/GPUHealth.hpp | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc $< build/POSHQueueCache.o build/POSHAtomicClaim.o -framework Foundation -framework Metal -framework IOKit -o $@
 
-build/posh-concurrent-gpu: tests/posh-concurrent-gpu.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/BoundedCount.hpp | build
+build/posh-abandon-check: tests/posh-abandon-check.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/GPUHealth.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc $< build/POSHQueueCache.o build/POSHAtomicClaim.o -framework Foundation -framework Metal -framework IOKit -o $@
+
+build/posh-concurrent-gpu: tests/posh-concurrent-gpu.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/BoundedCount.hpp src/GPUHealth.hpp | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fno-objc-arc $< build/POSHQueueCache.o build/POSHAtomicClaim.o -framework Foundation -framework Metal -framework IOKit -o $@
 
 build/metal-surface-check: tests/metal-surface-check.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/BoundedCount.hpp | build

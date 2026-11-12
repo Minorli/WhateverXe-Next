@@ -1,0 +1,387 @@
+{
+  "date": "2026-11-12",
+  "state": "research_only_late_real_recovery_failed_acceptance_final_disposal_not_native_validated",
+  "globally_installed": false,
+  "metal_driver_sha256": "1e5e4f5bd76ff567a102125dfa3c74a255934d45c753a88aedcbfac7dab53c6c",
+  "source_stages": {
+    "earlier_counter_only": "Successful init token, commit entry marker, reclaim after full native dealloc. No private POSH disposal. Native/sanitizer/GPU results below belong only to this stage.",
+    "final_source": "Adds guarded private-only unsubmitted allocation disposal after native cleanup, 512-round malloc check, and recovery preflight. Build/CPU checks passed. Native attempt blocked in Metal device initialization BEFORE installation; final disposal and memory-growth test not run.",
+    "intermediate_pinning_limit": "Counter-only implementation source and sanitizer executable preserved privately; the earlier non-sanitized/GPU executables were overwritten by later builds. Do not treat their results as an exact-binary replay of the final checkout."
+  },
+  "earlier_counter_only_native": [
+    {
+      "mode": "stock",
+      "rounds": 32,
+      "destroyed_witnesses": 32,
+      "stale_active_rounds": 32,
+      "wrong_only_active": 31,
+      "final_active": 32,
+      "cache_allocated": 0,
+      "cache_destroyed": 0,
+      "gpu_commits": 0,
+      "reentries": 0,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 0,
+      "committed": 0,
+      "abandoned": 0,
+      "destroyed_tokens": 0,
+      "exit_code": 8
+    },
+    {
+      "mode": "atomic",
+      "rounds": 32,
+      "destroyed_witnesses": 32,
+      "stale_active_rounds": 32,
+      "wrong_only_active": 31,
+      "final_active": 32,
+      "cache_allocated": 0,
+      "cache_destroyed": 0,
+      "gpu_commits": 0,
+      "reentries": 0,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 0,
+      "committed": 0,
+      "abandoned": 0,
+      "destroyed_tokens": 0,
+      "exit_code": 8
+    },
+    {
+      "mode": "lifecycle",
+      "rounds": 32,
+      "destroyed_witnesses": 40,
+      "stale_active_rounds": 0,
+      "wrong_only_active": 0,
+      "final_active": 0,
+      "cache_allocated": 0,
+      "cache_destroyed": 0,
+      "gpu_commits": 0,
+      "reentries": 8,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 307,
+      "committed": 0,
+      "abandoned": 307,
+      "destroyed_tokens": 307,
+      "exit_code": 0
+    },
+    {
+      "mode": "queue-cache-lifecycle",
+      "rounds": 32,
+      "destroyed_witnesses": 40,
+      "stale_active_rounds": 0,
+      "wrong_only_active": 0,
+      "final_active": 0,
+      "cache_allocated": 1,
+      "cache_destroyed": 1,
+      "gpu_commits": 0,
+      "reentries": 8,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 307,
+      "committed": 0,
+      "abandoned": 307,
+      "destroyed_tokens": 307,
+      "exit_code": 0
+    }
+  ],
+  "earlier_counter_only_concurrent": [
+    {
+      "mode": "lifecycle",
+      "concurrent_rounds": 300,
+      "workers": 4,
+      "cache_alias_rounds": 0,
+      "zero_cache_borrower_rounds": 0,
+      "max_cache_borrowers": 0,
+      "max_only_active_buffers": 1,
+      "private_aliases": 0,
+      "active_count_failures": 0,
+      "allocated": 0,
+      "destroyed": 0,
+      "refused": 0,
+      "gpu_commits": 0,
+      "tracked": 1400,
+      "abandoned": 1400,
+      "destroyed_tokens": 1400,
+      "exit_code": 0
+    },
+    {
+      "mode": "queue-cache-lifecycle",
+      "concurrent_rounds": 300,
+      "workers": 4,
+      "cache_alias_rounds": 0,
+      "zero_cache_borrower_rounds": 0,
+      "max_cache_borrowers": 1,
+      "max_only_active_buffers": 1,
+      "private_aliases": 0,
+      "active_count_failures": 0,
+      "allocated": 400,
+      "destroyed": 400,
+      "refused": 0,
+      "gpu_commits": 0,
+      "tracked": 1400,
+      "abandoned": 1400,
+      "destroyed_tokens": 1400,
+      "exit_code": 0
+    }
+  ],
+  "earlier_counter_only_sanitized": [
+    {
+      "mode": "lifecycle",
+      "rounds": 32,
+      "destroyed_witnesses": 40,
+      "stale_active_rounds": 0,
+      "wrong_only_active": 0,
+      "final_active": 0,
+      "cache_allocated": 0,
+      "cache_destroyed": 0,
+      "gpu_commits": 0,
+      "reentries": 8,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 307,
+      "committed": 0,
+      "abandoned": 307,
+      "destroyed_tokens": 307,
+      "exit_code": 0,
+      "sanitizers": [
+        "address",
+        "undefined"
+      ]
+    },
+    {
+      "mode": "queue-cache-lifecycle",
+      "rounds": 32,
+      "destroyed_witnesses": 40,
+      "stale_active_rounds": 0,
+      "wrong_only_active": 0,
+      "final_active": 0,
+      "cache_allocated": 1,
+      "cache_destroyed": 1,
+      "gpu_commits": 0,
+      "reentries": 8,
+      "reentry_failures": 0,
+      "overlap_failures": 0,
+      "concurrent_failures": 0,
+      "tracked": 307,
+      "committed": 0,
+      "abandoned": 307,
+      "destroyed_tokens": 307,
+      "exit_code": 0,
+      "sanitizers": [
+        "address",
+        "undefined"
+      ]
+    }
+  ],
+  "earlier_counter_only_gpu": {
+    "command_suffix": "50 POWER_LOG --reused-abandon",
+    "results": {
+      "stock": {
+        "exit_code": 8,
+        "events": [
+          {
+            "phase": "reused-abandon",
+            "abandoned": 1,
+            "gpu_commits": 0,
+            "final_active_count": 1,
+            "error": 8
+          }
+        ]
+      },
+      "atomic": {
+        "exit_code": 8,
+        "events": [
+          {
+            "phase": "reused-abandon",
+            "abandoned": 1,
+            "gpu_commits": 0,
+            "final_active_count": 1,
+            "error": 8
+          }
+        ]
+      },
+      "lifecycle": {
+        "exit_code": 0,
+        "events": [
+          {
+            "phase": "abandon-encoded",
+            "buffers": 16,
+            "final_active_count": 0,
+            "gpu_commits": 0
+          },
+          {
+            "phase": "reused-abandon",
+            "abandoned": 16,
+            "gpu_commits": 16,
+            "final_active_count": 0,
+            "error": 0
+          },
+          {
+            "phase": "stream",
+            "workers": 4,
+            "requested_per_worker": 50,
+            "completed": 200,
+            "data_mismatches": 0,
+            "gpu_errors": 0,
+            "stopped": 0,
+            "final_active_count": 0
+          },
+          {
+            "mode": "lifecycle",
+            "rounds": 50,
+            "workers": 4,
+            "gpu_commits": 200,
+            "capacity_probe_commits": 2,
+            "capacity_probe_blocked": false,
+            "active_count_failures": 0,
+            "only_active_failures": 0,
+            "pre_submit_failure_round": -1,
+            "last_cohort_active_count": 4,
+            "last_cohort_only_active": 1,
+            "data_mismatches": 0,
+            "gpu_errors": 0,
+            "new_gpu_report": false
+          },
+          {
+            "phase": "lifecycle-counts",
+            "tracked": 450,
+            "commit_entries": 418,
+            "abandoned": 32,
+            "destroyed_tokens": 450
+          }
+        ]
+      },
+      "cache-lifecycle": {
+        "exit_code": 0,
+        "events": [
+          {
+            "phase": "abandon-encoded",
+            "buffers": 16,
+            "final_active_count": 0,
+            "gpu_commits": 0
+          },
+          {
+            "phase": "reused-abandon",
+            "abandoned": 16,
+            "gpu_commits": 16,
+            "final_active_count": 0,
+            "error": 0
+          },
+          {
+            "phase": "stream",
+            "workers": 4,
+            "requested_per_worker": 50,
+            "completed": 200,
+            "data_mismatches": 0,
+            "gpu_errors": 0,
+            "stopped": 0,
+            "final_active_count": 0
+          },
+          {
+            "mode": "queue-cache-lifecycle",
+            "rounds": 50,
+            "workers": 4,
+            "gpu_commits": 200,
+            "capacity_probe_commits": 2,
+            "capacity_probe_blocked": false,
+            "active_count_failures": 0,
+            "only_active_failures": 0,
+            "pre_submit_failure_round": -1,
+            "last_cohort_active_count": 4,
+            "last_cohort_only_active": 1,
+            "data_mismatches": 0,
+            "gpu_errors": 0,
+            "new_gpu_report": false
+          },
+          {
+            "phase": "lifecycle-counts",
+            "tracked": 450,
+            "commit_entries": 418,
+            "abandoned": 32,
+            "destroyed_tokens": 450
+          }
+        ]
+      }
+    },
+    "total_submissions_per_successful_mode": 418,
+    "capacity_submissions_per_stopped_baseline": 2,
+    "short_tests_finished_local": "2026-11-12T22:58:08+08:00",
+    "long_running_acceptance": "failed: subsequent real recovery at 22:59:46; relationship to earlier candidate workload unresolved"
+  },
+  "live_failure": {
+    "first_new_gpu_report_local": "2026-11-12T22:59:46+08:00",
+    "reported_application": "mediaanalysisd",
+    "reported_engine": "CCS",
+    "hardware_context_id": 1019,
+    "userspace_blocked": [
+      "MTLCreateSystemDefaultDevice -> IOAccelSharedCreate",
+      "MTLCreateSystemDefaultDevice -> IOAccelSharedSetupDirtyRing"
+    ],
+    "kernel_termination_chain": [
+      "IGAccelCommandQueue::commandQueueStop",
+      "IGAccelEventMachine::finishEvent",
+      "IGAccelEventMachine::eventTimeout",
+      "IGScheduler5::checkForProgress"
+    ],
+    "latest_candidate_installed_in_blocked_processes": false,
+    "cannot_exclude_relationship_to_earlier_gpu_tests": true,
+    "first_rcs_snapshot": "All sampled RCS registers zero; detail ownership rejected. Not a CCS or BCS wait-target witness.",
+    "diagnostic_process_termination_requested": true,
+    "kernel_wait_remained": true,
+    "system_reboot_performed": false
+  },
+  "final_checks": {
+    "make_all_and_cpu_test_exit": 0,
+    "cpu_only_gpu_submissions": 0,
+    "inherited_driver_suite_locally_rerun": false,
+    "earlier_commit_github_ci": {
+      "head": "bd671d3f10827cf19968c7706ba8e28af43a087d",
+      "run": 43234974852,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "new_recovery_preflight": {
+      "exit_code": 14,
+      "before_metal_initialization": true,
+      "observed_calls": 46,
+      "observed_returns": 46,
+      "new_gpu_submissions": 0
+    },
+    "final_disposal_native_test": "not_run",
+    "final_disposal_sanitizer_native_test": "not_run",
+    "final_512_round_memory_growth_test": "not_run",
+    "final_full_gpu_comparison": "not_run"
+  },
+  "source_sha256": {
+    "src/POSHAtomicClaim.h": "1fb62e5f75ece0966e3fa700274e4b7e2d3e2b63e2fe89135e6aaf781b454b18",
+    "src/POSHAtomicClaim.mm": "3dd1f3c0fd45fbd2c497adbbf0165bc93cc3fd6e934815e5b8a87b0a12239b04",
+    "src/POSHAtomicCode.hpp": "0c4560774a2966cbffe9958957bb6cb2688ae356a59675ecd6a9474e07006b03",
+    "src/GPUHealth.hpp": "21aa5f282eae32c6f8b86885e3967e44814930bf843940ca48d469f4a61c1ba8",
+    "src/POSHQueueCache.mm": "1cb93e547491a902abfcce758b5b9b47bd7928c39ea172c7dbe69e4b36f90afc",
+    "tests/posh-abandon-check.mm": "d930f938d0cc43450717cae39a7bc89b57cedf8c29edcd643baf0bb33dbaabe2",
+    "tests/posh-queue-check.mm": "426b03cb58256d87081fd31f59ebeed283676c11b1ec12e3ce2c90c59f4d8a3c",
+    "tests/posh-concurrent-gpu.mm": "5f37f8ecda4196d5d66bf4ff153664baa5110cbfdb743348bd39750c7353a239",
+    "Makefile": "a3d8215a74c5ed7e4be86f275b78aa31cf686af6c08a0c2201b1f6e98214fa75"
+  },
+  "final_built_diagnostic_sha256": {
+    "build/posh-abandon-check": "4dd16df66a3f5858533f34842a7ad94dde31e18c8a06578277183cef3767bae0",
+    "build/posh-concurrent-gpu": "677a7619fcad9f0e964dd8f9f6b52527be69c3af2f9cb747a5f75f906d33d507",
+    "build/posh-queue-check": "143c38227d0e69174e7e43444f36252e887ab7f68a83ae009516aff34bbe6e48"
+  },
+  "final_build_note": "Header comment-only clarification followed the local build. No executable logic changed afterward.",
+  "earlier_private_preserved_sanitizer_binary_sha256": "51fc0a518f677b1ceab32c586c27f3e075f73c6bbf630ef7be499f792b54ae0d",
+  "limits": [
+    "No global deployment, boot validation or UU acceptance.",
+    "Original BCS target/producer unresolved.",
+    "Allocation exception rollback is not implemented.",
+    "Do not ship the counter-only candidate: returning only-active increases native private leakage without the new disposal path.",
+    "Submitted native private POSH allocation disposal and shared-cache ownership remain unresolved."
+  ]
+}

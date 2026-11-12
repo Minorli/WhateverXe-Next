@@ -9,15 +9,20 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <chrono>
+#include <thread>
 #include "../src/POSHQueueCache.h"
 #include "../src/POSHAtomicClaim.h"
 #include "../src/BoundedCount.hpp"
+#include "../src/GPUHealth.hpp"
 
 constexpr unsigned workers=4,width=128,height=128,length=width*height*4;
 static bool encode(id<MTLDevice> device,id<MTLCommandQueue> queue,id<MTLRenderPipelineState> state,
-    unsigned seed,id<MTLCommandBuffer> &cb,id<MTLBuffer> &source,id<MTLBuffer> &target) {
-    source=[device newBufferWithLength:length options:MTLResourceStorageModeShared];
-    target=[device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    unsigned seed,id<MTLCommandBuffer> &cb,id<MTLBuffer> &source,id<MTLBuffer> &target,
+    id<MTLBuffer> reuseSource=nil,id<MTLBuffer> reuseTarget=nil,
+    id<MTLTexture> reuseInput=nil,id<MTLTexture> reuseOutput=nil) {
+    source=reuseSource?[reuseSource retain]:[device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    target=reuseTarget?[reuseTarget retain]:[device newBufferWithLength:length options:MTLResourceStorageModeShared];
     if (!source || !target) return false;
     auto *bytes=(uint8_t *)source.contents;
     for (unsigned j=0;j<length;++j) bytes[j]=(j*17+seed)^(j>>7);
@@ -25,9 +30,9 @@ static bool encode(id<MTLDevice> device,id<MTLCommandQueue> queue,id<MTLRenderPi
     cb=[[queue commandBuffer] retain]; if (!cb) return false;
     MTLTextureDescriptor *desc=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:width height:height mipmapped:NO];
     desc.storageMode=MTLStorageModePrivate;desc.usage=MTLTextureUsageShaderRead;
-    id<MTLTexture> texture=[[device newTextureWithDescriptor:desc] autorelease];
+    id<MTLTexture> texture=reuseInput?reuseInput:[[device newTextureWithDescriptor:desc] autorelease];
     desc.usage=MTLTextureUsageRenderTarget;
-    id<MTLTexture> rendered=[[device newTextureWithDescriptor:desc] autorelease];
+    id<MTLTexture> rendered=reuseOutput?reuseOutput:[[device newTextureWithDescriptor:desc] autorelease];
     id<MTLBlitCommandEncoder> blit=[cb blitCommandEncoder];
     if (!texture || !rendered || !blit) return false;
     [blit copyFromBuffer:source sourceOffset:0 sourceBytesPerRow:width*4 sourceBytesPerImage:length sourceSize:MTLSizeMake(width,height,1) toTexture:texture destinationSlice:0 destinationLevel:0 destinationOrigin:MTLOriginMake(0,0,0)];
@@ -70,6 +75,7 @@ static NSSet *reports() {
     return readable?all:nil;
 }
 static bool temperatureOK(NSString *path) {
+    if (!xe::noGPURecovery()) return false;
     NSDictionary *a=[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     NSDate *modified=a[NSFileModificationDate];
     NSString *s=[NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
@@ -143,19 +149,76 @@ static int stream(id<MTLDevice> device,id<MTLRenderPipelineState> state,dispatch
     dispatch_release(submitters);dispatch_release(completed);dispatch_release(depth);
     return results->completed!=static_cast<unsigned>(rounds)*workers || results->bad || results->errors || results->stopped || count ? 8:0;
 }
+static int abandonEncoded(id<MTLDevice> device,id<MTLCommandQueue> queue,id<MTLRenderPipelineState> state) {
+    for (unsigned n=0;n<16;++n) {
+        @autoreleasepool {
+            id<MTLCommandBuffer> cb=nil;id<MTLBuffer> source=nil,target=nil;
+            const bool valid=encode(device,queue,state,n*29,cb,source,target);
+            const bool exclusive=valid && only(cb) && active(queue)==1;
+            [cb release];[source release];[target release];
+            if (!exclusive) return 8;
+        }
+        if (active(queue)) return 8;
+    }
+    printf("{\"phase\":\"abandon-encoded\",\"buffers\":16,\"final_active_count\":%u,\"gpu_commits\":0}\n",active(queue));
+    return 0;
+}
+static int abandonReused(id<MTLDevice> device,id<MTLCommandQueue> queue,id<MTLRenderPipelineState> state,
+    NSString *powerLog,NSSet *baseline) {
+    id<MTLBuffer> input=[device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    id<MTLBuffer> output=[device newBufferWithLength:length options:MTLResourceStorageModeShared];
+    MTLTextureDescriptor *desc=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm width:width height:height mipmapped:NO];
+    desc.storageMode=MTLStorageModePrivate;desc.usage=MTLTextureUsageShaderRead;
+    id<MTLTexture> texture=[device newTextureWithDescriptor:desc];
+    desc.usage=MTLTextureUsageRenderTarget;
+    id<MTLTexture> rendered=[device newTextureWithDescriptor:desc];
+    if (!input || !output || !texture || !rendered) return 5;
+    unsigned commits=0,drops=0;int error=0;
+    for (unsigned n=0;n<16 && !error;++n) {
+        if (!temperatureOK(powerLog) || ![reports() isSubsetOfSet:baseline]) { error=14;break; }
+        // The exact same resources survive both discarded encoding and the
+        // next committed encoding: stale cached resource IDs must not create
+        // an unsignalled dependency on commands which were never submitted.
+        for (unsigned submit=0;submit<2 && !error;++submit) {
+            @autoreleasepool {
+                id<MTLCommandBuffer> cb=nil;id<MTLBuffer> source=nil,target=nil;
+                const bool valid=encode(device,queue,state,n*79+submit*101,cb,source,target,input,output,texture,rendered);
+                if (!valid || !only(cb) || active(queue)!=1) error=8;
+                else if (submit) {
+                    dispatch_group_t completed=dispatch_group_create();
+                    dispatch_group_enter(completed);
+                    [cb addCompletedHandler:^(id<MTLCommandBuffer>) { dispatch_group_leave(completed); }];
+                    [cb commit];++commits;
+                    if (!wait(completed)) std::exit(12);
+                    if (cb.status!=MTLCommandBufferStatusCompleted || memcmp(source.contents,target.contents,length)) error=8;
+                    dispatch_release(completed);
+                } else ++drops;
+                [cb release];[source release];[target release];
+            }
+            // Stop before the next GPU submission if abandonment left a claim.
+            if (active(queue)) error=8;
+        }
+    }
+    [input release];[output release];[texture release];[rendered release];
+    printf("{\"phase\":\"reused-abandon\",\"abandoned\":%u,\"gpu_commits\":%u,\"final_active_count\":%u,\"error\":%d}\n",drops,commits,active(queue),error);
+    return error;
+}
 int main(int argc,char **argv) {
     @autoreleasepool {
         int rounds=20;
-        if (argc!=4 || !xe::boundedCount(argv[2],100,rounds)) return 2;
-        const bool atomic=!strcmp(argv[1],"atomic") || !strcmp(argv[1],"queue-cache-atomic");
-        const bool cache=!strcmp(argv[1],"queue-cache") || !strcmp(argv[1],"queue-cache-atomic");
+        if ((argc!=4 && argc!=5) || !xe::boundedCount(argv[2],100,rounds) ||
+            (argc==5 && strcmp(argv[4],"--reused-abandon"))) return 2;
+        const bool reuse=argc==5;
+        const bool reclaim=!strcmp(argv[1],"lifecycle") || !strcmp(argv[1],"queue-cache-lifecycle");
+        const bool atomic=reclaim || !strcmp(argv[1],"atomic") || !strcmp(argv[1],"queue-cache-atomic");
+        const bool cache=!strcmp(argv[1],"queue-cache") || !strcmp(argv[1],"queue-cache-atomic") || !strcmp(argv[1],"queue-cache-lifecycle");
         if (!atomic && !cache && strcmp(argv[1],"stock")) return 2;
         NSString *powerLog=@(argv[3]);
         if (!temperatureOK(powerLog)) { fprintf(stderr,"Stop: missing/stale/hot temperature sample\n");return 14; }
         NSSet *baseline=[reports() retain]; if (!baseline) return 4;
         id<MTLDevice> device=MTLCreateSystemDefaultDevice(); if (!device) return 3;
         if (cache && !installPOSHQueueCache(device.registryID)) return 4;
-        if (atomic && !installPOSHAtomicClaim(device.registryID)) return 4;
+        if (atomic && !installPOSHAtomicClaim(device.registryID,reclaim)) return 4;
         dispatch_queue_t pool=dispatch_get_global_queue(QOS_CLASS_USER_INITIATED,0);
         bool capacityBlocked=false;
         if (int c=capacity(device,pool,capacityBlocked)) { fprintf(stderr,"Queue capacity test failed: %d\n",c);return c; }
@@ -174,6 +237,14 @@ int main(int argc,char **argv) {
         [pipeline release];[library release];
         if (!state) return 6;
         id<MTLCommandQueue> queue=[device newCommandQueue]; if (!queue) return 3;
+        if (reclaim) {
+            const int abandoned=abandonEncoded(device,queue,state);
+            if (abandoned) return abandoned;
+        }
+        if (reuse) {
+            const int reused=abandonReused(device,queue,state,powerLog,baseline);
+            if (reused) return reused;
+        }
         unsigned wrongCount=0,wrongOnly=0,mismatch=0,errors=0,commits=0;
         int failedBeforeSubmit=-1;
         uint32_t observedCount=0;unsigned observedOnly=0;
@@ -231,6 +302,18 @@ int main(int argc,char **argv) {
         const bool noReport=after && [after isSubsetOfSet:baseline];
         [baseline release];[device release];
         printf("{\"mode\":\"%s\",\"rounds\":%d,\"workers\":%u,\"gpu_commits\":%u,\"capacity_probe_commits\":2,\"capacity_probe_blocked\":%s,\"active_count_failures\":%u,\"only_active_failures\":%u,\"pre_submit_failure_round\":%d,\"last_cohort_active_count\":%u,\"last_cohort_only_active\":%u,\"data_mismatches\":%u,\"gpu_errors\":%u,\"new_gpu_report\":%s}\n",argv[1],rounds,workers,commits,capacityBlocked?"true":"false",wrongCount,wrongOnly,failedBeforeSubmit,observedCount,observedOnly,mismatch,errors,noReport?"false":"true");
+        if (reclaim) {
+            // Completion signals precede the callback's return and native
+            // final release. Observe actual disposal, not just callback entry.
+            const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(2);
+            auto s=poshActiveStats();
+            while (s.destroyed!=s.tracked && std::chrono::steady_clock::now()<deadline) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                s=poshActiveStats();
+            }
+            printf("{\"phase\":\"lifecycle-counts\",\"tracked\":%llu,\"commit_entries\":%llu,\"abandoned\":%llu,\"destroyed_tokens\":%llu}\n",s.tracked,s.committed,s.abandoned,s.destroyed);
+            if (s.abandoned!=(reuse?32:16) || s.tracked!=s.committed+s.abandoned || s.destroyed!=s.tracked) return 8;
+        }
         return !cohortPassed || streaming || !noReport ? 8:0;
     }
 }

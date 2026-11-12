@@ -16,6 +16,10 @@ fingerprints, not raw logs or driver payloads.
 - `atomic-claim-tests.json`: later same-build stock/candidate native concurrency,
   actual emitted CPU instructions, concurrent render/stream work and two-order
   IOSurface memory comparisons. Process-local validation only; no global install.
+- `abandonment-tests.json`: staged uncommitted-buffer accounting checks, earlier
+  counter-only native/sanitizer/GPU results, and the subsequent real recovery
+  loop. The final private-allocation disposal path is build-checked only; its
+  native validation was blocked before installation. This is not an acceptance.
 - `gpu-short-tests.json`: selected historical process-local runs, before removal of
   legacy probe entry points and stricter argument parsing. Later controlled GPU
   comparisons are recorded separately in `queue-cache-tests.json`.

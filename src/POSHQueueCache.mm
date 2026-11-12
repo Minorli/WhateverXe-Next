@@ -33,7 +33,8 @@ bool installed;
 bool diagnosticProcess() {
     const char *name=getprogname();
     return name && (!strcmp(name,"metal-memory-check") || !strcmp(name,"metal-async-check") ||
-        !strcmp(name,"posh-queue-check") || !strcmp(name,"metal-surface-check") || !strcmp(name,"posh-concurrent-gpu"));
+        !strcmp(name,"posh-queue-check") || !strcmp(name,"metal-surface-check") || !strcmp(name,"posh-concurrent-gpu") ||
+        !strcmp(name,"posh-abandon-check"));
 }
 bool physicalDevice(uint64_t registryID) {
     io_registry_entry_t entry=IOServiceGetMatchingService(kIOMainPortDefault,IORegistryEntryIDMatching(registryID));

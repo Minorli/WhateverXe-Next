@@ -58,6 +58,26 @@ semaphore wait。报告没有保留足以可靠解码其等待目标的数据，
 采集有界的 head 附近指令候选、上下文身份、软件 PTE 和等待值，全部 nofault 读取并重查。
 未部署，不能称已取得新故障现场；细节见 `BCS.md`。
 
+### 后续新增：计算任务后的恢复循环
+
+同一天 22:58:08 前，新增生命周期候选的短时 GPU 探针返回成功。
+22:59:46 起又出现真实 GPU restart，报告 Application 为系统 `mediaanalysisd`，
+硬件 context ID 为 1019，报告的受阻引擎标为 CCS。报告中寄存器已是 idle / disabled，
+不能由此确定最早失败的指令，也不能将系统进程名当作与之前候选完全无关的证明。
+
+随后两个只准备做无提交对象检查的进程，在 `MTLCreateSystemDefaultDevice` 的
+`IOAccelSharedCreate` / `IOAccelSharedSetupDirtyRing` 中阻塞，尚未安装最新候选。
+系统 spindump 还记录 `IOServiceTerminateThread` 内的原生
+`commandQueueStop → finishEvent → eventTimeout → checkForProgress` 等待链。
+只终止本次诊断进程未解除已经进入的内核等待，未杀 WindowServer，未自动重启。
+
+保留的首次 RCS STOP 前快照寄存器全零；detail 的 ownership guard 拒绝。
+CSB intake 的错误字段没有报拒绝，但恢复计数继续增长，调用返回并不等于 GPU 工作恢复。
+这些信息缩小了后续调查范围，不能把它们当成原始 BCS semaphore 目标已取得。
+
+因此本轮长期验收明确未通过。新增私有 POSH 释放逻辑在此故障状态下无法完成 native
+验证，真实 GPU 测试停止；进度和各源码阶段的边界见 `Abandonment.md`。
+
 ## 3. UU 远端呈现触发闪屏
 
 用户两次观察到：显示另一台电脑的远程画面后，屏幕下半部快速闪烁；
