@@ -1,0 +1,77 @@
+{
+  "date": "2026-11-13",
+  "base_commit": "bc1ee65a6c5d7ba2b7a371a177eda01e2e58139c",
+  "scope": "ig=0x20 post-reboot read-only UU observation; no display register writes",
+  "boot_args": {
+    "ig20_present": true,
+    "observed_value": "ig=0x20",
+    "other_driver_components_changed": false
+  },
+  "capture_window_local": [
+    "2026-11-13T18:07:49.328891+08:00",
+    "2026-11-13T18:09:49.900894+08:00"
+  ],
+  "elapsed_seconds": 120.57200312614441,
+  "probe": {
+    "samples": 121,
+    "donor_counter_state": [1, 1],
+    "donor_counters_valid": [1, 1],
+    "donor_underrun_entry": [0, 0],
+    "donor_underrun_pipe_a": [0, 0],
+    "donor_underrun_pipe_b": [0, 0],
+    "donor_underrun_pipe_c": [0, 0],
+    "donor_underrun_dispatch": [0, 0],
+    "mmio_access_state": [0, 0],
+    "skipped_no_power_lease": [9746, 10945],
+    "writes": [0, 0],
+    "read_failures": [0, 0],
+    "unavailable_reason": "No qualified display power-domain lease; RAM counters only"
+  },
+  "display_capture": {
+    "snapshots": 13,
+    "shared_type1_open_close_succeeded": true,
+    "stream_error_count": [6, 6],
+    "ack_counts": {
+      "start": [131678, 21793, 157366, 21566, 2, 0, 0, 0],
+      "end": [164270, 26359, 189942, 26161, 2, 0, 0, 0]
+    },
+    "scan2_sequence": [83506, 101454],
+    "new_bit31_ack_observed": false,
+    "hardware_underrun_excluded": false
+  },
+  "recovery": {
+    "recovery_calls": 0,
+    "recovery_returns": 0,
+    "new_gpu_reports": 0,
+    "windowserver_watchdog_observed": false
+  },
+  "load_snapshot_at_collection_end": {
+    "windowserver_cpu_percent": 45.4,
+    "uu_cpu_percent": 13.2,
+    "vtdecoder_cpu_percent": 13.8,
+    "interpretation": "single ps snapshot, not a window median"
+  },
+  "user_reported_events": [
+    {
+      "local_time": "2026-11-13T18:01:04+08:00",
+      "precision": "message receipt",
+      "hardware_counter_event": false
+    },
+    {
+      "local_time": "2026-11-13T18:05:13+08:00",
+      "precision": "message receipt",
+      "hardware_counter_event": false
+    }
+  ],
+  "conclusion": {
+    "status": "evidence_insufficient",
+    "text": "ig=0x20 was present after reboot and the RAM-only probe stayed valid, but this run did not expose MMIO pipe status and did not correlate a user-reported flicker with a hardware counter. Zero native counters do not exclude scanout underrun.",
+    "next_review_question": "Determine a safe power-domain-qualified read path or use a controlled display-side experiment; do not enable tgldp-count or tgldp-wa from this result."
+  },
+  "artifacts": {
+    "probe_kext_sha256": "192e72cf5b53da0b09d7b606177470a1a1cb94b9fb002fa5e596d9892b2ecf63",
+    "capture_tool_sha256": "ac45422d8465402f06f20f71a6a136480abc5705b574396f2d3825adf0cb20de",
+    "raw_logs_published": false,
+    "raw_screen_recordings_published": false
+  }
+}

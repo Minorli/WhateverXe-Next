@@ -7,9 +7,26 @@
 [脱敏审查包](../review/2026-11-13/README.md) 和
 [完整外部审查提示词](ExternalReview-20261113.md)。请先阅读新事故，再复核以下研究。
 
+## 2026-11-13 18:07–18:09：`ig=0x20` 重启后 UU 观测
+
+- **成立〔整机〕：**维护者已手动重启，当前启动参数确实包含 `ig=0x20`；探针 1.0.1
+  保持 `DonorCounterState=1`、`DonorCountersValid=1`，121 个每秒样本读失败为 0，`Writes=0`。
+- **成立〔整机〕：**120.57 秒前台采集完整结束。RAM 计数 entry、pipe A/B/C 和 dispatch
+  均为 0→0；`MMIOAccessState=0`，所有采样仍因没有合格 display power-domain lease 而跳过 MMIO。
+- **成立〔整机〕：**显示 ACK 环仍为开机时的 6 条清除写入，`TGLStreamErrorCount` 为 6→6；
+  没有新的 bit31 ACK。恢复 calls/returns 为 0，也没有新的 gpuRestart 或 WindowServer watchdog。
+- **证据不足〔整机〕：**这次采集没有把闪烁时间落在同一个 120 秒窗口内，且 MMIO pipe status
+  不可读。因此不能说 `ig=0x20` 修复或排除了欠载，只能说本轮没有捕获到新的原生计数。
+- **成立〔整机快照〕：**采集结束时 WindowServer 约 45.4% CPU、UU 约 13.2%、VTDecoder
+  约 13.8%；这是单次快照，不代表窗口中位数。
+
+人工反馈的 18:01:04 和 18:05:13 已作为“message receipt”写入本机 ignored `local/`，
+不是驱动硬件事件。脱敏汇总见
+[validation/tgldisplayprobe-ig20-20261113.json](../validation/tgldisplayprobe-ig20-20261113.json)。
 
 
-## 2026-11-13 17:35–17:46：探针启动验证与 UU 基线
+
+## 2026-11-13 17:35–17:46：探针启动验证与 UU 基线（历史窗口）
 
 - **成立〔整机〕：**探针1.0.1实际加载，UUID与构建匹配；684.48秒、682个快照全部资格有效，
   读失败0、暂停0、Writes0。睡眠/唤醒尚未测试，完整MMIO仍不可用。
@@ -20,9 +37,8 @@
 - **成立〔整机、限本窗口〕：**WindowServer physical footprint最后392.40MiB、峰值577.09MiB；
   剔除前120秒后斜率−3.03MiB/min，未见持续增长。CPU单核中位数WS26.84%、UU20.14%；
   SMC返回的CPU温度中位数51°C、范围44–70°C，thermal pressure均Nominal。部分SMC key不可用，温度只作估计。
-- **成立〔批准＋磁盘部署〕：**维护者单独同意仅追加`ig=0x20`，现已配置并通过ocvalidate；
-  探针/WEX/framebuffer/Metal文件SHA均未改变。`config.pre-ig20.plist`为精确回退，保留探针。
-  **证据不足〔下一轮整机〕：**仍待维护者手动重启，不能宣称原生欠载报告已生效或闪烁已修复。
+- **成立〔批准＋磁盘部署〕：**在该历史窗口结束时，维护者单独同意仅追加`ig=0x20`，已配置并通过ocvalidate；
+  探针/WEX/framebuffer/Metal文件SHA均未改变。随后已手动重启并完成18:07–18:09复核，见本文件顶部。
 
 [采样窗口与统计](../validation/tgldisplayprobe-postboot-20261113.json)；
 [下一轮步骤与回退](Deployment.md#下一轮原生欠载报告-ig0x20已批准配置待重启)。
