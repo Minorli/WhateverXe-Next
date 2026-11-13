@@ -181,3 +181,16 @@ POSH 假设没有被否定，但优先级应放在 underrun 被排除之后。
 - `0xC2020` bit15 的实际写入值；`SRD_CTL` 在 TGL 上的实际映射。
 - UU 与 Google Remote Desktop 的解码和合成路径差异。
 - underrun 与闪烁是否同步。这是本文头号假设需要的关键证据。
+
+## 6. 跟进：S1 探针已提交（构建 + CPU 测试，未安装）
+
+- `probe/TGLDisplayProbe/`：独立 kext，不依赖 Lilu、不 hook，按 Codex 在 Deployment.md 中写的 S1 门槛实现：
+  - 默认零写入；
+  - 原生覆盖率计数器先通过运行时段内差值校验和 vtable 校验，才会读取；
+  - power well、DC 状态、PCI 访问资格三重检查；
+  - 睡眠 / 唤醒期间暂停采样；
+  - 读不到时报 unavailable，不填 0；
+  - sticky 位开机已置位的情况单独记录。
+- CPU 测试 12 个用例通过，另做了变异检查；kext 在审查者主机上交叉编译、链接通过。G83 上必须用本机 SDK 重新构建并记录 SHA。
+- 执行步骤见 [给 Codex 的采集提示词](../review/2026-11-13/claude-s1-probe-prompt.md)。
+- 2.6 的热路径问题已由 `a9aaf05` 在源码中修复。但实机运行的下游二进制仍带着这个问题（S0 实测 TGLScan2 平均约 190 条/秒），需要下游合入后才会生效。
