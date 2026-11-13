@@ -7,6 +7,49 @@
 [脱敏审查包](../review/2026-11-13/README.md) 和
 [完整外部审查提示词](ExternalReview-20261113.md)。请先阅读新事故，再复核以下研究。
 
+## d852aa9 跟进：显示 S0 已命中用户反馈窗口
+
+保留 [Claude 原审查](ClaudeReview-20261113-Display.md) 原文，下面是本机复核，
+不是把外部静态推论升级为整机结论。全部数值见 [验证摘要](../validation/uu-flicker-followup-20261113.json)。
+
+**成立〔整机只读〕：**2026-11-13 16:15:11–16:20:12（UTC+8），约301.27秒、31个快照。
+每10秒只打开一个 AppleIntelFramebuffer 的 type-1 shared client 并立即关闭，不调用 method；
+31次均成功。它触发已安装 WEX 的按需发布，包括既有 cursor observer，不是完全无扰动操作。
+使用 `tgl-capture --display` 按键读取，未高频序列化整个 registry。
+维护者在16:16:13附近反馈：UU开着，操作其它页面也会局部闪；这只是收到反馈的时间，不是精确 onset。
+
+| 观测 / 主张 | 结果及结论 |
+| --- | --- |
+| TGLStreamErrorCount | 6 → 6；环内六项都在 uptime 17.698秒，ACK value 全为 `0xFFFFFFFF`，A/B/C各两项 |
+| 六次等于六次欠载 | **不成立〔源码＋整机〕**：`tglStreamAck` 记录的是写入 IIR 的 ACK 参数含 bit31，包括 clear-all；这六次不能作硬件欠载证据 |
+| 快照是否陈旧 | 正常/fast ACK 计数 A 增加93,084/14,457，B增加100,844/14,460；序号也持续增加，说明发布在更新 |
+| 本轮闪烁对应新的欠载 ACK | **不成立〔该观测通道〕**：没有新条目；但 IMR/PIPESTATUS 未采集，不能据此排除欠载或其它扫描输出问题 |
+| TGLScan2 | 1,063,666 → 1,120,758；每秒平均189.51条，10秒区间106.34–313.51条；每条2KiB |
+| 这是190fps刷新 | **不成立**：updatePlane前后各一条，约94.75次调用/秒且是全局多个plane合计，不等于硬件刷新率 |
+| 默认追踪开销 | **成立〔整机＋源码〕**：没有 `-wex-display-trace`，仍在上述频率替换OSData/registry属性；不是只有打开诊断才发生 |
+| 开销导致闪烁 | **证据不足**：约0.37MiB/s的记录载荷本身不证明内存带宽耗尽；需测分配/锁/时序及对照效果 |
+| 内存配置 | SMBIOS报告DDR4 2667MHz，16+8GB；**证据不足**以确认真实通道数或flex模式，不能据此直接选0x1F |
+
+本机 framebuffer SHA 与原报告一致：
+`115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e`。
+独立复核 `invokeDEErrorIntrHandler` 的 `0x744CA/0x744EC/0x74514/0x74539`，
+确实更新 `0xE6CD8/E6CE0/E6CE8/E6CF0`；分派点`0x74084`更新`0xE6BC8`。
+`0x7455D`调用 kprintf，`0x74565`调用 dumpMMIO。**成立〔静态〕**：这些是原生处理路径计数；
+尚未读取加载后的值，非原子计数可能低估、也受中断是否送达影响。
+
+对照 [Linux v6.12 intel_display_power.c](https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/i915/display/intel_display_power.c)
+的 `tgl_bw_buddy_init`、`gen12_dbuf_slices_config`、`icl_display_core_init`，
+三项TGL初始化与条件确实存在；未知内存配置有单独处理，不能套用推测值。
+[i915_reg.h](https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/i915/i915_reg.h)
+定义 ICL_PIPESTATUS=pipe base+0x58、bit31；
+[intel_fifo_underrun.c](https://github.com/torvalds/linux/blob/v6.12/drivers/gpu/drm/i915/display/intel_fifo_underrun.c)
+的 `bdw_set_fifo_underrun_reporting` 在开启报告前写它清状态。
+**证据不足〔本机〕**：寄存器缺省/固件遗留值错误、PSR/FBC实际开启状态，以及欠载与闪烁因果。
+只搜常量未出现也不排除计算地址、DMC或固件写入；不把该方法提升为绝对缺失证明。
+
+S1的直接计数读出和MMIO访问资格见 [部署门槛](Deployment.md#显示-s0-之后的-s1s2门槛)。
+本轮没有部署探针或写显示寄存器；既有POSH问题另见下节，不与显示诊断混成同一项修复。
+
 ## db7b36e 跟进：B1 与 A1–A3
 
 本轮先做只读观测和精确二进制审查。维护者后来确认 slow2 目标事件、单内屏仍闪，

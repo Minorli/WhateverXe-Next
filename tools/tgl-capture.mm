@@ -8,10 +8,104 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <mach/mach_time.h>
 #include "../src/RecoveryState.hpp"
 #include "../driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp"
 static volatile sig_atomic_t stopped;
 static void stop(int) { stopped=1; }
+static id registryValue(io_registry_entry_t root,NSString *key) {
+    return CFBridgingRelease(IORegistryEntryCreateCFProperty(root,
+        (__bridge CFStringRef)key,kCFAllocatorDefault,0));
+}
+// Optional display observation: one standard shared client, immediately closed,
+// every ten seconds. This asks the installed WEX to publish existing recorders;
+// it calls no external method and never acquires WindowServer's type-0 client.
+// Publication is not inert: the installed wrapper also runs its existing cursor
+// observation. Record the open/close result; missing or stale data are not zeros.
+static NSDictionary *publishDisplay() {
+    io_service_t service=IOServiceGetMatchingService(kIOMainPortDefault,
+        IOServiceMatching("AppleIntelFramebuffer"));
+    if(!service)return @{@"service_available":@NO};
+    io_connect_t client=IO_OBJECT_NULL;
+    const auto opened=IOServiceOpen(service,mach_task_self(),1,&client);
+    IOObjectRelease(service);
+    NSMutableDictionary *result=[@{@"service_available":@YES,@"open_result":@(opened)} mutableCopy];
+    if(opened==KERN_SUCCESS)result[@"close_result"]=@(IOServiceClose(client));
+    return result;
+}
+static int displayCapture(io_registry_entry_t root,NSString *directory,int seconds) {
+    mach_timebase_info_data_t timebase{};mach_timebase_info(&timebase);
+    uint64_t previousSequence=0;double previousTime=0;
+    bool havePrevious=false;
+    for(int elapsed=0;elapsed<=seconds && !stopped;elapsed+=10) {
+        @autoreleasepool {
+            NSMutableDictionary *snapshot=[NSMutableDictionary new];
+            snapshot[@"publication"]=publishDisplay();
+            const double now=[NSDate date].timeIntervalSince1970;
+            const double uptime=double(mach_absolute_time())*timebase.numer/timebase.denom/1e9;
+            snapshot[@"capture_unix_seconds"]=@(now);
+            snapshot[@"capture_uptime_seconds"]=@(uptime);
+            const NSArray *keys=@[@"TGLStreamErrorCount",@"TGLStreamAckCounts",@"TGLStreamErrorRing",
+                @"TGLCCSAlignmentReady",@"TGLCCSAlignmentLive",@"TGLIOSurfaceCCSPolicyReady",
+                @"TGLIOSurfaceCCSAtStart",@"TGLNoPOSHReady",@"TGLNoPOSHLive",@"TGLGpuRecReady",@"TGLGpuRecLive"];
+            for(NSString *key in keys) {id value=registryValue(root,key);if(value)snapshot[key]=value;}
+            NSMutableDictionary *summary=[@{@"unix_seconds":@(now),@"uptime_seconds":@(uptime),
+                @"publication":snapshot[@"publication"],@"ack_bit31_count":snapshot[@"TGLStreamErrorCount"]?:[NSNull null],
+                @"ack_records":[NSNull null],@"ack_counts":[NSNull null]} mutableCopy];
+            NSData *ring=snapshot[@"TGLStreamErrorRing"];
+            if([ring isKindOfClass:[NSData class]] && ring.length==64*16*sizeof(uint64_t)) {
+                NSMutableArray *records=[NSMutableArray new];
+                for(unsigned i=0;i<64;++i) {
+                    uint64_t r[16];memcpy(r,(const char *)ring.bytes+i*sizeof(r),sizeof(r));
+                    if(!r[2])continue;
+                    // MEM1 and the ACK range identify the memory-only schema.
+                    if(r[15]!=0x4D454D31 || r[3]<0x44408 || r[3]>0x44438 || (r[3]&15)!=8 || r[13]>1)continue;
+                    [records addObject:@{@"sequence":@(r[2]),@"uptime_seconds":@(r[0]/1e9),
+                        @"reg":[NSString stringWithFormat:@"0x%llx",r[3]],
+                        @"ack_value":[NSString stringWithFormat:@"0x%08llx",r[4]],
+                        @"kind":r[4]==0xFFFFFFFF?@"clear_all_write":@"bit31_ack_not_yet_hardware_confirmed"}];
+                }
+                [records sortUsingDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"sequence" ascending:YES]]];
+                summary[@"ack_records"]=records;
+            }
+            NSData *counts=snapshot[@"TGLStreamAckCounts"];
+            if([counts isKindOfClass:[NSData class]] && counts.length==8*sizeof(uint32_t)) {
+                uint32_t c[8];memcpy(c,counts.bytes,sizeof(c));
+                NSMutableArray *array=[NSMutableArray new];for(auto v:c)[array addObject:@(v)];
+                summary[@"ack_counts"]=array;
+            }
+            uint64_t maximum=0,latestNS=0;
+            for(unsigned i=0;i<64;++i) {
+                NSString *key=[NSString stringWithFormat:@"TGLScan2Last%u",i];
+                NSData *data=registryValue(root,key);
+                if(![data isKindOfClass:[NSData class]] || data.length!=256*sizeof(uint64_t))continue;
+                uint64_t r[256];memcpy(r,data.bytes,sizeof(r));
+                if(r[3]!=2 || r[4]>1 || r[255]!=0x4D454D31)continue;
+                snapshot[key]=data;
+                if(r[2]>maximum) {maximum=r[2];latestNS=r[0];}
+            }
+            summary[@"scan2_sequence"]=maximum?@(maximum):(id)[NSNull null];
+            summary[@"scan2_latest_uptime_seconds"]=maximum?@(latestNS/1e9):(id)[NSNull null];
+            if(maximum && havePrevious && maximum>=previousSequence && now>previousTime) {
+                summary[@"scan2_records_per_second"]=@((maximum-previousSequence)/(now-previousTime));
+                // Native updatePlane is observed before and after. This is an
+                // approximate call rate, never a display refresh/flip rate.
+                summary[@"approx_update_plane_calls_per_second"]=@((maximum-previousSequence)/(2*(now-previousTime)));
+            }
+            previousSequence=maximum;previousTime=now;havePrevious=maximum!=0;
+            NSError *error=nil;
+            NSData *plist=[NSPropertyListSerialization dataWithPropertyList:snapshot format:NSPropertyListBinaryFormat_v1_0 options:0 error:&error];
+            NSString *file=[directory stringByAppendingPathComponent:[NSString stringWithFormat:@"display-%06d.plist",elapsed]];
+            if(!plist || ![plist writeToFile:file options:NSDataWritingAtomic error:&error] || chmod(file.fileSystemRepresentation,0600))return 5;
+            NSData *json=[NSJSONSerialization dataWithJSONObject:summary options:NSJSONWritingSortedKeys error:&error];
+            if(!json)return 6;
+            fwrite(json.bytes,1,json.length,stdout);putchar('\n');fflush(stdout);
+        }
+        // Short sleeps preserve SIGINT responsiveness. No observer runs here.
+        for(int i=0;i<10 && elapsed+i<seconds && !stopped;++i)sleep(1);
+    }
+    return 0;
+}
 struct HaltMonitor {
     const char *state="not_available";
     bool qualified=true,observed=false;
@@ -76,15 +170,19 @@ static NSSet<NSString *> *gpuReports(bool &readable,NSArray<NSString *> *directo
 }
 int main(int argc,char **argv) {
     @autoreleasepool {
-        if (argc!=3) { fprintf(stderr,"usage: tgl-capture PRIVATE_DIRECTORY SECONDS(1..3600)\n"); return 2; }
+        const bool display=argc==4 && strcmp(argv[1],"--display")==0;
+        if (argc!=3 && !display) { fprintf(stderr,"usage: tgl-capture [--display] PRIVATE_DIRECTORY SECONDS(1..3600; display: multiples of 10)\n"); return 2; }
+        const int first=display?2:1;
         char *end=nullptr;
-        long requested=strtol(argv[2],&end,10);
+        long requested=strtol(argv[first+1],&end,10);
         if (!end || *end || requested<1 || requested>3600) return 2;
+        if(display && requested%10)return 2;
         int seconds=static_cast<int>(requested);
-        NSString *directory=@(argv[1]); NSError *error=nil;
+        NSString *directory=@(argv[first]); NSError *error=nil;
         if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions:@0700} error:&error] || chmod(directory.fileSystemRepresentation,0700)) return 3;
         io_registry_entry_t root=IORegistryGetRootEntry(kIOMainPortDefault); if (!root) return 4;
         signal(SIGINT,stop); signal(SIGTERM,stop);
+        if(display) {const int result=displayCapture(root,directory,seconds);IOObjectRelease(root);return result;}
         NSArray<NSString *> *reportDirectories=@[@"/Library/Logs/DiagnosticReports", @"/Library/Logs/DiagnosticReports/Retired"];
         bool reportsReadable=false;
         NSSet<NSString *> *knownReports=gpuReports(reportsReadable,reportDirectories);

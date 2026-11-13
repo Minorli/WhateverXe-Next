@@ -1,7 +1,7 @@
 {
   "date": "2026-11-13",
   "base_commit": "db7b36e95c46c5ca63c8da0333002a1e478a7f2b",
-  "scope": "B1 read-only, A1-A3 static audit, exact native context-free CPU replay, existing phone video inspection",
+  "scope": "B1 read-only, A1-A3 static audit, exact native context-free CPU replay, existing phone video inspection; display S0 during user-reported flicker",
   "accelerator_sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
   "mtl_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
   "ccs_samples": [
@@ -137,5 +137,106 @@
     "other_windows_report_local_time": "2026-11-13T16:16:13+08:00",
     "exact_onset_known": false
   },
-  "source_sha256_note": "Hashes retained from the CPU run; later explanatory comments/docstrings do not change the exercised functions. No GPU or installation result is implied."
+  "source_sha256_note": "Hashes retained from the CPU run; later explanatory comments/docstrings do not change the exercised functions. No GPU or installation result is implied.",
+  "display_s0": {
+    "window_local": [
+      "2026-11-13T16:15:11.321197+08:00",
+      "2026-11-13T16:20:12.587299+08:00"
+    ],
+    "elapsed_seconds": 301.2661018371582,
+    "samples": 31,
+    "interval_requested_seconds": 10,
+    "shared_type1_open_close_all_success": true,
+    "ack_bit31_count_start": 6,
+    "ack_bit31_count_end": 6,
+    "retained_records": [
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44408",
+        "sequence": 1,
+        "uptime_seconds": 17.698252183
+      },
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44408",
+        "sequence": 2,
+        "uptime_seconds": 17.698253881
+      },
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44418",
+        "sequence": 3,
+        "uptime_seconds": 17.698254774
+      },
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44418",
+        "sequence": 4,
+        "uptime_seconds": 17.698255094
+      },
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44428",
+        "sequence": 5,
+        "uptime_seconds": 17.698255976
+      },
+      {
+        "ack_value": "0xffffffff",
+        "kind": "clear_all_write",
+        "reg": "0x44428",
+        "sequence": 6,
+        "uptime_seconds": 17.698256318
+      }
+    ],
+    "ack_counts_delta": [
+      93084,
+      14457,
+      100844,
+      14460,
+      0,
+      0,
+      0,
+      0
+    ],
+    "scan2_sequence_start": 1063666,
+    "scan2_sequence_end": 1120758,
+    "scan_records_per_second": {
+      "mean": 189.50688328970924,
+      "min_interval": 106.33540828443157,
+      "max_interval": 313.51052912710253
+    },
+    "approx_update_plane_calls_per_second": 94.75344164485462,
+    "two_records_per_update_not_hardware_fps": true,
+    "user_flicker_report_received_local": "2026-11-13T16:16:13+08:00",
+    "exact_flicker_onset_known": false,
+    "new_bit31_ack_observed": false,
+    "hardware_underrun_excluded": false,
+    "interrupt_mask_measured": false,
+    "display_registers_measured": false,
+    "memory_smbios": {
+      "type": "DDR4",
+      "speed_mhz": 2667,
+      "module_capacity_gb": [
+        16,
+        8
+      ],
+      "controller_channels_verified": false,
+      "bw_buddy_expected_mask_selected": false
+    },
+    "framebuffer_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "display_trace_boot_arg": false,
+    "program_off_boot_arg": false,
+    "cpu_temperature_single_smc_read_c": 71.0,
+    "smc_other_keys_reported_invalid": true,
+    "capture_tool_sha256": "6ca5bc12d10cf23ee98788c6bc1bccd5bbc31b1cedc82bb4eaa5c28f0f50ea5f",
+    "source_sha256": "59735c9e4554369f8fc70b9b9958e6e341423f6b8f6af8f7556680f2aad9cdd8",
+    "raw_recordings_published": false,
+    "probe_kext_built": false,
+    "probe_kext_installed": false
+  }
 }
