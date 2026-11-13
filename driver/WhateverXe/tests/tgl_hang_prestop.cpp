@@ -53,6 +53,27 @@ int main(int argc,char **argv) {
   return read(a,p,n);
  };
  collect(c,owner,scheduler,changing,mmio);assert(c.q[1]==0 && c.q[11]==1);
+ // A successful initial wake does not validate later register snapshots.
+ // Reject a lost/unmapped ACK in either recorded render pass, even if it
+ // returns before the second pass, and a lost final GT ACK when GT was read.
+ for(uint32_t invalid:{0U,UINT32_MAX})for(unsigned lost:{2U,3U}) {
+  c={};unsigned renderReads=0;
+  auto losingRender=[&](uint32_t reg)->uint32_t {
+   if(reg==0xd84)return ++renderReads==lost?invalid:2;
+   return reg;
+  };
+  collect(c,owner,scheduler,read,losingRender);
+  if(c.q[1]!=5) {fprintf(stderr,"FAIL: lost render ACK accepted: guard=%llu\n",(unsigned long long)c.q[1]);return 10;}
+ }
+ for(uint32_t invalid:{0U,UINT32_MAX}) {
+  c={};unsigned gtReads=0;
+  auto losingGT=[&](uint32_t reg)->uint32_t {
+   if(reg==0x130044)return ++gtReads==1?2:invalid;
+   return mmio(reg);
+  };
+  collect(c,owner,scheduler,read,losingGT,true);
+  if(c.q[1]!=6) {fprintf(stderr,"FAIL: lost GT ACK accepted: guard=%llu\n",(unsigned long long)c.q[1]);return 11;}
+ }
  c={};count=0;
  auto ownerChanges=[&](uint64_t a,void *p,unsigned n)->uint64_t {
   if(a==scheduler+0x10 && ++count==2)m[a]=owner+1;

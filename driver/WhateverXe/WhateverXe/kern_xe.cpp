@@ -65,6 +65,7 @@
 #include "kern_tgl_start_order.hpp"
 #include "kern_donor.hpp"
 #include "kern_tgl_csb.hpp"
+#include "kern_tgl_csb_failure.hpp"
 #include "kern_tgl_context_cache.hpp"
 #include "kern_tgl_gsync.hpp"
 #include "kern_tgl_rpcs.hpp"
@@ -15413,37 +15414,19 @@ namespace {
 // r307: first native failure only. CPU copies are sequential, not atomic; no
 // forcewake, register reads, queue writes or extra work on the successful path.
 void tglCaptureCSBFailure() {
- struct Engine {
-  uint64_t q[28]; // live[0..9], lengths[10..21], times[22..23], owner flags/tail + lengths
-  uint8_t streamer[0x80],nativeHead[16],descriptor[0x80],hwsp[0xC0];
-  uint8_t items[4][0x20],contexts[4][0xA0];
- };
- struct Capture { uint64_t schema,count;Engine engine[6]; };
+ using TGLCSBFailure::Capture;
  auto c=static_cast<Capture *>(IOMalloc(sizeof(Capture)));if (!c) return;
- bzero(c,sizeof(*c));c->schema=307;c->count=6;
+ bzero(c,sizeof(*c));c->schema=TGLCSBFailure::Schema;c->count=6;
  auto read=[](uint64_t address,void *dest,size_t size)->uint64_t {
   return (address>>47)==0x1FFFF ? tglVM.nofault(address,reinterpret_cast<uint64_t>(dest),size) : 0;
  };
- auto pointer=[](const uint8_t *p)->uint64_t {uint64_t v;memcpy(&v,p,8);return v;};
  for (unsigned i=0;i<6;++i) {
   auto &d=c->engine[i];const auto &e=tglCSBEngines[i];auto q=d.q;
   tglHostClock(q+22);
   q[0]=reinterpret_cast<uint64_t>(e.streamer);q[1]=e.state.head;
   q[2]=static_cast<unsigned>(e.state.error);q[3]=e.consumed;q[4]=e.retries;
   q[5]=e.fallback;q[6]=e.resets;q[7]=e.lastRaw;q[8]=1;q[9]=e.hardwareReady;
-  q[10]=read(q[0],d.streamer,sizeof(d.streamer));
-  if (q[10]==sizeof(d.streamer)) {
-   q[11]=read(q[0]+0x1C00,d.nativeHead,sizeof(d.nativeHead));
-   q[12]=read(pointer(d.streamer+0x28),d.descriptor,sizeof(d.descriptor));
-   q[13]=read(pointer(d.streamer+0x68),d.hwsp,sizeof(d.hwsp));
-   q[25]=read(pointer(d.streamer+0x10)+0x1190,q+24,1);
-   for (unsigned n=0;n<4;++n) {
-    q[14+n]=read(pointer(d.streamer+0x30+n*8),d.items[n],sizeof(d.items[n]));
-    if (q[14+n]==sizeof(d.items[n]))
-     q[18+n]=read(pointer(d.items[n]),d.contexts[n],sizeof(d.contexts[n]));
-   }
-  }
-  if (q[10]==sizeof(d.streamer)) q[27]=read(pointer(d.streamer+0x68)+0xBC,q+26,4);
+  TGLCSBFailure::collect(d,read);
   tglHostClock(q+23);
  }
  IORegistryEntry::getRegistryRoot()->setProperty("TGLCSBFailure0",c,sizeof(*c));

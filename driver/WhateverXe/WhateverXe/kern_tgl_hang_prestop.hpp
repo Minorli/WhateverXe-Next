@@ -9,8 +9,13 @@ constexpr uint32_t Registers[] {0x2030,0x2034,0x2038,0x203c,0x205c,0x2064,
  0x2068,0x206c,0x2074,0x209c,0x20b0,0x2110,0x2140,0x2144,0x2168,
  0x2180,0x21c0,0x21c4,0x21c8,0x2234,0x2238,0x2244,0x20bc,
  0x2510,0x2514,0x2580,0xd84,0x229c,0x2424,0x2270,0x2274,0x21a8};
+constexpr unsigned RenderACKIndex=26;
+static_assert(Registers[RenderACKIndex]==0xd84,"render ACK in both passes");
+inline bool awake(uint32_t ack) {return ack!=UINT32_MAX && (ack&2);}
 struct Capture {
  uint64_t q[16]; // schema, guard, begin/end ns, owner/scheduler/streamer, engine/domains, ACK, row errors, changed
+ // Guard5: a recorded render ACK was lost/unmapped. Guard6: final GT ACK
+ // was lost/unmapped after GT registers were read under the caller's lease.
  // Schema2 q12..15: paired GT ACK, paired Gen12 fault, fault VA data,
  // paired CS/LTISEQ flush requests. Each pair is before | (after << 32).
  uint32_t registers[2][32];
@@ -26,13 +31,13 @@ void collect(Capture &c,uint64_t owner,uint64_t scheduler,Read read,MMIO mmio,bo
  if(!owner || !field(scheduler,0x10,so) || so!=owner ||
     !field(scheduler,0xca0,streamer) || !field(streamer,0x10,so) || so!=owner)return;
  c.q[6]=streamer;c.q[1]=2;c.q[9]=mmio(0xd84);
- if(c.q[9]==UINT32_MAX || !(c.q[9]&2))return;
+ if(!awake(c.q[9]))return;
  // Only a caller already owning native GT forcewake may read these registers.
  // Render ACK or another client's GT ACK is not ownership of a GT lease.
  bool gt=false;
  if(gtLease) {
   c.q[12]=mmio(0x130044);
-  gt=c.q[12]!=UINT32_MAX && (c.q[12]&2);
+  gt=awake(c.q[12]);
   if(gt) {
    c.q[13]=mmio(0xCEC4); // Gen12, not the legacy fault register at4094.
    const auto lo=mmio(0xCEB8),hi=mmio(0xCEBC);
@@ -64,6 +69,12 @@ void collect(Capture &c,uint64_t owner,uint64_t scheduler,Read read,MMIO mmio,bo
  c.q[1]=!field(scheduler,0x10,so) || so!=owner ||
   !field(scheduler,0xca0,again) || again!=streamer ||
   !field(streamer,0x10,so) || so!=owner ? 3 : (c.q[10] ? 4 : 0);
+ // Reuse the existing sequential witnesses: no extra MMIO or forcewake.
+ // A valid start ACK alone cannot qualify the later samples. These checks
+ // reject observed loss; they cannot prove continuous hardware ownership.
+ if(!c.q[1] && (!awake(c.registers[0][RenderACKIndex]) ||
+    !awake(c.registers[1][RenderACKIndex])))c.q[1]=5;
+ if(!c.q[1] && gt && !awake(c.q[12]>>32))c.q[1]=6;
 }
 }
 #endif
