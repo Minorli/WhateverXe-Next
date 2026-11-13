@@ -9,6 +9,13 @@ Apple, or WhateverXe release. It does not claim authorship of inherited code.
   in `driver/WhateverXe/LICENSE.txt`; local changes to that tree follow the same license.
 - `research/0001-bcs-pending-capture.patch` contains changes to that tree and
   follows its BSD-3-Clause license.
+- The opt-in TGL no-POSH, no-multicontext and render-domain recovery code and
+  their CPU tests derive from SaqibAlMalik/WhateverXe
+  `e0aff60038de42520c078d833e0138a50cde2495` (b00t0x/WhateverXe issue 109),
+  under the preserved BSD-3-Clause license. Their original NootedGreen
+  NP550XDA / JulioNectar XPS13Plus references remain in the source.
+  Issue 109 credits vikenzo196 for the Metal ownership fix; that Metal patch
+  and the stamp-completion override are deliberately not included here.
 - `src/`, root `tests/`, `tools/`, the root Makefile and project documentation
   are provided under the root MIT license. `research/XePOSHFix-v0.1.0.cpp` is
   a retired local MIT experiment, with no generated Apple code page included.

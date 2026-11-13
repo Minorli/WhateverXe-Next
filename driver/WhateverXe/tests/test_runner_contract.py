@@ -28,7 +28,7 @@ class RunnerContract(unittest.TestCase):
         # Every Python test has an explicit execution mode. These modules
         # are shared source/ABI helpers exercised by registered callers.
         scripts = {Path(c[1]).name for j in jobs for stage,c in j.steps if stage == 'script'}
-        helpers = {'production_source.py','pmap_kernel_contract.py','compat_test_support.py'}
+        helpers = {'production_source.py','pmap_kernel_contract.py','compat_test_support.py','accelerator_fingerprint.py'}
         self.assertEqual({p.name for p in (ROOT/'tests').glob('*.py')},scripts|helpers)
         native = next(j for j in jobs if j.name == 'tgl_gt2_urb_native')
         self.assertEqual(runner.missing_inputs(native,self.args()),['accelerator'])

@@ -121,10 +121,28 @@ The outer-ring check uses current production source unless `--outer-source` is
 explicitly supplied. These input identities do not restrict runtime OS updates.
 
 Every standalone Python script has an enumerated mode. `production_source.py`,
-`pmap_kernel_contract.py` and `compat_test_support.py` are shared helpers exercised by registered callers.
+`pmap_kernel_contract.py`, `compat_test_support.py` and `accelerator_fingerprint.py`
+are shared helpers exercised by registered callers (the fingerprint helper by
+the optional accelerator replays, including `tgl_hang_cpu_native`).
 The registry contract checks that newly added scripts are not silently omitted.
 
 ## Independent expectations and boundaries
+
+The #109 candidate adds `tgl_noposh`, `tgl_nomc` and `tgl_gpurec` CPU helper
+checks, derived from SaqibAlMalik's fixed e0aff600 donor. `tgl_nomc` additionally
+executes the production transaction with write-then-error and rollback failures;
+it requires both sites restored, or an explicit unsafe result. `tgl_noposh_adapter`
+executes the production restore wrapper through a modeled native copy, CPS and
+ADL boundary. It checks pre-copy flag clearing, post-copy CTX_CTRL/LRCA changes,
+single delegation, disabled/non-RCS and native failure behavior. Sanitization
+failure must propagate false without downstream success callbacks. The exact
+native callers check that return at 0x7C131 and 0x7C91E: init takes its fresh-image
+path; beginReset returns false. Those caller branches are statically inspected,
+not executed by this adapter; complete scheduler error recovery remains untested.
+Require `tgl_noposh_adapter_native` with the fixed 567511bed855…d496e accelerator
+to execute its real qualifier and independently corrupt each existing anchor.
+No Apple instructions, MMIO, kernel recovery serialization, or GPU work execute
+in that check. The gpurec helper test does not validate the complete reset hook.
 
 | Check | Expectation and source | Boundary and exclusions |
 | --- | --- | --- |

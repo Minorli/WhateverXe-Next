@@ -15,6 +15,7 @@ assert 'cpsOK=cpsOK && hostOK && gucOK;' in s
 helper=s[s.index('uintptr_t tglCPSAllocate'):s.index('bool tglCPSSerialize')]
 helper+=s[s.index('static bool tglContextCacheInit(void'):s.index('// r150:')]
 code=r"""#include "kern_tgl_context_cache.hpp"
+#include "kern_tgl_noposh.hpp"
 #include <stdint.h>
 #include <sys/mman.h>
 #include <cassert>

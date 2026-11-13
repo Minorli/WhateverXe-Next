@@ -38,7 +38,7 @@ display13_retirement display13_trial_retirement display13_port_wait display13_ag
 display13_training_frontend framebuffer_donor_runtime compat_bundle_version dsi_backlight_adapter
 dsi_restart dsi_panel dsi_command_adapter dsi_irq_live dsi_surface_adapter dsi_aperture_adapter
 display13_shutdown display13_wake_notifications released_physical_admission released_topology
-accelerator_resources display13_power_dispatch test_runner_contract compat_mmio
+accelerator_resources display13_power_dispatch test_runner_contract compat_mmio tgl_noposh_adapter
 """.split()
 FAMILIES = {'BigSur':'bigsur', 'Monterey':'monterey', 'Ventura':'ventura',
             'Sonoma':'sonoma', 'Sequoia':'sequoia', 'Tahoe':'tahoe'}
@@ -54,7 +54,7 @@ adls_donor adls_clock_native""".split()
 ACCELERATOR_TESTS = """tgl_ccs tgl_completion_cache tgl_cps_color_pipe tgl_ff_dop
 tgl_ff_mode tgl_object_preemption tgl_object_selector tgl_render_flush
 dsi_backing_adapter dsi_backing_native tgl_rpcs_native tgl_hang_cpu_native small_gt_urb
-tgl_tlb_preparser tgl_semaphore_tlb tgl_iosurface_compression tgl_gt2_urb""".split()
+tgl_tlb_preparser tgl_semaphore_tlb tgl_iosurface_compression tgl_gt2_urb tgl_noposh_adapter""".split()
 
 @dataclass
 class Job:
