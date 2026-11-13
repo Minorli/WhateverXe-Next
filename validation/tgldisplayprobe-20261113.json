@@ -24,14 +24,15 @@
   "native_counter_instruction_anchors_matched": 5,
   "ocvalidate": "1.0.8 passed",
   "disk_deployed": true,
-  "boot_verified": false,
+  "boot_verified": true,
   "mmio_enabled": false,
   "write_modes": "refused",
   "boot_args_changed": false,
   "recovery_entry": "UEFI Shell; maintainer confirms previously booted successfully",
   "rollback_config": "EFI/OC/config.pre-tgldp.plist",
-  "user_action": "manual reboot; then verify before UU observation",
+  "user_action": "ig=0x20 separately approved and configured; await next manual reboot",
   "sleep_wake_verified": false,
   "underrun_confirmed": false,
-  "flicker_fixed": false
+  "flicker_fixed": false,
+  "postboot_validation": "tgldisplayprobe-postboot-20261113.json"
 }

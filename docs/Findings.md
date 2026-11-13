@@ -3,6 +3,25 @@
 观察日期：2026-11-12，时区 UTC+8。以下仅发布脱敏的汇总结论。
 
 
+
+## 2026-11-13 17:35–17:46：探针启动验证与 UU 基线
+
+- **成立〔整机〕：**探针1.0.1实际加载，UUID与构建匹配；684.48秒、682个快照全部资格有效，
+  读失败0、暂停0、Writes0。睡眠/唤醒尚未测试，完整MMIO仍不可用。
+- **成立〔用户观察＋整机〕：**用户至少报告一次闪烁（17:36:37接收，非精确onset）。
+  同窗原生欠载计数增量0、ACK6→6、恢复calls/returns0、无新gpuRestart。
+- **不成立：**由计数0排除欠载。MMIO覆盖为0，所有tick均SkippedNoPowerLease；
+  当前未开启原生中断报告，DC/PW/PCI skip比例不可测。不能套用“低skip、无计数→欠载排除”。
+- **成立〔整机、限本窗口〕：**WindowServer physical footprint最后392.40MiB、峰值577.09MiB；
+  剔除前120秒后斜率−3.03MiB/min，未见持续增长。CPU单核中位数WS26.84%、UU20.14%；
+  SMC返回的CPU温度中位数51°C、范围44–70°C，thermal pressure均Nominal。部分SMC key不可用，温度只作估计。
+- **成立〔批准＋磁盘部署〕：**维护者单独同意仅追加`ig=0x20`，现已配置并通过ocvalidate；
+  探针/WEX/framebuffer/Metal文件SHA均未改变。`config.pre-ig20.plist`为精确回退，保留探针。
+  **证据不足〔下一轮整机〕：**仍待维护者手动重启，不能宣称原生欠载报告已生效或闪烁已修复。
+
+[采样窗口与统计](../validation/tgldisplayprobe-postboot-20261113.json)；
+[下一轮步骤与回退](Deployment.md#下一轮原生欠载报告-ig0x20已批准配置待重启)。
+
 ## 2026-11-13：TGLDisplayProbe 本机部署
 
 - **成立〔静态＋CPU＋构建＋磁盘〕：**已配置1.0.1原生RAM计数探针，16项CPU case和采集器解析测试通过，

@@ -1,0 +1,105 @@
+{
+  "date": "2026-11-13",
+  "boot_time": "2026-11-13T17:32:22+08:00",
+  "loaded_probe_version": "1.0.1",
+  "loaded_probe_uuid_matches_build": true,
+  "probe_sha256": "192e72cf5b53da0b09d7b606177470a1a1cb94b9fb002fa5e596d9892b2ecf63",
+  "window": {
+    "start": "2026-11-13T17:35:22.067091+08:00",
+    "end": "2026-11-13T17:46:46.546664+08:00",
+    "seconds": 684.48,
+    "probe_samples": 682,
+    "ack_samples": 69,
+    "stop_reason": "Baseline completed within requested 10–15 minutes; all collector processes stopped; UU unchanged"
+  },
+  "flicker_reports": {
+    "count": 1,
+    "minimum_events": 1,
+    "time_precision": "message receipt; exact onset and total number unknown",
+    "receipt_times": [
+      "2026-11-13T17:36:37.117810+08:00"
+    ]
+  },
+  "probe": {
+    "qualified_valid_ratio": 1.0,
+    "paused_samples": 0,
+    "writes_max": 0,
+    "read_failures_delta": 0,
+    "donor_counter_deltas": {
+      "DonorUnderrunEntry": 0,
+      "DonorUnderrunPipeA": 0,
+      "DonorUnderrunPipeB": 0,
+      "DonorUnderrunPipeC": 0,
+      "DonorUnderrunDispatch": 0
+    },
+    "mmio_coverage_ratio": 0,
+    "skipped_no_power_lease_ratio": 1.0,
+    "skipped_dc_pw_pci_ratio": null
+  },
+  "ack": {
+    "first": 6,
+    "last": 6,
+    "delta": 0
+  },
+  "recovery": {
+    "new_gpu_reports": 0,
+    "max_calls": 0,
+    "max_returns": 0,
+    "report_monitor_continuous": true,
+    "halt_monitor": "not_available"
+  },
+  "windowserver_footprint": {
+    "samples": 69,
+    "first_mib": 287.28,
+    "last_mib": 392.4,
+    "peak_mib": 577.09,
+    "post_120s_slope_mib_per_min": -3.03,
+    "post_120s_samples": 57,
+    "method": "physical footprint, 10-second samples; linear regression after first 120 seconds; not RSS"
+  },
+  "power": {
+    "temperature": {
+      "count": 69,
+      "min": 44.0,
+      "median": 51.0,
+      "max": 70.0
+    },
+    "temperature_quality": "VirtualSMC/SMC reported Invalid key detected for some unavailable channels; use returned CPU die values as estimates, not calibrated sensors",
+    "ws_cpu": {
+      "count": 57,
+      "min": 15.36,
+      "median": 26.84,
+      "max": 62.29
+    },
+    "uu_cpu": {
+      "count": 57,
+      "min": 14.53,
+      "median": 20.14,
+      "max": 35.1
+    },
+    "package_w": {
+      "count": 57,
+      "min": 6.1,
+      "median": 9.89,
+      "max": 14.49
+    },
+    "all_thermal_pressure_nominal": true
+  },
+  "conclusions": {
+    "probe_boot_validated": true,
+    "sleep_wake_validated": false,
+    "flicker_fixed": false,
+    "no_recovery_during_window": true,
+    "underrun_excluded": false,
+    "scanout_excluded": false
+  },
+  "next_round": {
+    "authorized": true,
+    "disk_configured": true,
+    "effective_after_manual_reboot": true,
+    "only_change": "append ig=0x20",
+    "component_shas_unchanged": true,
+    "rollback": "EFI/OC/config.pre-ig20.plist",
+    "ocvalidate": "1.0.8 passed"
+  }
+}

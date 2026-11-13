@@ -38,7 +38,7 @@ UU 与 WindowServer 都走禁用 POSH VS 设置的路径，旧 MTL 也有相同�
 S0已执行，结果见 [REVIEW](REVIEW.md#d852aa9-跟进显示-s0-已命中用户反馈窗口)。
 用户反馈闪烁时没有新的bit31 ACK，不将其当作欠载已被排除，也不直接进入寄存器修补。
 
-**状态更新：S1 的 RAM-only 1.0.1 已本机构建并写入 EFI，尚未重启验收。完整 MMIO 部分未准入。**见下方本机部署节。两种读取边界仍分别成立：
+**状态更新：S1 的 RAM-only 1.0.1 已通过本次启动和11分钟采集验证；完整 MMIO 部分未准入。下一轮仅加 ig=0x20 已获批准并配置，等待手动重启。**见下方本机部署节。两种读取边界仍分别成立：
 
 1. 原生coverage计数：只读加载后framebuffer数据，核对精确SHA/布局、计数指令锚点与映射范围；
    不能把文件偏移直接当已重定位内存地址，也不能在kext退出后保留指针。
@@ -284,3 +284,50 @@ cp \EFI\OC\config.pre-tgldp.plist \EFI\OC\config.plist
    探针配置撤销后按原方式进入 macOS。不执行 Reset NVRAM。
 
 完整回退备份路径、文件清单和原始指纹仅保留本机 local/。
+
+
+### 下一轮：原生欠载报告 `ig=0x20`（已批准配置，待重启）
+
+2026-11-13 重启后，1.0.1已实际加载，原生counter资格成立；当前完整MMIO仍不可用。
+为避免在已知屏蔽盲区重复观察，维护者已明确同意配置、自己安排重启。已用**本轮现行配置**生成并写入候选，唯一差异是追加`ig=0x20`，
+保留同一探针/WEX/framebuffer/Metal SHA、同一镜像布局；ocvalidate1.0.8通过。旧的无探针候选没有使用。
+
+静态依据见REVIEW：bit5开启原生pipe underrun报告，bit4的panic/40秒sleep不启用；
+MMIO dump环的分配还要求bit12，本轮参数不含该位。
+但原生handler仍会调用watermark诊断并产生日志，这会增加中断处理开销，**不是完全无扰动观察，也不是闪烁修复**。
+
+维护者已确认配置；磁盘部署已完成，下面第2步起等待维护者手动操作：
+
+1. 保存当前配置为同分区`EFI/OC/config.pre-ig20.plist`，核对精确内容；写入已校验候选。
+   不更换kext、不启用`-tgldp-count`或`tgldp-wa`，不使用`ig=0x10`或`ig=0x1020`。
+2. 维护者手动重启。先核对实际boot-args与counter资格，做约60秒基线，把开机已有计数与随后增量分开。
+3. 同一UU画面、分辨率、帧率及镜像布局先观察最多3分钟，手机/人工记录闪烁时间。
+   每秒原生计数、每10秒ACK、恢复与负载同步采集；若出现新欠载、恢复循环、明显卡顿或其它停止条件，
+   结束本轮UU画面负载并保存记录，不为了累计数量持续触发。
+4. 新原生pipe计数与闪烁同步增长支持欠载；需对照ACK与时间误差。
+   没增长只约束这个启用后的原生中断通道，仍不等同于扫描输出正常；不跳过寄存器配置和内存控制器核对直接写WA。
+5. 回退删除仅新增的`ig=0x20`，或用UEFI Shell恢复`config.pre-ig20.plist`后手动重启。
+   此备份保留探针；`config.pre-tgldp.plist`仍是撤销整个探针的入口。两者不可混称。
+
+这轮改变中断报告状态，已取得维护者单独同意；EFI已含`ig=0x20`，**当前运行的启动仍无该参数**。
+`config.pre-ig20.plist`已保存并逐字节核对，删除本轮参数而保留探针；`config.pre-tgldp.plist`撤销整个探针。
+
+### 本次启动验收结果（17:35:22–17:46:46 +08:00）
+
+**成立〔整机〕：**2026-11-13 17:32:22启动，kmutil显示探针1.0.1，UUID与构建产物一致，
+EFI文件SHA与已记录构建匹配；682个每秒快照全部`DonorCounterState=1 / DonorCountersValid=1`，
+未暂停、无读取失败、`Writes=0`。这只验收RAM计数，不包含睡眠/唤醒。
+
+**成立〔整机＋用户观察〕：**684.48秒窗口内用户至少报告一次闪烁，接收时间17:36:37；
+不能把接收时间当精确onset，也不知道实际总闪烁次数。69次ACK快照的count为6→6；
+原生entry/pipeA/B/C/dispatch均0增量；恢复calls/returns和新增gpuRestart均0。
+**不成立：**这些零值排除了欠载或扫描输出问题；MMIO覆盖为0，`SkippedNoPowerLease`占全部tick，
+DC/PW/PCI skip比例不适用，不得填0。
+
+WindowServer physical footprint首尾287.28→392.40MiB，峰值577.09MiB；
+剔除前120秒后57个样本的线性斜率−3.03MiB/min。此窗口不支持持续增长，不替代长期内存验证。
+同段CPU占用（单核口径）中位数：WindowServer26.84%、UU20.14%。
+69个CPU温度读数44–70°C，中位数51°C，thermal pressure均Nominal；SMC对一些不可用key报错，
+只保留实际返回的CPU值作为估计。启动后台负载和工具log扫描的短时CPU开销已保存在原始记录。
+所有采集进程已正常停止，未退出UU、改布局、自动睡眠或重启。
+完整摘要见[验证JSON](../validation/tgldisplayprobe-postboot-20261113.json)。
