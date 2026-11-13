@@ -9,8 +9,47 @@
 #include <cstdio>
 #include <cstring>
 #include "../src/RecoveryState.hpp"
+#include "../driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp"
 static volatile sig_atomic_t stopped;
 static void stop(int) { stopped=1; }
+struct HaltMonitor {
+    const char *state="not_available";
+    bool qualified=true,observed=false;
+    uint32_t mask=0;
+};
+struct HaltHistory {
+    bool seen=false,continuous=true,observed=false;
+    void update(const HaltMonitor &monitor) {
+        const bool available=strcmp(monitor.state,"not_available")!=0;
+        continuous=continuous && monitor.qualified && (!seen || available);
+        seen=seen || available;observed=observed || monitor.observed;
+    }
+    bool permitsComparison() const {return continuous && !observed;}
+};
+static HaltMonitor haltMonitor(id value,bool ready) {
+    HaltMonitor result;
+    if (!ready && !value) return result; // Older installed drivers lack this optional view.
+    result.state="unknown";result.qualified=false;
+    if (!ready || ![value isKindOfClass:[NSData class]]) return result;
+    NSData *data=value;
+    uint64_t header[8]{};
+    if(data.length<sizeof(header))return result;
+    memcpy(header,data.bytes,sizeof(header));
+    if(header[0]!=TGLHangCPU::Schema || header[1]!=sizeof(TGLHangCPU::Capture))return result;
+    size_t offset=sizeof(header);
+    for(unsigned i=0;i<TGLHangCPU::Engines;++i) {
+        if(header[i+2]>2)return result;
+        if(header[i+2]) {result.observed=true;result.mask|=1U<<i;}
+        if(header[i+2]!=2)continue;
+        if(data.length-offset<sizeof(TGLHangCPU::Capture))return result;
+        uint64_t q[12];memcpy(q,(const char *)data.bytes+offset,sizeof(q));
+        if(q[0]!=TGLHangCPU::Schema || q[1]>4 || q[7]!=i || q[10]>2)return result;
+        offset+=sizeof(TGLHangCPU::Capture);
+    }
+    if(offset!=data.length)return result;
+    result.qualified=true;result.state=result.observed?"observed":"clear";
+    return result;
+}
 // Reports are an independent signal: not every driver build publishes the
 // recovery keys above. Keep filenames private with the rest of each snapshot.
 static NSSet<NSString *> *gpuReports(bool &readable,NSArray<NSString *> *directories) {
@@ -55,6 +94,9 @@ int main(int argc,char **argv) {
         const char *bcsKeys[]={"TGLHangBCSWait0","TGLHangBCSWait1","TGLHangBCSWait2","TGLHangBCSWait3"};
         bool failedBefore=false;
         bool cleanBefore=false;
+        HaltMonitor haltBefore;
+        NSData *haltDataBefore=nil;
+        HaltHistory haltHistory;
         auto stateBefore=xe::RecoveryState::Unknown;
         for (int elapsed=0;elapsed<=seconds && !stopped;elapsed+=2) {
             @autoreleasepool {
@@ -68,6 +110,11 @@ int main(int argc,char **argv) {
                     CFStringRef name=CFStringCreateWithCString(nullptr,key,kCFStringEncodingUTF8);
                     CFTypeRef value=IORegistryEntryCreateCFProperty(root,name,kCFAllocatorDefault,0); CFRelease(name);
                     if (value) snapshot[@(key)]=CFBridgingRelease(value);
+                }
+                const CFStringRef haltKeys[]{CFSTR("TGLHangCPUReady"),CFSTR("TGLHangCPULive")};
+                for (CFStringRef key:haltKeys) {
+                    CFTypeRef value=IORegistryEntryCreateCFProperty(root,key,kCFAllocatorDefault,0);
+                    if(value)snapshot[(__bridge NSString *)key]=CFBridgingRelease(value);
                 }
                 snapshot[@"capture_unix_seconds"]=@([NSDate date].timeIntervalSince1970);
                 bool readable=false;
@@ -99,19 +146,34 @@ int main(int argc,char **argv) {
                     NSData *batch=snapshot[[NSString stringWithFormat:@"TGLHangBatch%u",i]];
                     failed=failed || ([batch isKindOfClass:[NSData class]] && batch.length>0);
                 }
-                const bool clean=xe::comparisonBaselineClean(state,reportsContinuous,failed);
+                const auto halt=haltMonitor(snapshot[@"TGLHangCPULive"],
+                    snapshot[@"TGLHangCPUReady"]==(__bridge id)kCFBooleanTrue);
+                NSData *haltData=[snapshot[@"TGLHangCPULive"] isKindOfClass:[NSData class]]?
+                    snapshot[@"TGLHangCPULive"]:nil;
+                const bool haltChanged=(haltData || haltDataBefore) && ![haltData isEqual:haltDataBefore];
+                haltHistory.update(halt);
+                snapshot[@"halt_monitor_state"]=@(halt.state);
+                snapshot[@"halt_observed_engine_mask"]=@(halt.mask);
+                snapshot[@"halt_monitor_continuous"]=@(haltHistory.continuous);
+                // A halt invocation is a timeout witness, not proof of its
+                // initial cause. Even an incomplete record rejects a clean A/B.
+                const bool clean=xe::comparisonBaselineClean(state,reportsContinuous,
+                    failed || !haltHistory.permitsComparison());
                 snapshot[@"comparison_baseline_clean"]=@(clean);
                 // Periodic history survives reboot; fresh failure is persisted
                 // immediately rather than waiting for the next periodic slot.
                 if (elapsed%10==0 || failed!=failedBefore || clean!=cleanBefore ||
-                    state.state!=stateBefore || newReports.count!=previousReports) {
+                    state.state!=stateBefore || newReports.count!=previousReports ||
+                    strcmp(halt.state,haltBefore.state) || halt.mask!=haltBefore.mask || haltChanged) {
                     NSData *plist=[NSPropertyListSerialization dataWithPropertyList:snapshot format:NSPropertyListBinaryFormat_v1_0 options:0 error:&error];
                     NSString *file=[directory stringByAppendingPathComponent:[NSString stringWithFormat:@"capture-%06d.plist",elapsed]];
                     if (!plist || ![plist writeToFile:file options:NSDataWritingAtomic error:&error] || chmod(file.fileSystemRepresentation,0600)) { IOObjectRelease(root); return 5; }
-                    printf("{\"elapsed\":%d,\"recovery_calls\":%llu,\"recovery_returns\":%llu,\"recovery_monitor\":\"%s\",\"comparison_baseline_clean\":%s,\"new_gpu_reports\":%lu,\"report_monitor_available\":%s,\"report_monitor_continuous\":%s,\"failure_data\":%s}\n",elapsed,calls,returns,monitor,clean?"true":"false",(unsigned long)newReports.count,readable?"true":"false",reportsContinuous?"true":"false",failed?"true":"false"); fflush(stdout);
+                    printf("{\"elapsed\":%d,\"recovery_calls\":%llu,\"recovery_returns\":%llu,\"recovery_monitor\":\"%s\",\"comparison_baseline_clean\":%s,\"new_gpu_reports\":%lu,\"report_monitor_available\":%s,\"report_monitor_continuous\":%s,\"failure_data\":%s,\"halt_monitor\":\"%s\",\"halt_engine_mask\":%u}\n",elapsed,calls,returns,monitor,clean?"true":"false",(unsigned long)newReports.count,readable?"true":"false",reportsContinuous?"true":"false",failed?"true":"false",halt.state,halt.mask); fflush(stdout);
                 }
                 failedBefore=failed;
                 cleanBefore=clean;stateBefore=state.state;
+                haltBefore=halt;
+                haltDataBefore=haltData;
             }
             if (elapsed<seconds && !stopped) sleep(2);
         }

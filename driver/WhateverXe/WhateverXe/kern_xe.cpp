@@ -80,6 +80,7 @@
 #include "kern_tgl_hang_detail.hpp"
 #include "kern_tgl_hang_ggtt.hpp"
 #include "kern_tgl_hang_prestop.hpp"
+#include "kern_tgl_hang_cpu.hpp"
 #include "kern_tgl_same_tail.hpp"
 #include "kern_tgl_submit_history.hpp"
 #include "kern_tgl_hang_select.hpp"
@@ -112,6 +113,11 @@ extern "C" __attribute__((naked,used)) void tglHangPreStopBridge() {
 static bool tglHangPreStopReady=false;
 static uint32_t tglHangPreStopState;
 static TGLHangPreStop::Capture tglHangPreStopCapture{};
+static bool tglHangCPUReady;
+static uint64_t tglHangCPUDescriptors,tglHangCPUOrdinal;
+static uint32_t tglHangCPUState[TGLHangCPU::Engines];
+static TGLHangCPU::Capture tglHangCPUCapture[TGLHangCPU::Engines];
+static bool tglHangCPUSerialize(void *,void *,OSSerialize *);
 static bool tglSameTailEnabled;
 static TGLSameTail::State tglSameTailState{},tglSameTailFailure{};
 static TGLSubmitHistory::History<> tglSubmitHistory;
@@ -12173,6 +12179,26 @@ bool XE::processTGLAccelerator(KernelPatcher &patcher, size_t index, mach_vm_add
              patcher.clearError();tglHangPreStopReady=ok;
              IORegistryEntry::getRegistryRoot()->setProperty("TGLHangPreStopReady",ok);
              IORegistryEntry::getRegistryRoot()->setProperty("TGLSubmitHistoryReady",ok && tglSameTailEnabled);
+             // Separate admission for the six-engine CPU view. This reuses
+             // the exact halt call above; it adds no register or wake access.
+             const auto descriptors=address+0xd4200;
+             bool cpuOK=ok && size>0xd4200+TGLHangCPU::Engines*0x79 &&
+              patcher.solveSymbol<mach_vm_address_t>(index,"__ZL11kIGHwCsDesc",address,size)==descriptors &&
+              patcher.solveSymbol<mach_vm_address_t>(index,"__ZN12IGScheduler517getActiveContextsE10IGHwCsTypePP17IGHardwareContextPyS3_",address,size)==address+0x380ec &&
+              !memcmp(reinterpret_cast<void *>(address+0x380ec),TGLHangCPU::SchedulerLookup,sizeof(TGLHangCPU::SchedulerLookup)) &&
+              !memcmp(reinterpret_cast<void *>(address+0x39aaa),TGLHangCPU::StreamerOwners,sizeof(TGLHangCPU::StreamerOwners)) &&
+              !memcmp(reinterpret_cast<void *>(address+0x39aee),TGLHangCPU::StreamerDescriptor,sizeof(TGLHangCPU::StreamerDescriptor));
+             for(unsigned i=0;i<TGLHangCPU::Engines && cpuOK;++i)
+              cpuOK=*reinterpret_cast<const uint8_t *>(descriptors+i*0x79)==i;
+             patcher.clearError();
+             if(cpuOK) {
+              if(auto live=OSSerializer::forTarget(nullptr,tglHangCPUSerialize)) {
+               cpuOK=IORegistryEntry::getRegistryRoot()->setProperty("TGLHangCPULive",live);
+               live->release();
+              } else cpuOK=false;
+             }
+             tglHangCPUDescriptors=cpuOK?descriptors:0;tglHangCPUReady=cpuOK;
+             IORegistryEntry::getRegistryRoot()->setProperty("TGLHangCPUReady",cpuOK);
             }
 
 			// r123: the TGL caller loops reset -> extra stamp -> one-second wait
@@ -15575,10 +15601,44 @@ static void tglRPCSPowerObserve(void *owner,uint64_t context,uint64_t ordinal,un
  if(acquired)__atomic_store_n(&tglRPCSPowerWriter,0U,__ATOMIC_RELEASE);
 }
 
+static bool tglHangCPUSerialize(void *,void *,OSSerialize *serializer) {
+ // A completed record is immutable until reboot. Never copy a writing record
+ // or wait for a producer. The header describes precisely this serialization.
+ uint64_t header[8] {TGLHangCPU::Schema,sizeof(TGLHangCPU::Capture)};
+ unsigned capacity=sizeof(header);
+ for(unsigned i=0;i<TGLHangCPU::Engines;++i) {
+  header[i+2]=__atomic_load_n(tglHangCPUState+i,__ATOMIC_ACQUIRE);
+  if(header[i+2]==2)capacity+=sizeof(TGLHangCPU::Capture);
+ }
+ auto data=OSData::withCapacity(capacity);
+ if(!data)return false;
+ bool ok=data->appendBytes(header,sizeof(header));
+ for(unsigned i=0;i<TGLHangCPU::Engines && ok;++i)if(header[i+2]==2)
+  ok=data->appendBytes(&tglHangCPUCapture[i],sizeof(tglHangCPUCapture[i]));
+ if(ok)ok=data->serialize(serializer);
+ data->release();return ok;
+}
+
 extern "C" void tglHangPreStopWake(void *owner,bool enable,unsigned domains,unsigned engine,void *scheduler) {
  // Call the protected, counted native wake exactly once, before observing.
  tglCSBForceWake[0](owner,enable,domains);
- if(!tglHangPreStopReady || !enable || domains!=7 || engine || owner!=tglHost.owner || !tglVM.nofault)return;
+ if(!tglHangPreStopReady || !enable || domains!=7 || owner!=tglHost.owner || !tglVM.nofault)return;
+ if(tglHangCPUReady && engine<TGLHangCPU::Engines) {
+  uint32_t empty=0;
+  if(__atomic_compare_exchange_n(tglHangCPUState+engine,&empty,1U,false,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED)) {
+   auto &c=tglHangCPUCapture[engine];tglHostClock(c.q+2);c.q[8]=domains;
+   c.q[9]=__atomic_fetch_add(&tglHangCPUOrdinal,1ULL,__ATOMIC_RELAXED)+1;
+   auto read=[](uint64_t p,void *out,unsigned n)->uint64_t {
+    return tglVM.nofault(p,reinterpret_cast<uint64_t>(out),n);
+   };
+   TGLHangCPU::collect(c,reinterpret_cast<uint64_t>(owner),reinterpret_cast<uint64_t>(scheduler),
+    tglHangCPUDescriptors+engine*0x79,engine,read);
+   tglHostClock(c.q+3);__atomic_store_n(tglHangCPUState+engine,2U,__ATOMIC_RELEASE);
+  }
+ }
+ // The existing register view is still RCS-only. CPU records above do not
+ // authorize reading another engine's MMIO under a substituted register base.
+ if(engine)return;
  auto base=tglHostBase();if(!base)return;
  uint32_t empty=0;
  if(!__atomic_compare_exchange_n(&tglHangPreStopState,&empty,1U,false,__ATOMIC_ACQUIRE,__ATOMIC_RELAXED))return;

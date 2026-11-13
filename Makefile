@@ -2,6 +2,7 @@ CXX := xcrun clang++
 CXXFLAGS := -std=c++17 -O2 -g -Wall -Wextra
 PREFIX_MAP := -ffile-prefix-map=$(CURDIR)=/WhateverXe-Next
 HEALTH_HEADERS := src/GPUHealth.hpp src/RecoveryState.hpp
+HALT_HEADERS := driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp driver/WhateverXe/WhateverXe/kern_tgl_hang_pending.hpp
 .PHONY: all cpu-test clean
 all: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-lifetime build/bounded-count build/tgl-capture build/posh-queue-check build/metal-surface-check build/posh-concurrent-gpu build/posh-atomic-code build/posh-abandon-check build/recovery-state build/capture-reports
 
@@ -35,7 +36,7 @@ build/posh-concurrent-gpu: tests/posh-concurrent-gpu.mm build/POSHQueueCache.o b
 build/metal-surface-check: tests/metal-surface-check.mm build/POSHQueueCache.o build/POSHAtomicClaim.o src/BoundedCount.hpp $(HEALTH_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< build/POSHQueueCache.o build/POSHAtomicClaim.o -framework Foundation -framework Metal -framework CoreVideo -framework IOKit -framework AppKit -framework QuartzCore -o $@
 
-build/tgl-capture: tools/tgl-capture.mm src/RecoveryState.hpp | build
+build/tgl-capture: tools/tgl-capture.mm src/RecoveryState.hpp $(HALT_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< -framework Foundation -framework IOKit -o $@
 
 build/gl-blit-check: tests/gl-blit-check.mm build/POSHDeferred.o src/BoundedCount.hpp $(HEALTH_HEADERS) | build
@@ -53,7 +54,7 @@ build/posh-atomic-code: tests/posh-atomic-code.cpp src/POSHAtomicCode.hpp | buil
 build/recovery-state: tests/recovery-state.cpp src/RecoveryState.hpp | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -O1 -fsanitize=address,undefined $< -o $@
 
-build/capture-reports: tests/capture-reports.mm tools/tgl-capture.mm src/RecoveryState.hpp | build
+build/capture-reports: tests/capture-reports.mm tools/tgl-capture.mm src/RecoveryState.hpp $(HALT_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc -fsanitize=address,undefined $< -framework Foundation -framework IOKit -o $@
 
 cpu-test: build/posh-lifetime build/bounded-count build/posh-atomic-code build/recovery-state build/capture-reports
