@@ -4,7 +4,8 @@ WhateverXe-Next is independently maintained and is not an official Intel,
 Apple, or WhateverXe release. It does not claim authorship of inherited code.
 
 - `driver/WhateverXe/` derives from b00t0x/WhateverXe commit
-  `db438fdf4d5fe903f5dfbc65537ed3884e2ea980`. Its BSD-3-Clause notice is preserved
+  `db438fdf4d5fe903f5dfbc65537ed3884e2ea980`, updated through upstream 0.8.2
+  `4512191b9643e2391431fbd9639305b61568ee32`. Its BSD-3-Clause notice is preserved
   in `driver/WhateverXe/LICENSE.txt`; local changes to that tree follow the same license.
 - `research/0001-bcs-pending-capture.patch` contains changes to that tree and
   follows its BSD-3-Clause license.

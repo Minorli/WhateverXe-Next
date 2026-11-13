@@ -4,7 +4,7 @@
 
 | 来源 | 固定版本 / 用途 |
 | --- | --- |
-| [b00t0x/WhateverXe](https://github.com/b00t0x/WhateverXe) | `db438fdf4d5fe903f5dfbc65537ed3884e2ea980`；`driver/WhateverXe` 的完整归档基线 |
+| [b00t0x/WhateverXe](https://github.com/b00t0x/WhateverXe) | `4512191b9643e2391431fbd9639305b61568ee32`（0.8.2）；从原 `db438fdf` 以三方合并同步，保留本地改动 |
 | [macintelk/WhateverXe](https://github.com/macintelk/WhateverXe) | 调查参考 `7c76ce232ff533b116c84085020187c9c267c464`；未声称完整集成此分支 |
 | [wex-modified-edition](https://github.com/xiananliu/wex-modified-edition) | 本机现用预编译下游；0.8.1 release 内部仍为 0.8.0，无对应下游修改源码 |
 | [WhateverXe-Graphics](https://github.com/b00t0x/WhateverXe-Graphics) | 对照官方 v0.4.1 pkg，SHA `7f7ce3b924ad421cff0c4f30534598858474b8c9539c4b889a461bc1d5fed02c` |
@@ -20,7 +20,7 @@
 `a972cdb7ddd56bcf38c3ab71e874b73efc34bc683d30e49f0a1a1919625a726d`，本轮未恢复。
 0.4.3 Metal 不匹配参考 MTL 窗口；静态准入失败，未产生新的候选构建或安装。
 
-BCS 变更相对**未修改的 git archive 基线**生成，涉及
+历史 BCS 变更相对**未修改的 `db438fdf` git archive 基线**生成，涉及
 `WhateverXe/kern_tgl_hang_pending.hpp`、`WhateverXe/kern_xe.cpp`、`tests/tgl_hang_pending.cpp`。
 完整差异见 `research/0001-bcs-pending-capture.patch`。构建输出、缓存与本机依赖不在源码快照中。
 
