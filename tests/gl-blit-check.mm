@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <cstring>
 #include <thread>
-#include "../src/POSHDeferred.h"
 #include "../src/BoundedCount.hpp"
 #include "../src/GPUHealth.hpp"
 
@@ -29,16 +28,16 @@ int main(int argc,char **argv) {
         printf("{\"renderer\":\"%s\",\"gl_version\":\"%s\",\"mixed\":%s}\n",renderer,glGetString(GL_VERSION),mixed?"true":"false");fflush(stdout);
         id<MTLDevice> device=mixed?MTLCreateSystemDefaultDevice():nil;
         id<MTLCommandQueue> queue=mixed?[device newCommandQueue]:nil;
-        if(mixed && (!queue || !installPOSHDeferredFix()))return 4;
+        if(mixed && !queue)return 4;
         std::atomic<bool> stop{false}; std::atomic<unsigned> metalDone{0},metalErrors{0};
-        // Metal runs in this diagnostic only. No changes to GL code or other
-        // processes; the deferred hook avoids an unrelated synthetic POSH leak.
+        // Keep the native Metal lifetime: mixed mode must not silently install
+        // a disposal candidate while investigating a GL/Metal failure.
         std::thread worker;
         if(mixed)worker=std::thread([&]{@autoreleasepool {
             auto source=[device newBufferWithLength:1048576 options:MTLResourceStorageModeShared];
             auto target=[device newBufferWithLength:1048576 options:MTLResourceStorageModeShared];
             if(!source || !target){++metalErrors;return;}memset(source.contents,0x5a,1048576);
-            while(!stop && metalDone<10000){@autoreleasepool {
+            while(!stop && metalDone<static_cast<unsigned>(count)){@autoreleasepool {
                 if((metalDone%16)==0 && !xe::noGPURecovery()){++metalErrors;stop=true;break;}
                 auto cb=[queue commandBuffer];auto e=[cb blitCommandEncoder];
                 if(!cb || !e){++metalErrors;break;}

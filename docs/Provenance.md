@@ -39,7 +39,8 @@ UUID 是二进制构建标识，不是机器身份。没有发布 serial、硬�
 
 ## 构建步骤与复现限制
 
-根诊断工具：macOS、Clang、Foundation / Metal / IOKit / OpenGL 系统 SDK，`make all`。
+根诊断工具：macOS、Clang、Foundation / Metal / IOKit / OpenGL 系统 SDK。
+`make all` 构建只读采集器，`make gpu-probes` 单独构建图形探针。
 CPU 模型：`make cpu-test`。Linux CPU 模型可使用支持 C++17 与线程的编译器，
 但真实 GPU 工具和 kext 必须使用对应 macOS 工具链。
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Process-local research probe; see docs/POSH.md before enabling deferred mode.
+// Process-local research probe; queue-cache remains an explicit experiment.
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <objc/runtime.h>
@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include "../src/POSHDeferred.h"
 #include "../src/POSHQueueCache.h"
 #include "../src/BoundedCount.hpp"
 #include "../src/GPUHealth.hpp"
@@ -29,10 +28,9 @@ int main(int argc, char **argv) {
         const char *mode = argc > 1 ? argv[1] : "empty";
         int count = 200;
         if (argc > 2 && !xe::boundedCount(argv[2],12000,count)) return 2;
-        bool deferred = argc > 3 && strcmp(argv[3], "deferred") == 0;
         bool queueCache = argc > 3 && strcmp(argv[3], "queue-cache") == 0;
         if (argc > 4 || count < 1 || count > 12000 ||
-            (argc > 3 && !deferred && !queueCache && strcmp(argv[3], "stock") != 0)) return 2;
+            (argc > 3 && !queueCache && strcmp(argv[3], "stock") != 0)) return 2;
         bool blit = strcmp(mode, "blit") == 0;
         bool drawOverlap = strcmp(mode, "draw-overlap") == 0;
         bool draw = strcmp(mode, "draw") == 0 || drawOverlap;
@@ -47,7 +45,6 @@ int main(int argc, char **argv) {
         id<MTLCommandQueue> queue = [device newCommandQueue];
         if (!queue) { fprintf(stderr, "Command queue creation failed\n"); return 8; }
         printf("{\"queue_class\":\"%s\"}\n", class_getName(object_getClass(queue)));
-        if (deferred && !installPOSHDeferredFix()) { fprintf(stderr,"Deferred guard refused\n"); return 4; }
         const NSUInteger length = 1024 * 1024;
         id<MTLBuffer> source, target;
         id<MTLTexture> texture;
@@ -152,12 +149,6 @@ int main(int argc, char **argv) {
         }
         const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - begin).count();
         printf("{\"completed\":true,\"data_valid\":%s,\"seconds\":%.3f}\n", valid ? "true" : "false", seconds);
-        if (deferred) {
-            const auto s=poshDeferredStats();
-            printf("{\"deferred\":true,\"tracked\":%llu,\"detached\":%llu,\"disposed\":%llu,\"rejected\":%llu,\"completions\":%llu}\n",
-              s.tracked,s.detached,s.disposed,s.rejected,s.completions);
-            if (s.rejected || !s.tracked || s.detached!=s.disposed) return 10;
-        }
         if (queueCache) {
             const auto s=poshQueueCacheStats();
             printf("{\"queue_cache\":true,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu}\n",s.allocated,s.destroyed,s.refused);

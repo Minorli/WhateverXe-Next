@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
-#include "../src/POSHDeferred.h"
 #include "../src/POSHQueueCache.h"
 #include "../src/BoundedCount.hpp"
 #include "../src/GPUHealth.hpp"
@@ -27,18 +26,16 @@ int main(int argc,char **argv) {
         const char *mode=argc>1?argv[1]:"texture";
         int count=200;
         if (argc>4 || (argc>2 && !xe::boundedCount(argv[2],10000,count))) return 2;
-        bool fix=argc>3 && strcmp(argv[3],"deferred")==0;
         bool queueCache=argc>3 && strcmp(argv[3],"queue-cache")==0;
         bool texture=strcmp(mode,"texture")==0, mixed=strcmp(mode,"mixed")==0;
         bool abandoned=strcmp(mode,"abandoned")==0;
         if ((!texture && !mixed && !abandoned) || count<1 || count>10000) return 2;
-        if (argc>3 && !fix && !queueCache && strcmp(argv[3],"stock")!=0) return 2;
+        if (argc>3 && !queueCache && strcmp(argv[3],"stock")!=0) return 2;
         if (!xe::noGPURecovery()) return 14;
         id<MTLDevice> device=MTLCreateSystemDefaultDevice(); if (!device) return 3;
         if (queueCache && !installPOSHQueueCache(device.registryID)) { fprintf(stderr,"Queue-cache guard refused\n"); return 4; }
         id<MTLCommandQueue> queues[2]={[device newCommandQueue],[device newCommandQueue]};
         if (!queues[0] || !queues[1]) return 3;
-        if (fix && !installPOSHDeferredFix()) { fprintf(stderr,"Deferred guard refused\n"); return 4; }
         auto results=std::make_shared<Results>();
         dispatch_group_t group=dispatch_group_create();
         dispatch_semaphore_t depth=dispatch_semaphore_create(4);
@@ -103,15 +100,13 @@ int main(int argc,char **argv) {
         // of the final CB. Sentinels don't count toward workload verification.
         for (auto queue:queues) { @autoreleasepool { auto cb=[queue commandBuffer]; [cb commit]; [cb waitUntilCompleted]; if (cb.status!=MTLCommandBufferStatusCompleted) return 6; } }
         memory("end",count);
-        const auto s=poshDeferredStats();
         const double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
-        printf("{\"mode\":\"%s\",\"candidate\":\"%s\",\"submitted\":%d,\"completed\":%u,\"mismatches\":%u,\"gpu_errors\":%u,\"seconds\":%.3f,\"tracked\":%llu,\"detached\":%llu,\"disposed\":%llu,\"rejected\":%llu,\"dealloc_inflight\":%llu,\"uncommitted\":%llu}\n",mode,fix?"deferred":queueCache?"queue-cache":"stock",count,results->done.load(),results->bad.load(),results->errors.load(),seconds,s.tracked,s.detached,s.disposed,s.rejected,s.deallocInFlight,s.uncommitted);
+        printf("{\"mode\":\"%s\",\"candidate\":\"%s\",\"submitted\":%d,\"completed\":%u,\"mismatches\":%u,\"gpu_errors\":%u,\"seconds\":%.3f}\n",mode,queueCache?"queue-cache":"stock",count,results->done.load(),results->bad.load(),results->errors.load(),seconds);
         if (queueCache) {
             const auto q=poshQueueCacheStats();
             printf("{\"queue_cache\":true,\"allocated\":%llu,\"destroyed\":%llu,\"refused\":%llu}\n",q.allocated,q.destroyed,q.refused);
             if (q.allocated!=2 || q.refused) return 10;
         }
-        return results->bad || results->errors || (!abandoned && results->done!=static_cast<unsigned>(count)) ||
-            (fix && (s.rejected || !s.tracked || s.detached!=s.disposed)) ? 7:0;
+        return results->bad || results->errors || (!abandoned && results->done!=static_cast<unsigned>(count)) ? 7:0;
     }
 }

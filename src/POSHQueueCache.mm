@@ -130,7 +130,7 @@ bool installPOSHQueueCache(uint64_t metalRegistryID) {
         !methodBytes(queue,sel_registerName("dealloc"),file,0x3b7f6,0x3b906,2) ||
         !methodBytes(cb,sel_registerName("initWithQueue:retainedReferences:synchronousDebugMode:"),file,0x7e862,0x7eb66,5) ||
         !methodBytes(cb,sel_registerName("dealloc"),file,0x7ecba,0x7ee0a,2)) return false;
-    // Single-threaded diagnostic setup; do not compose with POSHDeferred.
+    // Single-threaded diagnostic setup before creating queues.
     originalInit=method_setImplementation(ctor,(IMP)init);
     installed=true;
     return true;

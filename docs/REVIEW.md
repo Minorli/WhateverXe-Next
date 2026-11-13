@@ -12,8 +12,8 @@
 1. `Findings.md`：三个主要问题的证据和反证。
 2. `Provenance.md` 与 `Validation.md`：源版本、当前加载版本与测试层级。
 3. `src/POSHAtomicClaim.mm`、`src/POSHAtomicCode.hpp` 与 `Concurrency.md`：原子计数候选和同版失败 / 通过对照；
-   `src/POSHQueueCache.mm` 与 `POSH.md`：队列所有权候选；
-   `src/POSHLifetime.hpp`、`src/POSHDeferred.mm` 是独立的较早原型。
+   `src/POSHQueueCache.mm` 与 `POSH.md`：队列所有权候选。
+   较早的 deferred 原型已删除；历史审查可从提交 `fd1a78a` 读取。
 4. `research/0001-bcs-pending-capture.patch` 及对应三个源码文件：BCS 采集增强。
 5. `Deployment.md`：不能越过的整机验证门槛。
 6. `BCS.md`：等待指令现场采集的限定、拒绝条件和待回答的问题。
@@ -40,19 +40,6 @@
 - 原生 render encoder 对计数表的重置能否覆盖 compute、blit、多 encoder 和跨提交路径？
   并发创建 CB、尚未完成的旧 CB 析构、错误恢复可能怎样干扰共享缓存？
 - 正反两次 IOSurface 对照只验证内存斜率和正确性；呈现时间戳全零，不能计为显示时序通过。
-- 后续问题针对 deferred 原型；不要将它们与队列方案混为一种析构补丁。
-
-- 初始化时的私有分配是否在所有路径都保持私有？`m_isOnlyActiveCommandBuffer`
-  是否可能改变？与队列的共享块比较，足以排除别名和迁移吗？
-- 原生析构前把 `_pPoshUsedAsTarget` 置空，是否破坏析构或父类清理所需的不变量？
-- GPU completion 与原生 CPU 清理之后才释放，是否覆盖所有实际消费者？错误完成
-  是否真的表示 GPU 不再访问？是否还有 descriptor、驱动 worker 或外部队列持有引用？
-- MRC 关联对象、复制的 completion block、局部 retain 在回调与析构并发时是否足以
-  保住 token 与控制块？是否有 retain cycle、重入、遗漏回调或不匹配的 allocator？
-- 真正的 native dealloc-before-GPU-complete 目前计数为零。如何在不伪造状态的前提下
-  覆盖这条路径？没有这项证据不得推荐全局部署。
-- 完整文件 SHA、方法 ABI、ivar 尺寸检查还缺什么？静态文件指纹与映射后代码状态
-  是不同的检查，应如何建立生产级准入？
 
 ### BCS / 恢复
 

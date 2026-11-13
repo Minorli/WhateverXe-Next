@@ -15,8 +15,8 @@ jobs:
       - name: Require the Intel fixture ABI
         run: test "$(uname -m)" = x86_64
       - name: Build only; do not submit GPU work
-        run: make all
-      - name: CPU lifecycle and submission-limit contracts
+        run: make all gpu-probes
+      - name: CPU ownership, monitor and submission-limit contracts
         run: make cpu-test
       - name: Inherited driver CPU and mock contracts
         working-directory: driver/WhateverXe

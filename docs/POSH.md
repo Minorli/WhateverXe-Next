@@ -43,7 +43,7 @@ active 数量、标志、指针或完成状态。实际入口是 `posh-queue-che
 准入同时要求诊断进程名称、Metal registry ID 对应的物理设备选择属性、完整 MTL 文件 SHA、
 四个方法的来源路径、映射地址和完整方法字节、构造 ABI、字段类型与对象范围。
 仅匹配代码前缀、只看伪装的 Metal 设备名称或路径存在均不足以进入候选。
-安装必须在单线程诊断设置阶段、创建队列之前完成；不得与 deferred 原型组合。
+安装必须在单线程诊断设置阶段、创建队列之前完成。
 
 100 个真实原生队列的未提交 CB 生命周期测试通过：首个 CB 借用，第二个重叠 CB 私有，
 先释放客户端队列引用时缓存所有者仍存活，最后 100 个队列均析构。无 GPU 提交。
@@ -51,53 +51,15 @@ active 数量、标志、指针或完成状态。实际入口是 `posh-queue-che
 串行通过不能抵消上述真实并发失败；错误恢复、跨提交复用和系统合成也未验收。
 
 该实现仍限制在诊断进程，未注入 UU 或 WindowServer，也未修改系统 bundle。
-它不是当前可安装的系统级驱动。native dealloc-before-completion 的阻塞项属于下述
-deferred 方案，不应被误当作队列方案的同一个实现要求；队列方案仍需独立证明共享缓存
+它不是当前可安装的系统级驱动。队列方案仍需独立证明共享缓存
 在编码、提交、descriptor 清理和并发之间的生命周期。
 
-## 较早原型：双事件延迟释放
+## 已删除：双事件延迟释放原型
 
-### 问题与实现
-
-研究对象是已固定指纹的 AppleIntelTGLGraphicsMTLDriver 中，命令缓冲私有 POSH 分配。
-原型在诊断进程里替换特定 init / dealloc 方法，不注入 WindowServer，不修改磁盘 bundle。
-全局实现尚未完成，不能把该原型直接作为系统级修复安装。
-
-初始化时仅在以下条件满足时建立 token：完整文件 SHA 一致、目标方法来自对应 bundle、
-方法参数 ABI 和 ivar 范围通过检查、only-active 标志为真、分配非空、
-分配不是队列共享指针、`malloc_size` 精确等于 77,824 bytes。
-
-token 由命令缓冲关联对象和完成回调分别保留。完成回调仅捕获 token，不捕获命令缓冲。
-析构前再次检查身份；确认仍为私有块后置空该指针，执行原生析构，再标记 CPU cleanup done。
-GPU completion 独立标记 GPU done。两个事件均到达后，以 atomic exactly-once 调用 deleter。
-
-```text
-native cleanup done ─┐
-                     ├─ both observed ─ atomic disposal, once
-GPU completion ─────┘
-```
-
-未提交的缓冲不可能已将工作交给 GPU，原型在该路径记录 uncommitted。
-缺失完成回调时保守泄漏；控制对象析构不伪造 GPU 完成。
-这避免用“超时后直接释放”掩盖未解决的 GPU 所有权。
-
-### 已验证
-
-- CPU 顺序：CPU 先 / GPU 先、重复事件、缺失完成、1000 次并发竞态。
-- ASan / UBSan 下 CPU 模型测试通过。
-- 真实 GPU 的空提交、计算、绘制、纹理与混合复制短测抑制内存增长，未见数据不一致。
-
-### 部署阻塞项
-
-1. 真实 GPU 短测中 `dealloc_inflight=0`。调用者提前释放不等于原生对象已经提前析构，
-   关键“GPU 尚未完成时原生析构”路径尚未被覆盖。
-2. detach 对原生清理、descriptor 与父类不变量的影响尚未完全证明。
-3. `malloc_size` 与私有标志不构成完整的所有权证明；别名、迁移、共享变化需审查。
-4. MTL error completion 对所有硬件故障语义是否足够安全仍需核对。
-5. Objective-C block / 关联对象 / native object 生命周期，需覆盖并发、错误、遗漏与重入。
-6. 原型校验静态文件和方法来源，生产实现还需验证实际映射、物理硬件和补丁链，
-   不能直接把同一套 offset 应用到不同组件版本。
-7. 不得在未满足上述条件时注入系统合成进程，以短测代替长期验证。
+`POSHDeferred`、`POSHLifetime` 及专用 CPU 测试已从活动源码删除，最后保留版本是
+`fd1a78a`。原型的 native inflight 析构、descriptor 别名与错误完成语义没有验收；
+GL/Metal 混合探针还会隐式启用它，使该负载无法作为原驱动的干净对照。
+历史短测结果继续保留在 `Validation.md`，不再为已退役原型增加测试或实现。
 
 ## 退役实验
 
@@ -106,6 +68,6 @@ GPU completion ─────┘
 因此不提供可安装二进制，不纳入默认构建，不再作为部署候选。
 所需 Apple 原始代码页未分发。
 
-根 `metal-memory-check` 已移除旧 `fix` 和 `binaryfix` 运行选项，保留 stock、deferred 与
+根 `metal-memory-check` 已移除旧 `fix`、`binaryfix` 和 `deferred` 运行选项，保留 stock 与
 受限诊断用途的 queue-cache。
 这项清理在旧对照结果之后完成；原始结果指向当时的测试版本，不能冒称新代码已重新做 GPU 验证。
