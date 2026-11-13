@@ -3,6 +3,12 @@
 These JSON files contain selected, non-identifying numeric summaries and source
 fingerprints, not raw logs or driver payloads.
 
+`upstream-109-anchor-audit-20261113.json` records static qualification of the
+new byte/symbol guards in SaqibAlMalik/WhateverXe e0aff600. The original donors
+match; the currently deployed Graphics 0.4.3 Metal window does not. This is a
+stop decision, not a candidate build or CPU/GPU pass. It includes the reassessed
+stock-queue deletion risk and leaves the underlying disassembly private.
+
 The later watchdog reboot is recorded separately in
 [`review/2026-11-13`](../review/2026-11-13/README.md), including sanitized excerpts,
 the symbolic lock dependency, repository/PR status and an independent review prompt.

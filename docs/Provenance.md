@@ -10,6 +10,15 @@
 | [WhateverXe-Graphics](https://github.com/b00t0x/WhateverXe-Graphics) | 对照官方 v0.4.1 pkg，SHA `7f7ce3b924ad421cff0c4f30534598858474b8c9539c4b889a461bc1d5fed02c` |
 | [WhateverXe issue 47](https://github.com/b00t0x/WhateverXe/issues/47) | POSH 泄漏假说与纹理恢复回归参考 |
 | [WhateverXe issue 81](https://github.com/b00t0x/WhateverXe/issues/81) | VA 兼容范围参考 |
+| [WhateverXe issue 109](https://github.com/b00t0x/WhateverXe/issues/109) | SaqibAlMalik 的恢复、no-POSH、MTL 与 VA opt-in 参考；本轮未移植 |
+| [SaqibAlMalik/WhateverXe e0aff600](https://github.com/SaqibAlMalik/WhateverXe/commit/e0aff60038de42520c078d833e0138a50cde2495) | 16 个变更文件已按完整 Git blob SHA-1 核对；保留 NootedGreen / vikenzo196 来源与 BSD-3-Clause 许可 |
+| [WhateverXe issue 75](https://github.com/b00t0x/WhateverXe/issues/75) | labrouss 的 9A49 VideoToolbox / CCS 记录，以及 Aqpcet 的 TGL-H35 / HLS 对照 |
+
+本轮静态核对与否定结论见 [REVIEW](REVIEW.md)。#109 的 accelerator 新增固定锚点
+与本机完整 SHA `567511…d496e` 相符，但作者未给出完整 accelerator SHA，不能声称已
+取得并对比作者整份文件。隔离 VA SHA 为
+`a972cdb7ddd56bcf38c3ab71e874b73efc34bc683d30e49f0a1a1919625a726d`，本轮未恢复。
+0.4.3 Metal 不匹配参考 MTL 窗口；静态准入失败，未产生新的候选构建或安装。
 
 BCS 变更相对**未修改的 git archive 基线**生成，涉及
 `WhateverXe/kern_tgl_hang_pending.hpp`、`WhateverXe/kern_xe.cpp`、`tests/tgl_hang_pending.cpp`。

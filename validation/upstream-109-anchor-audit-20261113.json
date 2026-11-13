@@ -1,0 +1,819 @@
+{
+  "date": "2026-11-13",
+  "evidence_level": "static files only; no CPU/GPU execution of candidate",
+  "reference_commit": "e0aff60038de42520c078d833e0138a50cde2495",
+  "source_blobs": [
+    {
+      "path": "WhateverXe/kern_mtl_posh_fix.hpp",
+      "blob_sha1": "88db0999612fa60daff5959277b8004bda24e96d"
+    },
+    {
+      "path": "WhateverXe/kern_tgl_gpurec.hpp",
+      "blob_sha1": "fcbdecf63bd5750d807937fd00291c00e39762a8"
+    },
+    {
+      "path": "WhateverXe/kern_tgl_nomc.hpp",
+      "blob_sha1": "9d612c1c05b5f7f2cf7c4d621fec30a517a3be64"
+    },
+    {
+      "path": "WhateverXe/kern_tgl_noposh.hpp",
+      "blob_sha1": "ab97280f584a0c94699a790806ee64fddb847380"
+    },
+    {
+      "path": "WhateverXe/kern_va_fix.hpp",
+      "blob_sha1": "12496a3b213660ae222f646526a1dbe5f4cd639f"
+    },
+    {
+      "path": "WhateverXe/kern_xe.cpp",
+      "blob_sha1": "de33fc64e96303838ea4e256beba866442c57f6a"
+    },
+    {
+      "path": "tests/fixtures/boot_argument_names.json",
+      "blob_sha1": "2b888af816f6a2412b82151fb34ff897a37ad109"
+    },
+    {
+      "path": "tests/mtl_posh_fix.cpp",
+      "blob_sha1": "fac43682cc355f83a256613e0e1e9a0b3908e4a7"
+    },
+    {
+      "path": "tests/page_in_source.py",
+      "blob_sha1": "00c52c041635d985602b98d3852db2a3a41edfc9"
+    },
+    {
+      "path": "tests/tgl_cps_color_pipe.py",
+      "blob_sha1": "2572600a3e7447741b836e4a861d1b2ac357e8d0"
+    },
+    {
+      "path": "tests/tgl_gpurec.cpp",
+      "blob_sha1": "a575246e50a30726a347190984324eb2d39efc95"
+    },
+    {
+      "path": "tests/tgl_gpurec_source.py",
+      "blob_sha1": "781ae4c935bdaf8f939b838df58cd0e2c5ab0be8"
+    },
+    {
+      "path": "tests/tgl_nomc.cpp",
+      "blob_sha1": "77f39dd447cb89920d40dfb403b2460f025004be"
+    },
+    {
+      "path": "tests/tgl_noposh.cpp",
+      "blob_sha1": "1e490e291b767823670b768b641aa0f13c4a6aa5"
+    },
+    {
+      "path": "tests/va_fix.cpp",
+      "blob_sha1": "08a93d66ef45dc0b5dd41e2db5f71c3c0a2d447f"
+    },
+    {
+      "path": "tools/test.py",
+      "blob_sha1": "fa48046b9c3f5fd79a329409964d608fc01dff50"
+    }
+  ],
+  "scope": "All newly added byte arrays, fixed symbols and literal donor checks in e0aff60. Existing admission/CPS/host hooks, live relocations and runtime-only objects are not qualified by disk checks.",
+  "files": {
+    "accelerator": {
+      "sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+      "size": 1838320,
+      "segments": [
+        {
+          "name": "__TEXT",
+          "vmaddr": 0,
+          "vmsize": 819200,
+          "fileoff": 0,
+          "filesize": 819200
+        },
+        {
+          "name": "__DATA",
+          "vmaddr": 819200,
+          "vmsize": 540672,
+          "fileoff": 819200,
+          "filesize": 540672
+        },
+        {
+          "name": "__LINKEDIT",
+          "vmaddr": 1359872,
+          "vmsize": 491520,
+          "fileoff": 1359872,
+          "filesize": 478448
+        }
+      ]
+    },
+    "mtl_old": {
+      "sha256": "1e5e4f5bd76ff567a102125dfa3c74a255934d45c753a88aedcbfac7dab53c6c",
+      "size": 5314944,
+      "segments": [
+        {
+          "name": "__TEXT",
+          "vmaddr": 0,
+          "vmsize": 4718592,
+          "fileoff": 0,
+          "filesize": 4718592
+        },
+        {
+          "name": "__DATA",
+          "vmaddr": 4718592,
+          "vmsize": 212992,
+          "fileoff": 4718592,
+          "filesize": 163840
+        },
+        {
+          "name": "__LINKEDIT",
+          "vmaddr": 4931584,
+          "vmsize": 442368,
+          "fileoff": 4882432,
+          "filesize": 432512
+        }
+      ]
+    },
+    "mtl_043": {
+      "sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+      "size": 5314944,
+      "segments": [
+        {
+          "name": "__TEXT",
+          "vmaddr": 0,
+          "vmsize": 4718592,
+          "fileoff": 0,
+          "filesize": 4718592
+        },
+        {
+          "name": "__DATA",
+          "vmaddr": 4718592,
+          "vmsize": 212992,
+          "fileoff": 4718592,
+          "filesize": 163840
+        },
+        {
+          "name": "__LINKEDIT",
+          "vmaddr": 4931584,
+          "vmsize": 442368,
+          "fileoff": 4882432,
+          "filesize": 432512
+        }
+      ]
+    },
+    "va_quarantined": {
+      "sha256": "a972cdb7ddd56bcf38c3ab71e874b73efc34bc683d30e49f0a1a1919625a726d",
+      "size": 8454464,
+      "segments": [
+        {
+          "name": "__TEXT",
+          "vmaddr": 0,
+          "vmsize": 7684096,
+          "fileoff": 0,
+          "filesize": 7684096
+        },
+        {
+          "name": "__DATA_CONST",
+          "vmaddr": 7684096,
+          "vmsize": 49152,
+          "fileoff": 7684096,
+          "filesize": 49152
+        },
+        {
+          "name": "__DATA",
+          "vmaddr": 7733248,
+          "vmsize": 606208,
+          "fileoff": 7733248,
+          "filesize": 606208
+        },
+        {
+          "name": "__LINKEDIT",
+          "vmaddr": 8339456,
+          "vmsize": 131072,
+          "fileoff": 8339456,
+          "filesize": 115008
+        }
+      ]
+    }
+  },
+  "byte_checks": [
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "allocate",
+      "offset": "0x7bb13",
+      "file_offset": "0x7bb13",
+      "kind": "bytes",
+      "expected": "41 f6 45 6e 10 74 2c",
+      "actual": "41 f6 45 6e 10 74 2c",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "clone",
+      "offset": "0x7c15e",
+      "file_offset": "0x7c15e",
+      "kind": "bytes",
+      "expected": "41 f6 45 6e 10 0f 85 e7 00 00 00 b8 ef ff ef ff 41 23 87 0c 10 00 00 0d 00 00 10 00",
+      "actual": "41 f6 45 6e 10 0f 85 e7 00 00 00 b8 ef ff ef ff 41 23 87 0c 10 00 00 0d 00 00 10 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "restore",
+      "offset": "0x7c421",
+      "file_offset": "0x7c421",
+      "kind": "bytes",
+      "expected": "41 f6 44 24 6e 10 74 31",
+      "actual": "41 f6 44 24 6e 10 74 31",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "reset",
+      "offset": "0x7c919",
+      "file_offset": "0x7c919",
+      "kind": "bytes",
+      "expected": "e8 74 fa ff ff",
+      "actual": "e8 74 fa ff ff",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "batch",
+      "offset": "0x4301f",
+      "file_offset": "0x4301f",
+      "kind": "bytes",
+      "expected": "31 c9 83 e0 10 48 c1 e0 10",
+      "actual": "31 c9 83 e0 10 48 c1 e0 10",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "params",
+      "offset": "0xb09a4",
+      "file_offset": "0xb09a4",
+      "kind": "bytes",
+      "expected": "00 00 1c 00 00 00 00 00 00 00 00 00",
+      "actual": "00 00 1c 00 00 00 00 00 00 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "params",
+      "offset": "0xb0bc0",
+      "file_offset": "0xb0bc0",
+      "kind": "bytes",
+      "expected": "00 00 1c 00 00 00 00 00 00 00 00 00",
+      "actual": "00 00 1c 00 00 00 00 00 00 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "gdrst",
+      "offset": "0x43769",
+      "file_offset": "0x43769",
+      "kind": "bytes",
+      "expected": "c7 80 08 4a 00 00 04 00 04 00 41 8b 4c 24 70 89 88 1c 94 00 00",
+      "actual": "c7 80 08 4a 00 00 04 00 04 00 41 8b 4c 24 70 89 88 1c 94 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "replay",
+      "offset": "0x4384e",
+      "file_offset": "0x4384e",
+      "kind": "bytes",
+      "expected": "41 0f b6 74 24 40 48 8b 07 48 8b 55 d0 ff 90 90 01 00 00",
+      "actual": "41 0f b6 74 24 40 48 8b 07 48 8b 55 d0 ff 90 90 01 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "flags",
+      "offset": "0x43625",
+      "file_offset": "0x43625",
+      "kind": "bytes",
+      "expected": "41 0f b6 44 24 40 49 8b 84 c4 b8 08 00 00 8b 88 a4 00 00 00",
+      "actual": "41 0f b6 44 24 40 49 8b 84 c4 b8 08 00 00 8b 88 a4 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "s5",
+      "offset": "0x380dc",
+      "file_offset": "0x380dc",
+      "kind": "bytes",
+      "expected": "89 f0 48 8b bc c7 a0 0c 00 00",
+      "actual": "89 f0 48 8b bc c7 a0 0c 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "rcu",
+      "offset": "0x28e7e",
+      "file_offset": "0x28e7e",
+      "kind": "bytes",
+      "expected": "b9 fe ff fe ff 23 88 00 48 01 00 48 8b 97 90 11 00 00 48 c1 ea 21 83 e2 01 8d 8c 11 00 00 01 00 89 88 00 48 01 00",
+      "actual": "b9 fe ff fe ff 23 88 00 48 01 00 48 8b 97 90 11 00 00 48 c1 ea 21 83 e2 01 8d 8c 11 00 00 01 00 89 88 00 48 01 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "nonpriv",
+      "offset": "0x28f27",
+      "file_offset": "0x28f27",
+      "kind": "bytes",
+      "expected": "c7 80 d0 a4 01 00 34 b1 00 00",
+      "actual": "c7 80 d0 a4 01 00 34 b1 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "whitelist",
+      "offset": "0x28eba",
+      "file_offset": "0x28eba",
+      "kind": "bytes",
+      "expected": "f6 87 91 11 00 00 01 74 6e c7 80 d0 24 00 00 00 e1 00 00 c7 80 d4 24 00 00 10 70 00 00 c7 80 d8 24 00 00 34 b1 00 00 c7 80 dc 24 00 00 08 70 00 00 c7 80 e0 24 00 00 80 25 00 00 c7 80 f0 24 00 00 1c 73 00 00 c7 80 f4 24 00 00 44 22 00 00 0f ba a7 e6 0f 00 00 19 73 14 c7 80 f8 24 00 00 51 23 00 10 c7 80 fc 24 00 00 41 23 00 10",
+      "actual": "f6 87 91 11 00 00 01 74 6e c7 80 d0 24 00 00 00 e1 00 00 c7 80 d4 24 00 00 10 70 00 00 c7 80 d8 24 00 00 34 b1 00 00 c7 80 dc 24 00 00 08 70 00 00 c7 80 e0 24 00 00 80 25 00 00 c7 80 f0 24 00 00 1c 73 00 00 c7 80 f4 24 00 00 44 22 00 00 0f ba a7 e6 0f 00 00 19 73 14 c7 80 f8 24 00 00 51 23 00 10 c7 80 fc 24 00 00 41 23 00 10",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "element",
+      "offset": "0x3a3b9",
+      "file_offset": "0x3a3b9",
+      "kind": "bytes",
+      "expected": "8b 47 50 48 c1 e0 04 48 8b 5c 07 30 48 85 db 0f 84 5d 01 00 00",
+      "actual": "8b 47 50 48 c1 e0 04 48 8b 5c 07 30 48 85 db 0f 84 5d 01 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "lutSCI",
+      "offset": "0x15f5d",
+      "file_offset": "0x15f5d",
+      "kind": "bytes",
+      "expected": "48 8d 35",
+      "actual": "48 8d 35",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "lut",
+      "offset": "0x15f67",
+      "file_offset": "0x15f67",
+      "kind": "bytes",
+      "expected": "48 8d 1d",
+      "actual": "48 8d 1d",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "scheduler",
+      "offset": "0x15f7b",
+      "file_offset": "0x15f7b",
+      "kind": "bytes",
+      "expected": "48 8b b8 50 12 00 00",
+      "actual": "48 8b b8 50 12 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "haltHead",
+      "offset": "0x56978",
+      "file_offset": "0x56978",
+      "kind": "bytes",
+      "expected": "55 48 89 e5 41 57 41 56 41 54 53 41 89 f6 49 89 ff 48 8b 7f 10 be 01 00 00 00 ba 07 00 00 00",
+      "actual": "55 48 89 e5 41 57 41 56 41 54 53 41 89 f6 49 89 ff 48 8b 7f 10 be 01 00 00 00 ba 07 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "haltBody",
+      "offset": "0x5699c",
+      "file_offset": "0x5699c",
+      "kind": "bytes",
+      "expected": "49 8b 7f 10 44 89 f0 48 6b c0 79 48 8d 0d 82 0d 08 00 44 8b 64 08 3d 48 8b 87 40 12 00 00 42 8b 0c 20 42 c7 04 20 01 00 01 00",
+      "actual": "49 8b 7f 10 44 89 f0 48 6b c0 79 48 8d 0d 82 0d 08 00 44 8b 64 08 3d 48 8b 87 40 12 00 00 42 8b 0c 20 42 c7 04 20 01 00 01 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "haltHead",
+      "offset": "0x56a2e",
+      "file_offset": "0x56a2e",
+      "kind": "bytes",
+      "expected": "55 48 89 e5 41 57 41 56 41 54 53 41 89 f6 49 89 ff 48 8b 7f 10 be 01 00 00 00 ba 07 00 00 00",
+      "actual": "55 48 89 e5 41 57 41 56 41 54 53 41 89 f6 49 89 ff 48 8b 7f 10 be 01 00 00 00 ba 07 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "resumeBody",
+      "offset": "0x56a4d",
+      "file_offset": "0x56a4d",
+      "kind": "bytes",
+      "expected": "e8 d8 21 fd ff 49 8b 7f 10 44 89 f0 48 6b c0 79 48 8d 0d cc 0c 08 00 44 8b 64 08 3d 48 8b 87 40 12 00 00 42 8b 0c 20 42 c7 04 20 00 00 01 00",
+      "actual": "e8 d8 21 fd ff 49 8b 7f 10 44 89 f0 48 6b c0 79 48 8d 0d cc 0c 08 00 44 8b 64 08 3d 48 8b 87 40 12 00 00 42 8b 0c 20 42 c7 04 20 00 00 01 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "LRC CTX_CTRL identity",
+      "offset": "0xc04a8",
+      "file_offset": "0xc04a8",
+      "kind": "u32",
+      "expected": "44 22 00 00",
+      "actual": "44 22 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "no-posh",
+      "name": "LRC POSH_LRCA identity",
+      "offset": "0xc0574",
+      "file_offset": "0xc0574",
+      "kind": "u32",
+      "expected": "b0 21 00 00",
+      "actual": "b0 21 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "nomc",
+      "name": "find",
+      "offset": "0x27499",
+      "file_offset": "0x27499",
+      "kind": "bytes",
+      "expected": "21 d8 48 c1 e0 21 48 b9 ff ff ff ff fd ff ff ff",
+      "actual": "21 d8 48 c1 e0 21 48 b9 ff ff ff ff fd ff ff ff",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "nomc",
+      "name": "find",
+      "offset": "0x4bf0a",
+      "file_offset": "0x4bf0a",
+      "kind": "bytes",
+      "expected": "f6 80 94 11 00 00 02 74 26 41 f6 46 24 02",
+      "actual": "f6 80 94 11 00 00 02 74 26 41 f6 46 24 02",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec",
+      "name": "disk CSB opcode + native head (live 11 requires tglCSB12Enabled)",
+      "offset": "0x3a3a4",
+      "file_offset": "0x3a3a4",
+      "kind": "bytes",
+      "expected": "b8 07",
+      "actual": "b8 07",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-halt",
+      "name": "forcewake call opcode",
+      "offset": "0x56997",
+      "file_offset": "0x56997",
+      "kind": "bytes",
+      "expected": "e8",
+      "actual": "e8",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-halt",
+      "name": "RCS reset-control descriptor",
+      "offset": "0xd776d",
+      "file_offset": "0xd776d",
+      "kind": "u32",
+      "expected": "d0 20 00 00",
+      "actual": "d0 20 00 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-halt",
+      "name": "CCS reset-control descriptor",
+      "offset": "0xd77e6",
+      "file_offset": "0xd77e6",
+      "kind": "u32",
+      "expected": "d0 a0 01 00",
+      "actual": "d0 a0 01 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-derived",
+      "name": "halt native SafeForceWake",
+      "offset": "0x56998",
+      "file_offset": "0x56998",
+      "kind": "rel32",
+      "expected": "8e 22 fd ff",
+      "actual": "8e 22 fd ff",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-derived",
+      "name": "eventTimeout SCI LUT",
+      "offset": "0x15f60",
+      "file_offset": "0x15f60",
+      "kind": "rel32",
+      "expected": "1c a3 08 00",
+      "actual": "1c a3 08 00",
+      "matches": true
+    },
+    {
+      "component": "accelerator",
+      "group": "gpurec-derived",
+      "name": "eventTimeout normal LUT",
+      "offset": "0x15f6a",
+      "file_offset": "0x15f6a",
+      "kind": "rel32",
+      "expected": "22 a3 08 00",
+      "actual": "22 a3 08 00",
+      "matches": true
+    },
+    {
+      "component": "mtl_old",
+      "group": "mtl-poshfix",
+      "name": "dealloc Find[43]",
+      "offset": "0x7ed6b",
+      "file_offset": "0x7ed6b",
+      "kind": "bytes",
+      "expected": "48 8b 1d 3e b1 41 00 49 8b 3c 1e 48 85 ff 74 1b 48 8b 05 26 b1 41 00 41 80 3c 06 00 75 0d e8 7a fa 01 00 49 c7 04 1e 00 00 00 00",
+      "actual": "48 8b 1d 3e b1 41 00 49 8b 3c 1e 48 85 ff 74 1b 48 8b 05 26 b1 41 00 41 80 3c 06 00 75 0d e8 7a fa 01 00 49 c7 04 1e 00 00 00 00",
+      "matches": true
+    },
+    {
+      "component": "mtl_043",
+      "group": "mtl-poshfix",
+      "name": "dealloc Find[43]",
+      "offset": "0x7ed6b",
+      "file_offset": "0x7ed6b",
+      "kind": "bytes",
+      "expected": "48 8b 1d 3e b1 41 00 49 8b 3c 1e 48 85 ff 74 1b 48 8b 05 26 b1 41 00 41 80 3c 06 00 75 0d e8 7a fa 01 00 49 c7 04 1e 00 00 00 00",
+      "actual": "48 8b 1d 3e b1 41 00 49 8b 3c 1e 48 85 ff 74 1b e9 80 32 f8 ff 90 90 90 90 90 90 90 90 90 e8 7a fa 01 00 49 c7 04 1e 00 00 00 00",
+      "matches": false
+    },
+    {
+      "component": "va_quarantined",
+      "group": "va-fix",
+      "name": "N1",
+      "offset": "0x1336bf",
+      "file_offset": "0x1336bf",
+      "kind": "bytes",
+      "expected": "e8 4c 27 ff ff 89 45 e4 48 8b 4d d8 48 81 c1 b0 2c 00 00 48 8b 55 d8 48 8b ba 20 09 00 00 48 89 4f 08 48 81 c2 b0 2c 00 00 48 8b 4d d8 48 8b b9 10 09 00 00 48 89 57 08 8b 45 e4 48 83 c4 30 5d c3",
+      "actual": "e8 4c 27 ff ff 89 45 e4 48 8b 4d d8 48 81 c1 b0 2c 00 00 48 8b 55 d8 48 8b ba 20 09 00 00 48 89 4f 08 48 81 c2 b0 2c 00 00 48 8b 4d d8 48 8b b9 10 09 00 00 48 89 57 08 8b 45 e4 48 83 c4 30 5d c3",
+      "matches": true
+    },
+    {
+      "component": "va_quarantined",
+      "group": "va-fix",
+      "name": "N2",
+      "offset": "0x130e7b",
+      "file_offset": "0x130e7b",
+      "kind": "bytes",
+      "expected": "e8 a0 56 ff ff 48 8b 45 a0 8b 88 bc 09 00 00 83 c1 00 89 c9 89 ca 48 8b bc d0 10 09 00 00 48 8b 55 f0 48 89 c6 e8 7b 56 ff ff 48 8b 45 a0",
+      "actual": "e8 a0 56 ff ff 48 8b 45 a0 8b 88 bc 09 00 00 83 c1 00 89 c9 89 ca 48 8b bc d0 10 09 00 00 48 8b 55 f0 48 89 c6 e8 7b 56 ff ff 48 8b 45 a0",
+      "matches": true
+    },
+    {
+      "component": "va_quarantined",
+      "group": "va-fix",
+      "name": "N3",
+      "offset": "0x12d301",
+      "file_offset": "0x12d301",
+      "kind": "bytes",
+      "expected": "e8 9a 01 00 00 48 89 45 c0 48 8b 45 d0 48 89 45 a8 48 8b 45 a8 48 8b 08 48 89 c7 ff 51 48 48 89 45 a0 48 8b 45 e8 c6 40 20 00 48 83 7d d0 00 0f 85 0c 00 00 00 c7 45 e4 05 00 00 00 e9 32 01 00 00",
+      "actual": "e8 9a 01 00 00 48 89 45 c0 48 8b 45 d0 48 89 45 a8 48 8b 45 a8 48 8b 08 48 89 c7 ff 51 48 48 89 45 a0 48 8b 45 e8 c6 40 20 00 48 83 7d d0 00 0f 85 0c 00 00 00 c7 45 e4 05 00 00 00 e9 32 01 00 00",
+      "matches": true
+    },
+    {
+      "component": "va_quarantined",
+      "group": "va-fix",
+      "name": "V1",
+      "offset": "0x1c16",
+      "file_offset": "0x1c16",
+      "kind": "bytes",
+      "expected": "e8 93 c6 23 00 55 48 89 e5 48 8d 05 1e 9a 24 00 8b 00 89 07 48 b8 00 00 00 00 40 00 00 80 48 89 47 04 5d c3",
+      "actual": "e8 93 c6 23 00 55 48 89 e5 48 8d 05 1e 9a 24 00 8b 00 89 07 48 b8 00 00 00 00 40 00 00 80 48 89 47 04 5d c3",
+      "matches": true
+    },
+    {
+      "component": "va_quarantined",
+      "group": "va-fix",
+      "name": "V2",
+      "offset": "0x2c8fc",
+      "file_offset": "0x2c8fc",
+      "kind": "bytes",
+      "expected": "e8 1a 53 fd ff 45 8b 86 28 01 00 00 45 8a be 24 01 00 00 4d 85 c0 0f 84 4f 01 00 00 41 8b 86 60 01 00 00 c1 e8 05 0f b7 c0 b9 e0 07 00 00 29 c1 bf ef 07 00 00 29 c7 85 c9 0f 49 f9 4d 8b 66 08 83 e7 f0 c1 e7 0c 09 c7 41 bd 00 00 ff ff 41 01 fd 49 8d be 9c 42 00 00 31 db 48 8d 05 c3 0d 2f 00 41 b9 ff 00 ff ff 49 ba 01 00 00 80 f0 00 00 00 49 bb 01 00 00 80 0f 00 00 00 45 84 ff 74 7c 41 8b 8c 9e cc 41 00 00 48 8b 10 48 8b 70 08 48 89 77 e8 8b 70 20 89 37 48 8b 70 18 48 89 77 f8 48 8b 70 10 48 89 77 f0 48 89 57 e0 8b 57 ec 44 21 ca 81 ca 00 10 00 00 89 57 ec 41 8b b4 24 68 a8 00 00 c1 e6 10 0f b7 d2 8d 94 16 00 00 ff ff 89 57 ec 44 89 6f f4 48 c7 47 f8 00 00 00 00 c7 07 00 00 00 00 83 f9 02 74 67 83 f9 01 74 68 85 c9 75 68 c7 47 f8 00 00 00 00 eb 5f 48 8b 08 48 8b 50 08 48 89 57 e8 8b 50 20 89 17 48 8b 50 18 48 89 57 f8 48 8b 50 10 48 89 57 f0 48 89 4f e0 8b 4f ec 44 21 c9 81 c9 00 10 00 00 89 4f ec 41 8b 94 24 68 a8 00 00 c1 e2 10 0f b7 c9 8d 8c 0a 00 00 ff ff 89 4f ec 44 89 6f f4 80 4f fb 80 eb 0a 4c 89 57 f8 eb 04 4c 89 5f f8 48 ff c3 48 83 c7 24 4c 39 c3 0f 82 10 ff ff ff",
+      "actual": "e8 1a 53 fd ff 45 8b 86 28 01 00 00 45 8a be 24 01 00 00 4d 85 c0 0f 84 4f 01 00 00 41 8b 86 60 01 00 00 c1 e8 05 0f b7 c0 b9 e0 07 00 00 29 c1 bf ef 07 00 00 29 c7 85 c9 0f 49 f9 4d 8b 66 08 83 e7 f0 c1 e7 0c 09 c7 41 bd 00 00 ff ff 41 01 fd 49 8d be 9c 42 00 00 31 db 48 8d 05 c3 0d 2f 00 41 b9 ff 00 ff ff 49 ba 01 00 00 80 f0 00 00 00 49 bb 01 00 00 80 0f 00 00 00 45 84 ff 74 7c 41 8b 8c 9e cc 41 00 00 48 8b 10 48 8b 70 08 48 89 77 e8 8b 70 20 89 37 48 8b 70 18 48 89 77 f8 48 8b 70 10 48 89 77 f0 48 89 57 e0 8b 57 ec 44 21 ca 81 ca 00 10 00 00 89 57 ec 41 8b b4 24 68 a8 00 00 c1 e6 10 0f b7 d2 8d 94 16 00 00 ff ff 89 57 ec 44 89 6f f4 48 c7 47 f8 00 00 00 00 c7 07 00 00 00 00 83 f9 02 74 67 83 f9 01 74 68 85 c9 75 68 c7 47 f8 00 00 00 00 eb 5f 48 8b 08 48 8b 50 08 48 89 57 e8 8b 50 20 89 17 48 8b 50 18 48 89 57 f8 48 8b 50 10 48 89 57 f0 48 89 4f e0 8b 4f ec 44 21 c9 81 c9 00 10 00 00 89 4f ec 41 8b 94 24 68 a8 00 00 c1 e2 10 0f b7 c9 8d 8c 0a 00 00 ff ff 89 4f ec 44 89 6f f4 80 4f fb 80 eb 0a 4c 89 57 f8 eb 04 4c 89 5f f8 48 ff c3 48 83 c7 24 4c 39 c3 0f 82 10 ff ff ff",
+      "matches": true
+    }
+  ],
+  "symbol_checks": [
+    {
+      "symbol": "__ZN20IGHardwareRingBuffer19resetGraphicsEngineEP17IGHardwareContext",
+      "expected_offset": "0x43576",
+      "actual_offset": "0x43576",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN16IntelAccelerator13SafeForceWakeEbj",
+      "expected_offset": "0x28c2a",
+      "actual_offset": "0x28c2a",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN16IntelAccelerator20getDefaultResetValueEj",
+      "expected_offset": "0x2e60a",
+      "actual_offset": "0x2e60a",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN12IGScheduler515processGPUResetE10IGHwCsTypeP17IGHardwareContext",
+      "expected_offset": "0x380d8",
+      "actual_offset": "0x380d8",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN12IGScheduler517getActiveContextsE10IGHwCsTypePP17IGHardwareContextPyS3_",
+      "expected_offset": "0x380ec",
+      "actual_offset": "0x380ec",
+      "matches": true
+    },
+    {
+      "symbol": "__ZNK11IGAccelTask9getStampsEv",
+      "expected_offset": "0x8248",
+      "actual_offset": "0x8248",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN16IntelAccelerator17signalStampUpdateERK8IGBitSetILm64EE",
+      "expected_offset": "0x2ab4e",
+      "actual_offset": "0x2ab4e",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN19IGAccelEventMachine12eventTimeoutEi",
+      "expected_offset": "0x15f22",
+      "actual_offset": "0x15f22",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN16IntelAccelerator17initModeRegistersEv",
+      "expected_offset": "0x28e1a",
+      "actual_offset": "0x28e1a",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN26IGHardwareCommandStreamer515processGPUResetEv",
+      "expected_offset": "0x3a396",
+      "actual_offset": "0x3a396",
+      "matches": true
+    },
+    {
+      "symbol": "_rcsResetRegisters",
+      "expected_offset": "0x14b2b0",
+      "actual_offset": "0x14b2b0",
+      "matches": true
+    },
+    {
+      "symbol": "_ccsResetRegisters",
+      "expected_offset": "0x14aeb8",
+      "actual_offset": "0x14aeb8",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN16IntelAccelerator19populateAccelConfigEP13IOAccelConfig",
+      "expected_offset": "0x270e8",
+      "actual_offset": "0x270e8",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN21IntelTGLMemoryManager31newUnifiedAddressRangeAllocatorEP11IGAccelTask",
+      "expected_offset": "0x4bed8",
+      "actual_offset": "0x4bed8",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN11IGScheduler19haltCommandStreamerE10IGHwCsType",
+      "expected_offset": "0x56978",
+      "actual_offset": "0x56978",
+      "matches": true
+    },
+    {
+      "symbol": "__ZN11IGScheduler21resumeCommandStreamerE10IGHwCsType",
+      "expected_offset": "0x56a2e",
+      "actual_offset": "0x56a2e",
+      "matches": true
+    }
+  ],
+  "resolved_targets": [
+    {
+      "name": "halt native SafeForceWake",
+      "rel32_offset": "0x56998",
+      "expected_target": "0x28c2a",
+      "actual_target": "0x28c2a",
+      "matches": true
+    },
+    {
+      "name": "eventTimeout SCI LUT",
+      "rel32_offset": "0x15f60",
+      "expected_target": "0xa0280",
+      "actual_target": "0xa0280",
+      "matches": true
+    },
+    {
+      "name": "eventTimeout normal LUT",
+      "rel32_offset": "0x15f6a",
+      "expected_target": "0xa0290",
+      "actual_target": "0xa0290",
+      "matches": true
+    }
+  ],
+  "counts": {
+    "byte_checks": 40,
+    "byte_matches": 39,
+    "symbol_checks": 16,
+    "symbol_matches": 16
+  },
+  "decision": "STOP: current 0.4.3 MTL fails the original 43-byte guard. Do not retarget, rebase, build or deploy in this task. Old donor compatibility is separate from live combination.",
+  "evidence_sha256": {
+    "metal043-cave-private.txt": "192ef983ee62d2689a24235ee418d7657256004a64a7c3c429a7a5714351b47d",
+    "metal043-ownership-private.txt": "078d9275a3dc2d2d0933c52cfffbf0186e75c4dfedcf176da33a04650053830e",
+    "metal043-text-private.txt": "1924ddd7d8b870a346a3b4bed51f53bf55cd8fe1b0862e6bfead122d8611835a",
+    "kernel-flicker.txt": "a68207b5ee83bde04ecdcb1ad4577341c19bc434092fcb3eadb5d409376f9043",
+    "issue75-comments.json": "6d8ad9bc27e13d002643075c57e4f4b053deb0ac1d341f3c9710890538237fe4",
+    "issue47-comments.json": "4cb4d50d19acc47997d0bdf9f70b9a5dbe451a08d4185a3cd412ca21fcfda6ce",
+    "tgl-stability-commit.json": "5cd51423a1e902324f69c371fec087d0a7df89f932a070868c87ba90895b1ebd"
+  },
+  "metal_043_risk": {
+    "conclusion": "成立（静态）：stock 队列共享字段为 NULL 时，所有非空 CB POSH 指针均进入 delete；不成立：这足以证明当前组合安全。",
+    "text_changed_bytes": 43,
+    "text_changed_runs": [
+      [
+        "0x2000",
+        "0x2006",
+        6
+      ],
+      [
+        "0x2007",
+        "0x2011",
+        10
+      ],
+      [
+        "0x2012",
+        "0x201b",
+        9
+      ],
+      [
+        "0x201c",
+        "0x2020",
+        4
+      ],
+      [
+        "0x7ed7b",
+        "0x7ed89",
+        14
+      ]
+    ],
+    "queue_init_unchanged": true,
+    "queue_dealloc_unchanged": true,
+    "cb_init_unchanged": true,
+    "find43_occurrences_old": 1,
+    "find43_occurrences_043": 0,
+    "native_shared_ivar_xref_count": 3,
+    "stock_shared_nonnull_store_found": false,
+    "kernel_posh_enabled_log_time": "2026-11-13 13:16:21.964 +0800",
+    "caused_this_machine_hang": "not established",
+    "old_bundle_signature_verify_exit": 0,
+    "rollback_executed": false
+  },
+  "subsequent_tasks": {
+    "2": "not executed: step 1 stop gate",
+    "3": "not executed: step 1 stop gate",
+    "4": "not executed: step 1 stop gate",
+    "5": "not executed: step 1 stop gate",
+    "6": "not executed: step 1 stop gate",
+    "7": "not executed: step 1 stop gate"
+  },
+  "stampfix_decision": "不成立（源码）：本仓库禁止伪造 GPU 完成；e0aff60 writes stamp[0]=submitted then signalStampUpdate without proof of completion. Do not port this path."
+}

@@ -1,5 +1,17 @@
 # POSH 所有权研究
 
+## 0.4.3 部署风险复核
+
+2026-11-13 对 `25b6c72e…c4faa` 精确复核：新 cave `0x2000` 使用
+`MTLIGAccelCommandBuffer._pIGCommandQueue` 与 `MTLIGAccelCommandQueue.m_pPoshUsedAsTarget`，
+在 `0x2012` 将共享指针与 CB 的 POSH 指针比较，不相等就进入 `0x7ED89` delete。
+队列 init/dealloc、CB init 与 `1e5e4f5b…53c6c` 逐字节相同；原生共享字段仍只置零，
+无非空赋值路径。**成立〔静态〕：**在 stock 队列下，非空私有块必然被释放，
+only-active 标志不再阻止删除；与旧两字节实验具有相同释放条件。
+不能因此断言 GPU use-after-free 已被证明，但必须重新审查内核 POSH 仍开启的组合。
+[#109](https://github.com/b00t0x/WhateverXe/issues/109) 的 MTL 释放开关还要求 no-POSH 实际启用。
+本机尚不满足；详见 [Deployment](Deployment.md)。原生计数竞态与该风险仍需分别处理。
+
 ## 当前进展：原子领取候选
 
 已实现独立的 `POSHAtomicClaim`，修复原生“读零值→设置 only-active→普通增加”竞态，

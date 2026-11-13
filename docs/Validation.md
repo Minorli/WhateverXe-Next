@@ -5,6 +5,12 @@
 
 ## 2026-11-13：官方 Metal 所有权修正
 
+**后续风险更正：**本节保留当时短测结果，不代表当前部署获准。
+对精确 0.4.3 文件的后续复核确认，stock 队列的共享字段仍为 NULL，非空私有 POSH 块
+全部进入 delete；内核 POSH 仍开启。当前组合已在 [Deployment](Deployment.md) 列为
+部署阻塞，不能把短测、签名通过或重启加载当作低风险验收。#109 的原始 MTL 字节窗口
+在 0.4.3 不匹配；本轮没有移植或构建它，详见 [REVIEW](REVIEW.md)。
+
 核对官方 Graphics `v0.4.3`（`9eaf6b7f43a4f33d0f7e568f7f206e829f0a548b`）的 Tahoe
 Metal bundle，所有其他文件与本机 bundle 的 Git blob 一致，只有主 executable 不同。
 新文件 SHA 为 `25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa`。

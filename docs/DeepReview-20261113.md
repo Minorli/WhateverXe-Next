@@ -116,7 +116,13 @@ forcewake 的所有权，不能只替换寄存器基址。
 精确 accelerator 的 streamer 初始化使用六条描述符：0=RCS、1=CCS、2=BCS、
 3=VCS0、4=VCS2、5=VECS0。当前只读 CSB 记录中 engine 1 存在实际消费记录；
 Linux v6.12 TGL 平台的引擎 mask 不含 CCS，并不足以证明 Apple 的 engine 1 不可用，
-更不是直接禁用它的依据。晚期 gpuRestart 虽然明确写着 CCS，但各环已处于停止/恢复
+更不是仅据该 mask 直接禁用它的依据。新增的
+[#109（SaqibAlMalik）](https://github.com/b00t0x/WhateverXe/issues/109) 与
+[#75（labrouss）](https://github.com/b00t0x/WhateverXe/issues/75) 提供了不同的调查理由：
+CCS 复位可能经共享 GDRST 破坏 RCS 状态。**部分成立〔参考源码/外部整机报告〕：**
+应重新评估单独关闭 multi-context 的可回退实验，而不是因“CCS 不存在”禁用它。
+本轮字节核对在 0.4.3 MTL 不匹配处停止，尚未完成共享复位机制及属性来源的独立证明，
+未更改 EFI 或关闭 CCS。晚期 gpuRestart 虽然明确写着 CCS，但各环已处于停止/恢复
 状态，这不能替代第一故障时刻的指令、依赖和上下文证据。
 
 下一步捕获应先在原生 STOP 之前保存对应引擎的调度器、streamer、slot/context 与

@@ -2,6 +2,46 @@
 
 观察日期：2026-11-12，时区 UTC+8。以下仅发布脱敏的汇总结论。
 
+## 2026-11-13 补充：#109 / #75 与当前部署的否定结论
+
+**任务 1，部分成立〔静态〕。**核对 SaqibAlMalik 的
+[`e0aff600`](https://github.com/SaqibAlMalik/WhateverXe/commit/e0aff60038de42520c078d833e0138a50cde2495)：
+新增的 accelerator 字节/常量检查 33 项、固定符号 16 项在本机 `567511be…d496e` 上匹配；
+旧 MTL `1e5e4f5b…53c6c` 的 43 字节窗口和隔离 VA `a972cdb7…a726d` 的 5 个窗口也匹配。
+**当前 0.4.3 MTL `25b6c72e…c4faa` 不匹配**，原始 43 字节模式在整个新版文件中出现 0 次。
+结论是“原始 donor 可对上，但不能直接套用到当前组合”，不是补丁已正确运行。
+依照本轮“不匹配就停”的要求，任务 2–7 未执行，没有移植、构建、安装或实机诱发负载。
+完整逐项表和校验范围见 [REVIEW](REVIEW.md#2026-11-13上游-109-准入核对任务-1)。
+
+**优先风险，成立〔静态〕。**0.4.3 在 `0x2012` 比较 CB 私有 POSH 指针与所属队列
+共享指针，非相等时跳至 `0x7ED89` delete。原生队列共享指针只被置空，无非空赋值路径；
+所以 stock 队列非空私有块的释放条件与 #47 两字节释放实验相同。完整解释、
+重启后观察与旧 bundle 回退步骤见 [Deployment](Deployment.md)。
+这否定了“所有权比较足以证明 POSH 开启时安全”，没有证明本机现有闪屏就是这次修改造成。
+
+此前遗漏的两条上游线索已纳入：
+
+- [#109，SaqibAlMalik](https://github.com/b00t0x/WhateverXe/issues/109)：同为 i7-1165G7 / 9A49，
+  报告恢复循环、WindowServer 内存增长与 watchdog。其 `kern_tgl_gpurec.hpp` 记录的
+  `commandQueueStop → finishEvent → eventTimeout → checkForProgress` 与本机线程 111 相符。
+  **部分成立〔外部整机报告 + 本机已有事故〕：**属于高度相关的恢复链线索；共享 GDRST
+  破坏兄弟引擎状态、stamp 不 retire 及本机首次 hang 的完整因果链尚未独立核实。
+  作者的五次恢复成功是其机器结果，不能转记成本机验证。
+- [#75，labrouss](https://github.com/b00t0x/WhateverXe/issues/75)：9A49 上 VideoToolbox 相关负载
+  出现 CCS hang / 重启循环；[Aqpcet 的 TGL-H35 对照](https://github.com/b00t0x/WhateverXe/issues/75#issuecomment-6742194654)
+  区分了本地 H.264 正常与 HLS 触发。**部分成立〔外部整机报告〕：**支持优先调查视频呈现
+  与跨引擎恢复，不能推出 UU 必用 CCS，或所有硬解都会失败。
+  同帖 Alder Lake-P 的后续报告为 RCS hang，也不能挪作 TGL/CCS 证据。
+
+**不成立〔源码〕：**直接接受 #109 的 stampfix 作为本仓库候选。
+它在两次 NULL timeout、无 active context 时，将 returned 写成 submitted 再 signal；
+未证明被丢弃工作已经完成。即使作者观察到客户端最终返回错误，该写法仍违反
+本仓库禁止伪造 GPU 完成的约束。后续可继续审查独立 gpurec / nomc / no-posh，
+但不得以“恢复到 idle”为由把该 stamp 写入伪装成正常完成。
+
+建议下一轮先获准恢复旧 Metal 基线，再继续任务 2 的独立语义复核和任务 3 的属性来源调查。
+这是明确的后续路径，尚无任何候选可以在本机安装或宣称解决卡死。
+
 ## 1. 内存持续增长
 
 独立进程中，stock 驱动在 2000 个空命令缓冲后 malloc 使用量增加约 148.806 MiB，

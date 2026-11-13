@@ -287,5 +287,17 @@
       "decoder-flicker.sample.txt": "40216f1feba611882f1880a8061465e380811819a10d58e20f9319c38197d6da",
       "kernel-flicker.txt": "a68207b5ee83bde04ecdcb1ad4577341c19bc434092fcb3eadb5d409376f9043"
     }
+  },
+  "risk_reassessment": {
+    "date": "2026-11-13",
+    "evidence": "upstream-109-anchor-audit-20261113.json",
+    "static_stock_queue_nonnull_posh_always_deleted": true,
+    "kernel_posh_still_enabled": true,
+    "low_risk_acceptance_rejected": true,
+    "caused_machine_hang_proven": false,
+    "current_combination_deployment_blocked": true,
+    "rollback_recommended": true,
+    "rollback_executed": false,
+    "historical_test_results_preserved": true
   }
 }
