@@ -7,7 +7,111 @@
 [脱敏审查包](../review/2026-11-13/README.md) 和
 [完整外部审查提示词](ExternalReview-20261113.md)。请先阅读新事故，再复核以下研究。
 
+## 2026-11-13 后续：0.8.2 + #109 可审查内核候选
+
+**部分成立〔静态 / CPU / 构建〕：候选已形成，尚未安装或取得整机验证。**
+维护者授权继续修复并推送 main；较早的“遇到 MTL 不匹配即停止”记录仍保留在下方。
+现在是拆分内核路径，不是放宽旧 MTL 的守卫。外部审查请使用
+[本轮 txt 提示词](../review/2026-11-13/issue109-review-prompt.txt)，不要继续审查旧研究分支 HEAD。
+
+### 来源与实际变化
+
+- `278814e`：将 vendored driver 从 `db438fdf4d5fe903f5dfbc65537ed3884e2ea980`
+  三方同步至上游 **0.8.2 / `4512191b9643e2391431fbd9639305b61568ee32`**，保留本地 DVMT、
+  多引擎故障采集与 MMIO 改动。并非逐字相同的上游发行包。
+- `3e52ff0`：下述内核候选、失败路径修正、回归测试及许可声明；验证文件绑定完整提交和源码 SHA。
+- 参考 [SaqibAlMalik 的 #109](https://github.com/b00t0x/WhateverXe/issues/109) /
+  [`e0aff60038de42520c078d833e0138a50cde2495`](https://github.com/SaqibAlMalik/WhateverXe/commit/e0aff60038de42520c078d833e0138a50cde2495)，
+  拆入 `-wex-tgl-no-posh`、`-wex-tgl-nomc`、`-wex-tgl-gpurec`，以及默认关闭的附属
+  `-wex-tgl-gpurec-halt`。保留 NootedGreen NP550XDA / JulioNectar XPS13Plus 来源。
+- 不纳入 stampfix、MTL page-in 改写、VA fallback、nogva。vikenzo196 的 Metal 来源仍记入 NOTICE。
+  没有 returned=submitted 或 signal 的替代完成路径；相关符号只留在原资格检查中，没有调用。
+- **成立〔CPU〕：nomc 回退修正。**按实际两处字节回退，覆盖第二处已经写入却报错的情况；
+  回退无法恢复原字节则返回 Unsafe，生产调用者拒绝 accelerator start。未知字节不强行覆盖。
+- **成立〔静态 + CPU〕：no-POSH 错误传播修正。**原方案布局不符只计数，仍可返回恢复成功。
+  现在缺 buffer / CPU 地址或布局不匹配均传回 false；native copy 仍恰好调用一次。
+  `initWithOptions` 在 `0x7C131` 检查 false，进入 `0x7C186` 的 fresh image 路径；
+  `beginReset` 在 `0x7C91E` 检查 false，经 `0x7C995` 返回失败。没有吞掉或伪造完成。
+- **成立〔源码〕：gpurec installer** 现在返回真实的 route/halt 安装状态，不能只以字节资格成功返回成功。
+
+### 本机 accelerator 的独立机制复核
+
+输入完整 SHA 为 `567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e`。
+本轮重新生成反汇编，只留本机 `local/`。下列为语义摘要；下方原始锚点表仍可复核。
+
+| 判断 | 偏移证据 | 结论 / 证据层级 |
+| --- | --- | --- |
+| RCS 与 CCS 共用 GDRST bit 1 | RCS `0x84D39` 与 CCS `0x4E386` 写 ring+0x70=2；各自 `+0x78` 绑定 reset vector；`0x43773..0x43778` 写 GDRST `0x941C` | 成立 / 静态 |
+| 原生仅回放本引擎 | `0x437E7` 取自身 ring+0x78；`0x437FA..0x43840` 回写；`0x4384E..0x4385B` 按自身 type 调 scheduler | 成立 / 静态 |
+| RCU_MODE、CCS 附加寄存器未恢复 | RCS 常量表 `0xC2200` 32 项、CCS `0xBEE00` 4 项，均无 `0x14800 / 0xCE90 / 0x1A4D0 / 0x1A0A8 / 0x1A098`；构造分别 `0x85651..0x85692`、`0x4EB67..0x4EBA8` | 成立 / 静态 |
+| RCS NONPRIV 不在任何 reset 表 | RCS 保存表有 `0x24D0..0x24FC` 多项；`populateResetRegisterList 0x28FC8..0x29C50` 的 19 项默认值中没有它们 | 不成立 / 静态；应说“缺默认恢复值”，不是“没有保存项” |
+| eventTimeout reason 1–5 不做 real restart | reason 1 `0x15FC7..0x16019`，2 `0x15FA8..0x15FC5`，3 `0x15F92..0x15FA3`，4 `0x16076..0x160A1`，5 `0x160B6..0x16101`，最终返回 NULL `0x1610B..0x1611F` | 成立 / 静态；reason 1 仍执行 display stamp update，不能说“毫无副作用” |
+| reason 6 发起真正恢复 | `0x16120..0x1614C` 调 scheduler vtable+0x188，返回 context+0xB8 的 channel | 成立 / 静态 |
+
+**部分成立〔静态 + 历史整机〕：**上述机制能解释 resetOK=1 后兄弟状态仍损坏并重复报错；
+Incident 中线程 111 的 `commandQueueStop → finishEvent → eventTimeout → checkForProgress`
+与 #109 作者描述相符。但本机事故没有同时保存首次 reset 前后这些 MMIO 值及同一 stamp 的完整历史，
+仍不能把“共享复位 → orphan stamp → 线程 111 → watchdog”全部标为已证明。
+排除 stampfix 后更不能沿用作者“五次强制 hang 均恢复”的整机结论。
+
+[#75，labrouss](https://github.com/b00t0x/WhateverXe/issues/75) 及 Aqpcet 的 TGL-H35 对照支持优先关注
+视频 / CCS 恢复。禁用 CCS 的实验依据应是共享复位域，不是“CCS 不存在”。不据此断言 UU 必然提交 CCS。
+
+### EnableMultiContext 与下游兼容边界
+
+**部分成立〔静态〕：**`0x27488..0x27499` 以 accelerator 自身为 receiver、默认值 0 调
+`utilGetProperty<unsigned>`。`0x280BE..0x280C1` 先读自身 property；缺失时
+`0x28143..0x28182` 查自身 Development 字典；`0x281A4..0x28222` 再查
+`IODeviceTree:/options`，将字符串形式的数字转换后覆盖。不是在此直接向 IGPU provider 递归读取。
+**证据不足〔静态〕：**仅 OpenCore DeviceProperties 注入 IGPU 就一定会传播到 accelerator。
+本轮没有改 EFI、NVRAM 或 personality。nomc 还修改高地址预留分支 `0x4BF0A`，
+所以 native property=0 与 nomc 并非语义完全相同；第二处保留高地址范围是否必要仍需审查。
+
+| 当前下游依赖 | 上游 0.8.2 + 本候选的结论 |
+| --- | --- |
+| `-wex-cdclk-sanitize` | 同名开关不存在；普通 CDCLK 处理不等于下游 sanitize 行为，覆盖证据不足 |
+| `-wex-blfix` | 同名开关不存在；上游背光路径不能直接当成本机面板验证，覆盖证据不足 |
+| `-wex-dcoff` | 同名开关不存在；实际电源状态策略等价性未证明 |
+| `-wex-hdmi-clock600` | 同名开关不存在；600 MHz 上限修正未被此候选覆盖证明 |
+| `-wex-hdmi-scdc-write` | 同名开关不存在；SCDC 写序列及下游补丁源码未取得 |
+| `-wex-edp-fix-training` | 同名开关不存在；现用面板训练修正未被证明等价 |
+| VA fallback | 本轮明确不移植、不恢复隔离 VA，不能算已覆盖 |
+| `-wex-tgl-fix-memory-leak` | 当前下游在 Tahoe 未生效；本候选 no-POSH 不是旧 MTL 释放补丁，不能等价替换 |
+
+因此 **不成立〔构建 / 部署〕：直接拿新构建覆盖当前闭源下游即可得到单变量 no-POSH 实验。**
+应先取得下游合入，或另行完成独立适配插件的 hook 共存与准入审查；本轮没有假造一个可直接安装的插件。
+
+### 验证结果与审查重点
+
+记录：[issue109-candidate-20261113.json](../validation/issue109-candidate-20261113.json)。
+默认 CPU 套件 224 项通过，69 个需原始输入的可选模式未执行；另外显式 require 的
+`tgl_noposh_adapter_native` 在本机精确 SHA 上通过（仅执行 C++ qualifier，不执行 Apple 指令或 GPU）。
+无效锚点逐一拒绝，未扩充旧 SHA 允许集合。DEBUG / RELEASE 完成链接、ABI/Compat、启动栈检查；
+构建 SHA 和源码 SHA 在记录中。此前测试清单的 accelerator_fingerprint 共享模块遗漏已修复；失败记录保留。
+
+nomc 旧 written-count 回退及 no-POSH 忽略错误各有一次语义反例失败；修复版在同一断言通过。
+这证明具体 CPU 缺陷已修正，不代表闪屏和 hang 已修复。没有运行 mtl_posh_fix 测试，因为该实现未纳入。
+
+优先审查 `pendingOwner/pendingBar` 和 good/extras 缓存对 native recovery 序列化的假设；
+RCS/CCS 并行 reset / 嵌套 replay 是否会串状态；错误后兄弟 engine 是否仍在执行；halt 的长等待和恢复顺序。
+`TGLNoPOSHReady` 表示安装/准入，不是所有 context 都已成功 sanitize；必须检查 Live 失败计数。
+no-POSH 返回 false 后完整 scheduler 错误处理、POCS 分配与释放生命周期尚需进一步复核。
+本次录屏没有可靠命中用户确认的闪烁帧，不能宣布 POSH 已被证实为闪烁来源。
+
+### 给下游维护者的请求草稿（未发送）
+
+> 希望在现用 0.8.1 下游保留 HDMI、面板、时钟和背光增强的基础上，拆入
+> SaqibAlMalik / WhateverXe#109（e0aff600）的 no-POSH、gpurec 和 nomc opt-in。
+> 请默认关闭、逐点保持完整字节与设备守卫，发布对应源码和构建依赖指纹。
+> 本机 accelerator SHA 为 567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e。
+> 请不要合入 returned=submitted 的 stampfix，也不要把旧 MTL patch 套到 Graphics 0.4.3。
+> 我们的候选额外修正了 nomc 部分写入回退和 no-POSH sanitization 错误传播，附 CPU 反例与双配置构建。
+> 首轮希望只增加 no-POSH 一个开关，以保留同一 HDMI/镜像基线，核对 UU 闪烁及 POSH 生命周期。
+> gpurec 的并发恢复和 halt 路径仍请共同审查，不作为已验收修复发布。
+
 ## 2026-11-13：上游 #109 准入核对（任务 1）
+
+以下保留较早一轮的结论；后续授权拆分内核候选的结果见上方。
 
 **结论：部分成立〔静态〕。**本机原始 accelerator / 旧 MTL / 隔离 VA 的新增固定锚点
 均匹配；**不成立〔静态〕：可把 e0aff60 整包直接套用到当前 0.4.3 Metal。**

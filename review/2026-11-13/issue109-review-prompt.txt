@@ -1,0 +1,97 @@
+请审查 Minorli/WhateverXe-Next 的 main，重点是 WhateverXe 上游 issue #109 的内核拆分候选。
+这是经机器所有者授权的开源图形驱动稳定性维护。请做缺陷审查，不安装驱动、不重启、不制造 GPU 完成。
+
+一、固定本次输入
+1. 拉取 https://github.com/Minorli/WhateverXe-Next 的 main，并在报告开头写出实际 HEAD。
+2. 先读 AGENTS.md、driver/WhateverXe/AGENTS.md、driver/WhateverXe/tests/README.md。
+3. 基线导入提交 278814e：将原 db438fdf4d5fe903f5dfbc65537ed3884e2ea980 三方同步到
+   b00t0x/WhateverXe 0.8.2 / 4512191b9643e2391431fbd9639305b61568ee32，保留本地改动。
+   内核候选与失败路径修正固定在 3e52ff0bc63dbbae100265c1748dd9f65c0eafbf。
+4. #109 参考 SaqibAlMalik/WhateverXe commit e0aff60038de42520c078d833e0138a50cde2495，
+   父提交是 db438fdf。来源链接：
+   https://github.com/b00t0x/WhateverXe/issues/109
+   https://github.com/SaqibAlMalik/WhateverXe/commit/e0aff60038de42520c078d833e0138a50cde2495
+   视频/CCS 对照：https://github.com/b00t0x/WhateverXe/issues/75（labrouss；Aqpcet 的 TGL-H35 对照）
+5. 读 docs/REVIEW.md 顶部本轮结论、docs/Findings.md、docs/Deployment.md、docs/Provenance.md、
+   validation/issue109-candidate-20261113.json。旧研究分支和“停在任务1”的段落是历史记录，不能混为当前状态。
+
+二、机器与现象
+i7-1165G7 / 96EU / 24GB / 8086:9A49 rev01，Tahoe 26.7.3。
+现用闭源下游0.8.1（内部版本仍0.8.0），HDMI与内屏有意镜像，左侧Dock。
+曾在UU远程画面出现GPU恢复循环、卡死、风扇加速及watchdog重启。
+最新Graphics0.4.3 Metal加载后内存增长改善，用户报告长时间UU不再crash，但仍偶发Dock/下半屏同步闪烁；
+有限观察窗口gpuRestart为0。系统录屏有时改变触发概率，录像尚未可靠分流到合成或scanout。
+本仓库候选尚未部署，不能把当前稳定性改善归功于它。
+
+精确输入：
+accelerator 567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e
+旧MTL       1e5e4f5bd76ff567a102125dfa3c74a255934d45c753a88aedcbfac7dab53c6c
+0.4.3 MTL   25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa
+现用下游WEX df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3
+原始Apple文件、反汇编、视频和系统日志留在本机，不在公开仓库；缺输入就说明缺失，不能猜成测试通过。
+
+三、本次实际纳入范围
+- kern_tgl_noposh.hpp + kern_xe.cpp：在RCS restoreFromSafeImage之前清POSH标志，成功复制后清CTX_CTRL bit4与POSH_LRCA。
+- kern_tgl_nomc.hpp：精确两处补丁（0x27499、0x4BF0A），默认关闭。
+- kern_tgl_gpurec.hpp + kern_xe.cpp：共享复位域后的兄弟列表、RCU_MODE、CCS附加寄存器、RCS白名单恢复；
+  附属halt实现保留但默认关闭，首轮不启用。
+- 不含stampfix，不把returned写为submitted，不替GPU signal完成。
+- 不含旧MTL page-in补丁、VA fallback或nogva。0.4.3 MTL与旧43字节锚点不匹配，继续拒绝。
+- 保留原NootedGreen NP550XDA / JulioNectar XPS13Plus出处，记录vikenzo196的MTL来源及BSD-3-Clause许可。
+
+四、优先审查代码中的真实风险
+1. no-POSH：clearFlag是否早于所有POCS image复制？sanitize是否覆盖init与beginReset？
+   核对context+0x6C/0x6E、buffer+0x98、image+0x100C/+0x10D8的ABI与cache flush顺序。
+   新修正：布局错误或地址缺失时返回false，不再仅计数后报告成功。
+   本机静态调用点：initWithOptions 0x7C131检查返回，false到0x7C186 fresh-image；
+   beginReset 0x7C91E检查返回，false到0x7C995并返回失败。
+   请进一步追踪完整scheduler对beginReset失败的处理、启动POCS image分配与释放，不能把局部false传播当成全局恢复正确。
+2. nomc：旧算法按成功调用数回退，如果第二处已写入但patcher报错，会漏回退第二处。
+   新算法核验真实字节；回退不完整返回Unsafe，生产调用处拒绝accelerator admission。
+   请核对部分写入、未知第三方字节、写保护错误、回退报错与重复进入；不能靠修改锚点凑通过。
+   0x4BF0A保留高地址预留范围是否必要？它与单纯EnableMultiContext=0不完全等价。
+3. gpurec：pendingOwner/pendingBar和good/extras缓存是全局状态，依赖native recovery序列化。
+   是否能并发/嵌套reset？兄弟仍执行时回放列表是否安全？snapshot健康判定是否太弱？
+   halted/READY_TO_RESET失败时仍继续复位是否正确？forcewake引用和每条失败路径是否平衡？
+   beforeReplay与自身/兄弟回放顺序是否正确？白名单最后写入是否会被后续native路径覆盖？
+   installer已改为报告真实route状态，请核对部分安装失败的结果。
+   helper CPU测试不覆盖整个reset hook；请明确这个边界。
+4. 恢复链：静态已确认RCS 0x84D39与CCS 0x4E386都设GDRST domain=2，0x43778写0x941C，
+   0x437E7..0x4385B只恢复自身列表/引擎。
+   RCS常量表0xC2200有32项、CCS 0xBEE00有4项，均缺RCU_MODE及四个CCS extra。
+   RCS NONPRIV存在于保存表，却不在populateResetRegisterList 0x28FC8..0x29C50默认表；请勿混淆两者。
+   eventTimeout reason1–5返回NULL、reason6真实reset；reason1还有display stamp update副作用。
+   结合Incident-20261113线程111，哪些环节已证实、哪些仍缺现场MMIO/stamp证据？
+5. 当前0.4.3 Metal：stock队列共享POSH指针只初始化为NULL，析构比较不等即delete；
+   内核POSH仍开启，释放后GPU是否还有消费者未证明。不能把内存改善当成生命周期安全。
+6. EnableMultiContext：utilGetProperty读accelerator自身、Development字典以及IODeviceTree:/options。
+   仅向IGPU注入DeviceProperties是否传播到accelerator未证明；请勿直接建议修改EFI。
+7. 下游增强：cdclk-sanitize、blfix、dcoff、hdmi-clock600、hdmi-scdc-write、edp-fix-training
+   均未被此上游候选证明等价覆盖。不得将新kext当成当前机器的可直接替换发行版。
+
+五、验证已有与未有
+完整CPU默认套件224项通过，69个需原始输入模式跳过；详细状态见validation记录。
+另有显式require的tgl_noposh_adapter_native对本机精确SHA通过；它执行真实C++ qualifier，
+逐个损坏锚点检查拒绝，不运行Apple指令、MMIO或GPU。
+两个语义反例：恢复nomc旧written-count逻辑、恢复no-POSH忽略错误，各自在行为断言失败；修复版通过。
+DEBUG/RELEASE构建已完成，SHA与源码/依赖记录在validation文件；未安装。
+没有运行mtl_posh_fix，因为没有纳入这条实现；没有伪称作者的五次hang实机结果是本机结果。
+
+可以在合适环境运行：
+cd driver/WhateverXe
+python3 tools/test.py --jobs 2
+python3 tools/test.py --only tgl_nomc --only tgl_noposh --only tgl_gpurec --only tgl_noposh_adapter
+有精确原文件时再运行：
+python3 tools/test.py --accelerator /本机私有路径/AppleIntelTGLGraphics --require tgl_noposh_adapter_native --only tgl_noposh_adapter_native
+DEBUG/RELEASE使用tools/build.py，显式提供Lilu开发资源与MacKernelSDK，不下载/上传Apple驱动。
+不要为了测试自动重启、杀WindowServer、改Dock或镜像、安装候选或启动GPU强制hang。
+
+六、请输出具体审查结果
+按P0/P1/P2排列，每条给文件行号、触发条件、代码路径、影响、独立证据、最小修改建议和必要验证。
+对主张用“成立 / 部分成立 / 不成立 / 证据不足”，标明静态、CPU、进程内GPU、整机层级。
+发现错误请给最小diff，不要重构无关模块，不要放宽SHA/字节守卫或伪造完成。
+如果无法访问私有输入，审查公开代码和验证边界即可，不要填造结论。
+最后判断候选是否达到“可进行经用户确认的单变量实机试验”，列出具体阻塞。
+首个试验只应比较同一保留下游增强的二进制，无no-POSH与加no-POSH各15分钟；
+不能拿当前闭源0.8.1与整个新上游候选比较后，把变化全部归因于一个开关。
+请将报告写入文件，并给出可复制的简短结论。
