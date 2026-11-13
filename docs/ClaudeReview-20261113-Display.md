@@ -194,3 +194,58 @@ POSH 假设没有被否定，但优先级应放在 underrun 被排除之后。
 - CPU 测试 12 个用例通过，另做了变异检查；kext 在审查者主机上交叉编译、链接通过。G83 上必须用本机 SDK 重新构建并记录 SHA。
 - 执行步骤见 [给 Codex 的采集提示词](../review/2026-11-13/claude-s1-probe-prompt.md)。
 - 2.6 的热路径问题已由 `a9aaf05` 在源码中修复。但实机运行的下游二进制仍带着这个问题（S0 实测 TGLScan2 平均约 190 条/秒），需要下游合入后才会生效。
+
+## 7. 第二轮跟进：欠载基本排除，转查平面编程
+
+### 7.1 `ig=0x20` 打开了完整的原生欠载上报链（成立〔静态〕）
+
+framebuffer `115a4616…888e`，偏移均为文件偏移：
+
+1. controller `start` 的 `0x3F236..0x3F254` 把 `ig` 读进 `+0xC58`。
+2. `hwEnableInterrupts` 的 `0x757EE` 判断 `testb $0x30, +0xC58`。条件成立时，`0x757FF..0x7582D` 清除 pipe A/B/C 缓存 IMR（`+0xD8C/+0xD94/+0xD9C`）的 bit31，并置位对应缓存 IER 的 bit31；`0x75A90..0x75B93` 再把它们写入 `0x44404/0x4440C` 等寄存器。
+3. 之后还会改 IMR 缓存的只有三个函数：`hwConfigureVBLInterrupt 0x72B9E`、`hwConfigureFlipInterrupts 0x74F4C`、`hwConfigureScanLineInterrupt 0x7525E`。它们都只读改写单个位，不会把 bit31 重新屏蔽。
+4. 中断链：`ProcessInterrupt 0x72F92` 读 `0x190010`，bit16 → `processDEInterrupt 0x7349A` 读 `0x44200`，bit16 → 读 `DE_PIPE_IIR(A) 0x44408`。
+   - bit31 映射为软件位 `0x40`。读到的值经 `FastWriteRegister32` 原样写回 IIR，作为 ACK。
+   - 软件位累加到 `+0xE08`。`SWInterruptHandler` 在 `0x7407C` 检查 `0x1C0`，命中后经 `0x74084`（dispatch 计数）调用 `invokeDEErrorIntrHandler`（`0x744CA` entry 计数，`0x744EC` pipe A 计数）。
+   - handler 只在 `ig` 的 bit4（0x10）置位时进入 panic 分支，0x20 不会。
+5. 推论：在 `ig=0x20` 的启动中，pipe A 每发生一次欠载，都会被两条互相独立的通道同时记录：
+   - 原生 entry 和 pipeA 计数各加 1；
+   - WEX 的 `tglStreamAck` 在 fast 路径记录一条 bit31 ACK。WEX 从 0.8.0 起同时挂了 `WriteRegister32` 和 `FastWriteRegister32`。
+   这个 ACK 通道在实时工作：120 秒内 `TGLStreamAckCounts[1]`（pipe A fast）增长了 4566。`TGLStreamErrorCount` 的 6 正好等于 `hwEnableInterrupts` 开机时对 3 个 pipe 各写两次 `0xFFFFFFFF`。
+
+### 7.2 结合整机数据：pipe A 欠载基本排除（成立〔静态＋整机〕；有一个前提待核实）
+
+- `validation/tgldisplayprobe-ig20-20261113.json` 在 18:07:49 和 18:09:49 读到的 `DonorUnderrunEntry`、`PipeA` 都是 **0**。这是绝对值，从 framebuffer 加载起累计，不是窗口增量。bit31 ACK 也一直是开机时的 6 条。
+- 用户在 18:01:04 和 18:05:13 报告过闪烁。**前提：这两次闪烁发生在 `ig=0x20` 那次启动之后**（需用 `sysctl kern.boottime` 核实）。如果前提成立，这两次闪烁期间 pipe A 没有产生任何欠载中断。
+- 因此原来的头号假设"UU 闪烁 = pipe A FIFO underrun"降级为**基本排除**。`tgldp-wa`（BW_BUDDY / DCPR_2 / DBUF）的实验不再优先，RAM-only 探针也不需要再取得 MMIO 资格。
+- 剩余的漏洞：
+  - `enableSWDC6` 会把 IMR 全部写成 1，但这只发生在 DC6 期间，那时没有 flip，而闪烁都发生在有画面更新的时候；
+  - 不产生 bit31 的显示故障（见 7.3）。
+
+### 7.3 新的头号方向：平面编程 / 缓冲区时序
+
+- 现象：
+  - `Findings` 里 slow2 的手机视频：下沿露出的终端文字被上方内容覆盖 1–2 帧，然后恢复，是局部的水平边缘变化；
+  - README 记录 Dock 和 UU 的下半部闪；
+  - 系统录屏抓不到。
+- 这种"一两帧显示内容与合成结果不一致"的现象，不需要欠载也能出现。候选机制：
+  1. 播放 UU 远端视频时启用了 overlay（plane 2/3），而它的位置、尺寸、格式、压缩设置有误，或者 enable/disable 不是原子切换；
+  2. 平面寄存器在 `PLANE_SURF` arm 之后又被写。Gen9+ 上非 SURF 寄存器要等下一次 SURF 写入才生效，于是会有一帧错配；
+  3. flip 完成得过早，WindowServer 在仍被扫描的缓冲上绘制（缓冲复用深度太浅）；
+  4. 运行时重新分配 DDB 或水印。
+- 这四条都能用 WEX **已有**的 `tglProgramRecord` 环判定。下游 0.8.1 基于 0.8.0，而 0.8.0 源码已经带有这个记录器，以及 `-wex-tgl-prog-off` 开关。
+  - group 1 记录 pipe A plane 1–3 的 `0x70180..0x70400`：CTL/STRIDE/POS/SIZE/SURF/AUX/COLOR_CTL/WM/BUF_CFG；
+  - group 0 记录 pipe/transcoder/power well 寄存器；
+  - 每条带纳秒时间戳和调用者镜像偏移；
+  - 打开一次 type-1 客户端就会发布。不需要重启，也不写寄存器。
+
+### 7.4 本轮提交
+
+- `src/TGLPlaneTrace.hpp`：纯解码逻辑，包括去重、丢失区间（gap）检测、PLANE_CTL 解码，以及 post-arm / 复用深度 / DDB 变化 / 用户标记窗口的统计。输出 JSON 时不带线程和 access 指针，不打印 SURF 地址。
+  - `tests/tgl-plane-trace.cpp`：7 个用例（ASan/UBSan）；8 处变异全部被测出。
+- `tools/tgl-plane-trace.mm`：只读采集器（`make build/tgl-plane-trace`）。
+  - 每 250 ms 打开并关闭一次 type-1 客户端，读取两个记录环；用户按回车即打一个闪烁标记。
+  - 同时记录 gamma 上传次数、IIR ACK 增量，以及探针的原生欠载计数。
+  - 输出 `summary.json` 和 `records.csv`，用 O_EXCL 创建、权限 0600，应放在 `local/`。
+- `wrapTGLGamma10`：没有 `-wex-display-trace` 时直接调用原生实现，不占用观察槽位，因此 `wrapTGLRegisterWrite` 不会在亮着的 pipe 上写 PAL_PREC_INDEX、读 1024 次 LUT 数据口，也不发布约 20 KiB 的 registry 记录。新增 `tgl_gamma_observer` 测试；它在旧代码上会失败。0.8.0 带有同样的代码，所以要列入给下游的合入请求。
+- 以上都**没有证明**哪一项是闪烁原因。gamma 门控与 `a9aaf05` 性质相同，属于默认路径优化。

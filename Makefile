@@ -4,7 +4,7 @@ PREFIX_MAP := -ffile-prefix-map=$(CURDIR)=/WhateverXe-Next
 HEALTH_HEADERS := src/GPUHealth.hpp src/RecoveryState.hpp
 HALT_HEADERS := driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp driver/WhateverXe/WhateverXe/kern_tgl_hang_pending.hpp
 .PHONY: all gpu-probes cpu-test clean
-all: build/tgl-capture
+all: build/tgl-capture build/tgl-plane-trace
 gpu-probes: build/metal-memory-check build/metal-async-check build/gl-blit-check build/posh-queue-check build/metal-surface-check build/posh-concurrent-gpu build/posh-abandon-check
 
 build:
@@ -37,6 +37,12 @@ build/metal-surface-check: tests/metal-surface-check.mm build/POSHQueueCache.o b
 build/tgl-capture: tools/tgl-capture.mm src/RecoveryState.hpp $(HALT_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< -framework Foundation -framework IOKit -o $@
 
+build/tgl-plane-trace: tools/tgl-plane-trace.mm src/TGLPlaneTrace.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc $< -framework Foundation -framework IOKit -o $@
+
+build/tgl-plane-trace-test: tests/tgl-plane-trace.cpp src/TGLPlaneTrace.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -O1 -fsanitize=address,undefined $< -o $@
+
 build/gl-blit-check: tests/gl-blit-check.mm src/BoundedCount.hpp $(HEALTH_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc -Wno-deprecated-declarations $< -framework AppKit -framework Metal -framework OpenGL -framework IOKit -o $@
 
@@ -52,11 +58,12 @@ build/recovery-state: tests/recovery-state.cpp src/RecoveryState.hpp | build
 build/capture-reports: tests/capture-reports.mm tools/tgl-capture.mm src/RecoveryState.hpp $(HALT_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc -fsanitize=address,undefined $< -framework Foundation -framework IOKit -o $@
 
-cpu-test: build/bounded-count build/posh-atomic-code build/recovery-state build/capture-reports
+cpu-test: build/bounded-count build/posh-atomic-code build/recovery-state build/capture-reports build/tgl-plane-trace-test
 	./build/bounded-count
 	./build/posh-atomic-code
 	./build/recovery-state
 	./build/capture-reports
+	./build/tgl-plane-trace-test
 
 clean:
 	rm -rf build

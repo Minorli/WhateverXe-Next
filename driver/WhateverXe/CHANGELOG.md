@@ -5,6 +5,7 @@
 ### Fixed
 
 - Avoid diagnostic snapshot allocation and registry writes on display update and framebuffer attribute paths unless display tracing is explicitly enabled.
+- Skip the 10-bit gamma LUT readback (palette index writes and data-port reads on a live pipe) and its registry records unless display tracing is explicitly enabled.
 
 ## 0.8.1
 

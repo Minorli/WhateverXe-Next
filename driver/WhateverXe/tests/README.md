@@ -91,6 +91,12 @@ existing inaccessible-MMIO and released-HDCP-object cases remain. Clock,
 registry allocation and native update are CPU stubs; this does not measure
 kernel latency or establish a physical flicker fix.
 
+`tgl_gamma_observer` executes the production 10-bit gamma wrapper. Without
+display tracing, 50 uploads must reach the native target, claim no observation
+slot (so `wrapTGLRegisterWrite` performs no PAL_PREC_INDEX write or LUT
+data-port readback) and publish nothing; explicit tracing keeps the observer
+and releases its slot. CPU stubs only; not a flicker or latency measurement.
+
 ```sh
 python3 tools/test.py --list
 python3 tools/test.py --only profile_admission --only display13_power_dispatch

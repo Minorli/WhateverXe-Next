@@ -19853,6 +19853,14 @@ void XE::wrapTGLFastRegisterWrite(void *access, unsigned long reg, uint32_t valu
 }
 
 void XE::wrapTGLGamma10(void *path, void *transaction, uint32_t control) {
+	// Gamma uploads run on WindowServer's transaction path. Without the explicit
+	// display-trace opt-in, claim no observation slot (a slot arms the LUT
+	// readback in wrapTGLRegisterWrite: PAL_PREC_INDEX writes plus 1024 data-port
+	// reads on a live pipe) and publish none of the ~20 KiB registry records.
+	if (!tglDisplayTraceEnabled) {
+		FunctionCast(wrapTGLGamma10, callbackXE->orgTGLGamma10)(path, transaction, control);
+		return;
+	}
 	const auto thread = reinterpret_cast<uintptr_t>(current_thread());
 	TGLGammaObservation *slot = nullptr;
 	// A nested upload is retained but marks its parent's record ambiguous.
