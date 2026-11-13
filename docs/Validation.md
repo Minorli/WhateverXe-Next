@@ -1,7 +1,52 @@
 # 验证记录
 
-日期：2026-11-12。以下保留精确的通过边界；原始日志不分发。
+以下保留各日期的通过边界；原始日志不分发。较早记录始于 2026-11-12。
 机器与实际加载指纹见 Provenance。
+
+## 2026-11-13：官方 Metal 所有权修正
+
+核对官方 Graphics `v0.4.3`（`9eaf6b7f43a4f33d0f7e568f7f206e829f0a548b`）的 Tahoe
+Metal bundle，所有其他文件与本机 bundle 的 Git blob 一致，只有主 executable 不同。
+新文件 SHA 为 `25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa`。
+完整 bundle 的 Mod 链签名及资源验证通过；没有重签、放宽系统签名或替换 EFI。
+
+官方所有权提交为
+[`aa278800`](https://github.com/b00t0x/WhateverXe-Graphics/commit/aa27880055cec32967bba5c54ac6ff8bfcf05fb9)。
+精确文件的 `__TEXT` 只有 43 个字节不同，位于既有空隙内的所有权分支与 dealloc 跳转。
+新分支比较 CB 的 POSH 指针与所属队列的共享指针：相等则保留，不同则进入原生 delete。
+init、commit、only-active 标志和 GPU 等待生成没有更改；不会修复已发现的非原子计数。
+该检查避免把“only-active”直接当作共享所有权，但不构成所有异步错误路径的证明。
+
+复用已有探针，不增加测试框架。两组各只做一次旧版→新版对照，使用相同下游内核。
+新版通过仅对测试进程设置 `DYLD_LIBRARY_PATH` 载入，dyld 日志确认实际来自隔离目录；
+候选模式均为 stock，没有启用本仓库的 queue-cache、atomic 或生命周期 hook。
+
+| 工作负载 | 数量 | 旧版 malloc 增长 bytes | 新版 malloc 增长 bytes | 结果 |
+| --- | ---: | ---: | ---: | --- |
+| CVPixelBuffer / IOSurface 纹理采样、绘制、像素读回 | 120 帧 | 9,564,080 | 170,672 | 两边像素错误 0、exit 0 |
+| 深度 4 的异步纹理复制、提交后立即释放客户端引用 | 120 次 | 9,903,376 | 435,856 | 两边 completed=120、mismatch=0、GPU error=0、exit 0 |
+
+这是 `malloc size_in_use`，不是 RSS 或系统显存。第一组新版第 60/120 帧分别为
+1,052,416 / 1,053,184 bytes，未延续旧版约 76 KiB/帧的增长。完整 150 秒监测内
+恢复计数为零、无新增 gpuRestart，CPU die 样本 39–45°C。短测不能验收长期稳定性。
+
+随后备份旧 bundle，以原子替换文件的方式装入官方 executable，完整签名复查通过。
+新启动的 UU 确实映射新文件，观看模式已显示此前授权的远端画面；90 秒观察无新增
+恢复/报告，CPU die 样本 56–70°C。UU 结束并退出，后台服务保留。
+`lsof` 显示 UU 的映射 inode 与新文件一致，而既有 WindowServer 仍使用旧 inode。
+两版 UUID 相同，不能用 UUID 作为新修复已加载的证明。
+
+UU 期间 WindowServer 约 97% CPU，退出后样本为 0.9%。主线程样本有大量
+`capture_stream_update` / `CaptureSurfaceMetal`，UI 采集本身可能贡献负载。
+因此既不能把全部 CPU 归给 UU，也不能称新版已降低系统合成负载。
+本次没有客观捕获闪烁或原始 hang。WindowServer 的新组件加载、内存斜率、UU 闪屏及
+卡死验收需要重启之后进行；没有自动重启或终止 WindowServer。
+
+同轮清理删除了 deferred 释放原型、其 CPU 模型和专用测试，三个相关探针编译通过，
+两个旧 deferred 参数都在创建 GPU device 前以 exit 2 拒绝。
+GL 混合模式不再隐式安装释放 hook，Metal 工作上限跟随用户请求数量。
+`make all` 仅构建只读采集器，`make gpu-probes` 显式构建 GPU 工具；没有重复全量 CPU 套件。
+历史验证仍属于当时源码。结构化结果见 `validation/upstream-metal-20261113.json`。
 
 ## 1. CPU / mock 与 native replay
 

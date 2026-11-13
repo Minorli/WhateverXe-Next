@@ -1,0 +1,182 @@
+{
+  "date": "2026-11-13",
+  "timezone": "Asia/Shanghai",
+  "diagnostic_source_commit": "2dda7c5",
+  "upstream_repository": "b00t0x/WhateverXe-Graphics",
+  "upstream_tag": "v0.4.3",
+  "upstream_commit": "9eaf6b7f43a4f33d0f7e568f7f206e829f0a548b",
+  "ownership_commit": "aa27880055cec32967bba5c54ac6ff8bfcf05fb9",
+  "old_mtl_sha256": "1e5e4f5bd76ff567a102125dfa3c74a255934d45c753a88aedcbfac7dab53c6c",
+  "new_mtl_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+  "same_uuid": true,
+  "bundle_other_tracked_files_match": true,
+  "bundle_signature_verified": true,
+  "tests": {
+    "surface": {
+      "count": 120,
+      "old": {
+        "mode": "stock",
+        "frames": 120,
+        "pixel_mismatches": 0,
+        "malloc_before": 729056,
+        "malloc_after": 10293136,
+        "allocated": 0,
+        "refused": 0,
+        "new_gpu_report": false,
+        "result": 0,
+        "start_unix": 1794543326.152,
+        "end_unix": 1794543329.006,
+        "elapsed_seconds": 2.849203,
+        "cpu_seconds": 0.160879,
+        "frame_work_p50_ms": 1.6764,
+        "frame_work_p95_ms": 3.4312
+      },
+      "upstream": {
+        "mode": "stock",
+        "frames": 120,
+        "pixel_mismatches": 0,
+        "malloc_before": 761328,
+        "malloc_after": 932000,
+        "allocated": 0,
+        "refused": 0,
+        "new_gpu_report": false,
+        "result": 0,
+        "start_unix": 1794543344.358,
+        "end_unix": 1794543347.256,
+        "elapsed_seconds": 2.897612,
+        "cpu_seconds": 0.152155,
+        "frame_work_p50_ms": 1.399,
+        "frame_work_p95_ms": 3.1773
+      }
+    },
+    "async_texture": {
+      "count": 120,
+      "old": [
+        {
+          "phase": "start",
+          "submitted": 0,
+          "malloc_bytes": 472720,
+          "footprint_bytes": 2080768
+        },
+        {
+          "phase": "end",
+          "submitted": 120,
+          "malloc_bytes": 10376096,
+          "footprint_bytes": 28352512
+        },
+        {
+          "mode": "texture",
+          "candidate": "stock",
+          "submitted": 120,
+          "completed": 120,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 0.112
+        }
+      ],
+      "upstream": [
+        {
+          "phase": "start",
+          "submitted": 0,
+          "malloc_bytes": 484368,
+          "footprint_bytes": 2101248
+        },
+        {
+          "phase": "end",
+          "submitted": 120,
+          "malloc_bytes": 920224,
+          "footprint_bytes": 25874432
+        },
+        {
+          "mode": "texture",
+          "candidate": "stock",
+          "submitted": 120,
+          "completed": 120,
+          "mismatches": 0,
+          "gpu_errors": 0,
+          "seconds": 0.136
+        }
+      ]
+    }
+  },
+  "monitor": {
+    "elapsed": 150,
+    "recovery_calls": 0,
+    "recovery_returns": 0,
+    "recovery_monitor": "clean",
+    "comparison_baseline_clean": true,
+    "new_gpu_reports": 0,
+    "report_monitor_available": true,
+    "report_monitor_continuous": true,
+    "failure_data": false,
+    "halt_monitor": "not_available",
+    "halt_engine_mask": 0
+  },
+  "uu_monitor": {
+    "elapsed": 90,
+    "recovery_calls": 0,
+    "recovery_returns": 0,
+    "recovery_monitor": "clean",
+    "comparison_baseline_clean": true,
+    "new_gpu_reports": 0,
+    "report_monitor_available": true,
+    "report_monitor_continuous": true,
+    "failure_data": false,
+    "halt_monitor": "not_available",
+    "halt_engine_mask": 0
+  },
+  "temperature": {
+    "power.txt": {
+      "samples": 80,
+      "min_c": 39.0,
+      "max_c": 45.0,
+      "other_smc_keys_unavailable": true
+    },
+    "uu-power.txt": {
+      "samples": 50,
+      "min_c": 56.0,
+      "max_c": 70.0,
+      "other_smc_keys_unavailable": true
+    }
+  },
+  "deployment": {
+    "metal_executable_replaced": true,
+    "old_bundle_backed_up": true,
+    "uu_loaded_new_inode": true,
+    "existing_windowserver_loaded_old_inode": true,
+    "kernel_changed": false,
+    "efi_changed": false,
+    "va_restored": false,
+    "rebooted": false,
+    "full_system_acceptance": false
+  },
+  "limitations": [
+    "No original UU hang or objective flicker captured in this window.",
+    "Screen capture contributes to sampled compositor work; CPU attribution is not established.",
+    "Native lifecycle candidates remain restricted to their old exact donor fingerprint.",
+    "Short GPU comparisons do not establish long-term or fault-recovery safety."
+  ],
+  "evidence_sha256": {
+    "surface-stock.jsonl": "0c3d1f4d39a8e0c180bfe16ab46322d0bb2fb47b29b797cb1fd2ad65f68dbfd8",
+    "surface-upstream.jsonl": "68e05dc3ff7563f20517c1b197cde88d3816238e3d78abaddd2319068d21b6b3",
+    "surface-stock.stderr": "6f5d5ea74b1cb9dfec1e5c7490dce295b3499826c4dab22510e1557e1eb57e36",
+    "surface-upstream.stderr": "e6b4ce7358e6673c63af461acd689811967d69e5d4871bce627e1d92203957ba",
+    "async-stock.jsonl": "30091b0d80f327ca0405ac08eeb02896f008a692295b956d9b6dab55f9149e53",
+    "async-upstream.jsonl": "622789a284669fc9667c2674e829111bda7cb7f20d4be235133b352c0c63c72e",
+    "async-upstream.stderr": "c6f9534694bab2cfd5ff942456d27c0c5eff5c11694e5f8cdf9012f93993dce1",
+    "monitor.jsonl": "ce24decc55b55fbe02d161421a64cf9c18110283e691f56db7afd3e888d9e600",
+    "uu-monitor.jsonl": "d340b01116fc876fc85726f7b93b7ecfeaea611d8d98bebe5c0a54318c4edce6",
+    "power.txt": "c5bc51df289ed2b05c38a862f4bf4e9408f690792b6966b187c1207897f4cf3c",
+    "uu-power.txt": "0725832b8941b58d6eb90f40a2e80563427a88476731cab9431f50f20c46da9f",
+    "uu.sample.txt": "7d62887f1a76cc5a70be9e5f55a910913b9a48cad02e073f73d8203e0ba936dc",
+    "ws.sample.txt": "e8d0369656276f8a3770a870186a31b0e666d943117c4389123f861b95a2cf5d",
+    "uu.top.txt": "596604d65f6631750768962a4f1f8d8f9c80d3bbbacfc2065e3c2a34e43c9113",
+    "release.json": "48f5c122b6aa628aeb4bb9a059bd3c0acbe52d3dbed5a741300457f0bc212cee",
+    "ownership-commit.json": "39a2de923f87f80354de3ac04f466753e627701a5955ed8a602238ec1419c267",
+    "tree.json": "4c60adbfe745b2af783e2304b98dd4dc08a459bf7a1a851c69a1199118323e45"
+  },
+  "probe_sha256": {
+    "metal-surface-check": "2ec9a8c1b9dc31df059500b63c97c18e4e39ef24c3a5dfa34936850580764179",
+    "metal-async-check": "4ead6575df2e85954dd05c464aa6cb48f2ce08552934386dc5a9864e41a14356"
+  }
+}
