@@ -122,7 +122,9 @@ Linux v6.12 TGL 平台的引擎 mask 不含 CCS，并不足以证明 Apple 的 e
 下一步捕获应先在原生 STOP 之前保存对应引擎的调度器、streamer、slot/context 与
 复制长度和起止时间；仅有 CPU 复制仍是顺序快照。任何新增寄存器读取都需要单独
 证明该引擎的地址与当前持有的 forcewake 域，禁止以 RCS 成功快照代替 CCS/BCS。
-这段是捕获设计，**尚未增加或部署对应新钩子**。
+这一设计的 CPU 观察部分已在后续代码中实现，见
+`HaltObservation-20261113.md`；尚未部署或取得真实多引擎 halt 记录。
+仍没有新增 CCS/BCS MMIO 观察。
 
 ## POSH 审查结论
 

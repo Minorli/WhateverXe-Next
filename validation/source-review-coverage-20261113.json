@@ -33,15 +33,25 @@
       "path": "driver/WhateverXe/WhateverXe/kern_adls_boot.hpp",
       "sha256": "c68348048420ed5515c42055d25dc65540b927bcd76e39f78e6abef8cf9628c2",
       "lines": 137,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          137
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_adls_clock.hpp",
       "sha256": "5624ab6ebbda419800dc9cd7214d6c809d64c502a00e2661fef5e48ddd54e1cf",
       "lines": 12,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          12
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_alderlake_n.hpp",
@@ -87,22 +97,37 @@
       "path": "driver/WhateverXe/WhateverXe/kern_display13_clock.hpp",
       "sha256": "3b34b1277e270129156f696cac20075b336f60117a553f2c6c64d622376337aa",
       "lines": 284,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          284
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_color.hpp",
       "sha256": "3f8619e01aa9f6f19cd92f1324f9aeac44154a5d8f27a6c3651a44704d9f984c",
       "lines": 49,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          49
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_cursor.hpp",
       "sha256": "e07165a7a937bece479f20bdff304f92ddd5996dd1b139045dbaba92568fac51",
       "lines": 42,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          42
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_dbuf.hpp",
@@ -122,43 +147,73 @@
       "path": "driver/WhateverXe/WhateverXe/kern_display13_fb_gtt.hpp",
       "sha256": "5d00bf06b9b911a4398d2394489a047bcc2d1b0f913bda871c125af20cc1e7e4",
       "lines": 36,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          36
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_fb_irq.hpp",
       "sha256": "dd5796d2531a074785c46ca8758cd4e06a3bbcaab9e05d6eb0f129e40fd08257",
       "lines": 591,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          591
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_fb_memory.hpp",
       "sha256": "695fd431388ca2e5160a7ca0af5f31189d9e9f983e8c287dc57362711cc5418f",
       "lines": 463,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          463
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_fb_sysmem.hpp",
       "sha256": "592a873392ebbdf6e4d0f8bf8ca17b09d6aae821bb31f2958f92ad4f96870a19",
       "lines": 124,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          124
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_fb_topology.hpp",
       "sha256": "934570ccb73ac4b18fa28f086dda0136a3ad92b9e4b1404429c9a9a10e568044",
       "lines": 122,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          122
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_firmware.hpp",
       "sha256": "0136ee7f6c1ba1337d0283720806b45d2f5ee8c3c4be9929dcb75c8aef0eda2c",
       "lines": 44,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          44
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_framebuffer_power.inc",
@@ -171,22 +226,37 @@
       "path": "driver/WhateverXe/WhateverXe/kern_display13_hdmi_wiring.hpp",
       "sha256": "1598c489f403d0603943e12884e5016ec1c7ed1ec245545df381fde5d37b9818",
       "lines": 9,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          9
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_output_wiring.hpp",
       "sha256": "c7f1c773f6252ff37eb40d16a42b4ca8879705475985447adfaaa1d046367757",
       "lines": 90,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          90
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_panel.hpp",
       "sha256": "882abf98601a0ac7a4c7af0879551fb8c3f9781b8b1350bc45e0ae24f63c647f",
       "lines": 49,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          49
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_power.hpp",
@@ -206,8 +276,13 @@
       "path": "driver/WhateverXe/WhateverXe/kern_display13_retirement.hpp",
       "sha256": "eb68199a4447a54016b31b2e2ee0f06e8b38ba2136330b6148ab9db6514e423b",
       "lines": 25,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          25
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_tc.hpp",
@@ -262,8 +337,13 @@
       "path": "driver/WhateverXe/WhateverXe/kern_display13_transcoder.hpp",
       "sha256": "039711ca6fc7244cdb4caa65c6c3844e32c30cbf6940fc5ee1701b6527baa35a",
       "lines": 39,
-      "status": "unread",
-      "read_ranges": []
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          39
+        ]
+      ]
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_display13_wm.hpp",
@@ -738,6 +818,18 @@
       ]
     },
     {
+      "path": "driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp",
+      "sha256": "fe08ba9ec9900f28bbe641de4248d6f4a54a4716d15d9eff0b4ead91895e504f",
+      "lines": 88,
+      "status": "read",
+      "read_ranges": [
+        [
+          1,
+          88
+        ]
+      ]
+    },
+    {
       "path": "driver/WhateverXe/WhateverXe/kern_tgl_hang_detail.hpp",
       "sha256": "898e57b661084d2f81c9503d9d4b81cf7fb40206d7cbd066da8f11460d1e3de2",
       "lines": 190,
@@ -1075,13 +1167,13 @@
     },
     {
       "path": "driver/WhateverXe/WhateverXe/kern_xe.cpp",
-      "sha256": "c5cce17a3960238b35950808ae5125c2286a520d789e70f3c1e21de3ea7200e9",
-      "lines": 20379,
+      "sha256": "9cec46c37aa8b315f4294706801e8db110f51d244aa073703f6e901e19a0e1a7",
+      "lines": 20439,
       "status": "read",
       "read_ranges": [
         [
           1,
-          20379
+          20439
         ]
       ]
     },
@@ -1567,13 +1659,13 @@
     }
   ],
   "summary": {
-    "files": 155,
-    "lines": 40400,
+    "files": 156,
+    "lines": 40548,
     "by_status": {
-      "read": 95,
-      "unread": 60,
+      "read": 112,
+      "unread": 44,
       "partial": 0
     },
-    "read_lines": 29055
+    "read_lines": 31319
   }
 }
