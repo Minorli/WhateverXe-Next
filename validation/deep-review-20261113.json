@@ -1,0 +1,240 @@
+{
+  "schema": 1,
+  "date": "2026-11-13",
+  "source_commit": "f3a212a5d7e5ba67277a6e709b2bf6af2da55cdd",
+  "baseline_commit": "5851889cb10a6a801be6256dde9090ef287dd56d",
+  "scope": "code review, CPU/filesystem tests, build checks and bounded read-only observation",
+  "original_GPU_fault_resolved": false,
+  "source_review_complete": false,
+  "candidate_installed": false,
+  "boot_tested": false,
+  "UU_vs_Google_Remote_Desktop_AB_performed": false,
+  "long_running_acceptance": false,
+  "source_trees": {
+    "driver/WhateverXe": "09d8a861027263fefeab65f8bb261d00afe8b679",
+    "src": "e59f3a39f023f9f97d8c8a8947e2a8c4a680a4cf",
+    "tests": "92cdecc07dc45688bae92836338ad0adc1af13ae",
+    "tools": "e96ea4eef181269a55b7e69c5122787483140a6c"
+  },
+  "source_changes": {
+    "D01_D03": "1534f4719c71b402112f3031794d89eaa2fff5b0",
+    "D02": "19873a585fb6e846d968d63d79efac26800f7277",
+    "D04_D05": "980faf87805e6dbed870de6642f0654f0e3bc772",
+    "D06": "f3a212a5d7e5ba67277a6e709b2bf6af2da55cdd"
+  },
+  "root_build_and_CPU_tests": {
+    "command": "make -j1 all cpu-test",
+    "exit_code": 0,
+    "tests": {
+      "posh-lifetime": 0,
+      "bounded-count": 0,
+      "posh-atomic-code": 0,
+      "recovery-state": 0,
+      "capture-reports": 0
+    },
+    "log_sha256": "9771b361eda678329f1a1e9f8f9e8a6592ec8547ddd179895acd5eb9fc3edccb",
+    "executables_sha256": {
+      "posh-lifetime": "b406a9ca12db00fe0a6bfb43bd02bfb928af164dee385ceef4d67d2a81961732",
+      "bounded-count": "116aadfbd67194c8e927052de74e82e9ad879dd079f5b623c88cb33e6bb2af6a",
+      "posh-atomic-code": "cfc5338d83697b7f2bcf5d4244b76a10636f891acb30c220a0952c00903fc13d",
+      "recovery-state": "5d2a1e7c4afb81a90f4473f6fb4fd27c529b329584e428b5b72456fbb0f5601e",
+      "capture-reports": "12627d533ab559418d4b5713151a6338c1b5f951ded720334ea29dab43af7830",
+      "tgl-capture": "9369442cd67a266cf6a0adaf3a9899f887b88ba215b6c1e79b76439353dfcd10"
+    },
+    "inputs_sha256": {
+      "Makefile": "7bb7a742eb2ab6a561c8e7a7455eab8667290d3c2e69cbc182c84b6b9e12fb7d",
+      "src/BoundedCount.hpp": "ae94d5690a525a0ba3e33ea759b7231dfd0d0cd466ccf8b16505ae3f0184e667",
+      "src/GPUHealth.hpp": "75ae57e3759acc97aa2d66a8210e9d513f6b09e33d323e87eaaa9967404fbaff",
+      "src/POSHAtomicClaim.h": "1fb62e5f75ece0966e3fa700274e4b7e2d3e2b63e2fe89135e6aaf781b454b18",
+      "src/POSHAtomicClaim.mm": "3dd1f3c0fd45fbd2c497adbbf0165bc93cc3fd6e934815e5b8a87b0a12239b04",
+      "src/POSHAtomicCode.hpp": "0c4560774a2966cbffe9958957bb6cb2688ae356a59675ecd6a9474e07006b03",
+      "src/POSHDeferred.h": "e1eaa3ff55938057a311e1619485661b75f70d9713991de16a9e8ff81f35c91a",
+      "src/POSHDeferred.mm": "2b0966e02d73721579b0cc66b8cfcbbbe5c03af4a18c55934cc07129180c4587",
+      "src/POSHLifetime.hpp": "d556086aa58d88ceae3955f815ac94cbe3cb181e636e9bcbf05ee8cf48b5dc84",
+      "src/POSHQueueCache.h": "0e607a095c7b93bd551b2ee89ef389fc7e768f07cbda67fa304685c7aadb0789",
+      "src/POSHQueueCache.mm": "1cb93e547491a902abfcce758b5b9b47bd7928c39ea172c7dbe69e4b36f90afc",
+      "src/RecoveryState.hpp": "e527d45ecbf37ba65e455f4aa27f29c01782261bbd41019d1c2f33d748eb478a",
+      "tests/bounded-count.cpp": "3085c37ba6c9d18e3308dd641c43b5d4f8ef429260c665b53a1efc61d587a2e7",
+      "tests/capture-reports.mm": "3cfcac481ad031bbb9b4328e8cc0f94a5805b16ccc38e5d97624351bdd01058d",
+      "tests/gl-blit-check.mm": "490c01276a7f43ab70f57a8da16f42b4e30c19414ddf1cae854758f2405fd410",
+      "tests/metal-async-check.mm": "47c5a7d4c6e9d56d7cb61d50cc116542d157947ce421d7ad82c96b2350d7c03b",
+      "tests/metal-memory-check.mm": "c8950a29d08f21def675e16dddb7d4b69a38580c838a1af1502053d05b322508",
+      "tests/metal-surface-check.mm": "34c6071fcc0deca4badd105cb80269eb517ce7dec3e41fcbdf2f8a3e38aa16d7",
+      "tests/posh-abandon-check.mm": "d930f938d0cc43450717cae39a7bc89b57cedf8c29edcd643baf0bb33dbaabe2",
+      "tests/posh-atomic-code.cpp": "1dac45f1e4c450ff3705b3af6565796c76d26f40fcf0336e030d089d32a0b359",
+      "tests/posh-concurrent-gpu.mm": "5f37f8ecda4196d5d66bf4ff153664baa5110cbfdb743348bd39750c7353a239",
+      "tests/posh-lifetime.cpp": "6d75220ae7f412692695c5c2bd17a7aff0bb68c36f010c9ae31c0351bd1b9945",
+      "tests/posh-queue-check.mm": "426b03cb58256d87081fd31f59ebeed283676c11b1ec12e3ce2c90c59f4d8a3c",
+      "tests/recovery-state.cpp": "769c508ff3daaac16f6e0200403ca4ea27e52b204e0a8d25d86335a17a99501b",
+      "tools/tgl-capture.mm": "7d1db73c6fe3d8a65bb654abec8275a2c2f68b449931f3ea7485df6517581dc9"
+    }
+  },
+  "driver_CPU_tests": {
+    "command": "python3 tools/test.py --jobs 2",
+    "exit_code": 0,
+    "planned_and_retained_results": 214,
+    "failed": 0,
+    "result_artifact": "deep-review-driver-tests-20261113.json",
+    "result_sha256": "50abd38a17ef3c3112979a24e559a38ccd91c49bc1f4d09069ab365b98fa8a49",
+    "log_sha256": "f4c0af20dc574e13fe79d822dd0c15534129a5a5826f1b03fdd945658bd1e9ea",
+    "native_donor_kernel_replays_requested": false,
+    "hardware_validation": false
+  },
+  "builds": {
+    "debug": {
+      "exit_code": 0,
+      "manifest": "deep-review-debug-build-20261113.json",
+      "manifest_sha256": "0105b50d764754e550219d03812bc9934b5505b6c33cf27d462096b0002e08c8",
+      "warnings_present": true,
+      "outputs": {
+        "WhateverXe": "9f4f4ee10ef1a318e1e55088ea6a13c9fd2e00eda10c881b4acdf3465536b8b1",
+        "AppleIntelTGLCompat": "be2afc1c8991044c79e8cd4332ae2f53ffca78fd5c89fe2d67ca042f32b97dd6"
+      },
+      "compiler_stack_records": 3248,
+      "max_recorded_function_frame_bytes": 6008,
+      "per_function_limit_violations": 0,
+      "stack_scope": "compiler-reported function frames only; not a maximum nested kernel stack proof"
+    },
+    "release": {
+      "exit_code": 0,
+      "manifest": "deep-review-release-build-20261113.json",
+      "manifest_sha256": "e433c9ddb9f259ab33151501e9059d8da91a2d44ee8bbdf2e213c91a5b4725ff",
+      "warnings_present": true,
+      "outputs": {
+        "WhateverXe": "86cb984a68b3ea487832d465aeb9d56230d1f6b5cf56eac4c8ae86c2ee79cfbf",
+        "AppleIntelTGLCompat": "cab03ed3a70bc94a5502ea9533f46450e20148cf0af8819167124dbf59e2fca2"
+      },
+      "compiler_stack_records": 1306,
+      "max_recorded_function_frame_bytes": 3128,
+      "per_function_limit_violations": 0,
+      "stack_scope": "compiler-reported function frames only; not a maximum nested kernel stack proof"
+    }
+  },
+  "regressions": [
+    {
+      "defect": "D01",
+      "baseline_kind": "old one-byte copy behavior",
+      "before_regression_exit": 1,
+      "after_regression_exit": 0,
+      "before_log_sha256": "2c69ed3f726a3b5707e587287e0fcb6cc3a6137a68059f04a25c1d53ea223d94",
+      "after_log_sha256": "63628dfb6e087f8f16c0c159592e834ae1aaa83d7eae97e66d98c46bfbced638"
+    },
+    {
+      "defect": "D03",
+      "baseline_kind": "retained collector before ACK qualification",
+      "before_regression_exit": 10,
+      "after_regression_exit": 0,
+      "before_log_sha256": "f296c782017c5016ed64c791e75ec3b7254de764b642b70f2916d8bbf8ba006e",
+      "after_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "defect": "D04",
+      "baseline_kind": "actual extracted old admission function",
+      "before_regression_exit": 1,
+      "after_regression_exit": 0,
+      "before_log_sha256": "e6b00e782dbc38dfb28acc2bf45ce22578c07eb91b141477fd6774f1b7e48568",
+      "after_log_sha256": "caf3dfe3efb75316188a932e95243cbde9f6bedfc83c6f0816de213a46438303"
+    },
+    {
+      "defect": "D05",
+      "baseline_kind": "actual extracted old accessors",
+      "before_regression_exit": 1,
+      "after_regression_exit": 0,
+      "before_log_sha256": "73e33c284d1f6abdcf614f9c8a0ca4d7e0e2af2e6ca879197096b387a17c32d7",
+      "after_log_sha256": "c9301683ace6602810c68557483f8f248b1cc2b54d0b48323c59836fed1972c1"
+    },
+    {
+      "defect": "D06",
+      "baseline_kind": "real old runner with controlled failing-first and successful-second commands",
+      "before_regression_exit": 1,
+      "after_regression_exit": 0,
+      "before_log_sha256": "a0f2db107fca58b413f1fc29dced9f3d3896da5de2086bbfbe9c9e37a083a626",
+      "after_log_sha256": "48c91e4d59c8a8c69c2a352c76a31ca149dc83fa5fac7fb5fc98e8c2c38b4b36"
+    }
+  ],
+  "D02_checks": [
+    "exact ready wire length",
+    "null/truncated/extended/unready inputs",
+    "either nonzero recovery counter including equal counters",
+    "nonzero record body with zero counters",
+    "unaligned storage",
+    "independent failure rejects clean baseline",
+    "report continuity required",
+    "actual observer: missing active directory, optional archive, retirement, new reports, unreadable archive"
+  ],
+  "read_only_observation": {
+    "seconds": 30,
+    "publication_interval_seconds": 10,
+    "poll_interval_seconds": 2,
+    "records": [
+      {
+        "elapsed": 0,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "recovery_monitor": "clean",
+        "comparison_baseline_clean": true,
+        "new_gpu_reports": 0,
+        "report_monitor_available": true,
+        "report_monitor_continuous": true,
+        "failure_data": false
+      },
+      {
+        "elapsed": 10,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "recovery_monitor": "clean",
+        "comparison_baseline_clean": true,
+        "new_gpu_reports": 0,
+        "report_monitor_available": true,
+        "report_monitor_continuous": true,
+        "failure_data": false
+      },
+      {
+        "elapsed": 20,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "recovery_monitor": "clean",
+        "comparison_baseline_clean": true,
+        "new_gpu_reports": 0,
+        "report_monitor_available": true,
+        "report_monitor_continuous": true,
+        "failure_data": false
+      },
+      {
+        "elapsed": 30,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "recovery_monitor": "clean",
+        "comparison_baseline_clean": true,
+        "new_gpu_reports": 0,
+        "report_monitor_available": true,
+        "report_monitor_continuous": true,
+        "failure_data": false
+      }
+    ],
+    "command": "tgl-capture PRIVATE_DIRECTORY 30",
+    "active_reproduction": false,
+    "kernel_changed": false,
+    "interpretation": "No failure observed during this short existing-boot sample; no claim about delayed faults or UU stability."
+  },
+  "review_coverage_artifact": "source-review-coverage-20261113.json",
+  "native_review": {
+    "Metal_image_UUID": "6F93BBF4-F2EA-3F4B-904D-1E907FAF705A",
+    "probe_created_GPU_objects": false,
+    "probe_invoked_reviewed_methods": false,
+    "observations": [
+      "two-argument superclass initialization redispatches to the three-argument selector on the same object",
+      "commit invokes synchronization notifications and queue handoff after the native subclass active-count decrement",
+      "destructor invokes callbacks before final queue and private-data releases"
+    ],
+    "remaining": "Full POSH alias/escape lifetime and original CCS/BCS fault are unresolved."
+  },
+  "limits": [
+    "Research kexts do not yet preserve all verified downstream HDMI enhancements.",
+    "Current native memory-leak option was not ready on this Tahoe boot.",
+    "Historical legacy runner counts can hide same-stem job outcomes; artifacts are retained without rewriting history.",
+    "Per-function CPU/static/sanitizer tests cannot prove native ABI, GPU synchronization, live display or recovery correctness.",
+    "Remaining unread source is explicitly recorded."
+  ],
+  "privacy": "No raw reports, kernel/GPU memory, Apple binaries, full disassembly, credentials, EFI identities or corporate network data included."
+}
