@@ -39,7 +39,7 @@ static bool hardwareAllowed(void *controller) {
 
 static uint32_t read32(void *access, unsigned long offset) {
     const auto size = field<uint32_t>(access, 0x60);
-    if (size < 4 || offset >= size - 4) {
+    if (size < 4 || offset > size - 4) {
         IOLog("AppleIntelTGLCompat: invalid MMIO read offset=%lx size=%x\n", offset, size);
         return 0;
     }
@@ -120,7 +120,7 @@ extern "C" uint64_t tglRead64(void *controller, volatile void *base, unsigned lo
     if (!hardwareAllowed(controller)) return 0;
     auto access = manager(controller);
     const auto size = field<uint32_t>(access, 0x60);
-    if (base == field<volatile void *>(access, 0x50) && (size < 8 || offset >= size - 8)) {
+    if (base == field<volatile void *>(access, 0x50) && (size < 8 || offset > size - 8)) {
         IOLog("AppleIntelTGLCompat: invalid MMIO read64 offset=%lx\n", offset);
         return 0;
     }
@@ -138,7 +138,7 @@ extern "C" void tglWrite64(void *controller, volatile void *base, unsigned long 
         return;
     }
     const auto size = field<uint32_t>(access, 0x60);
-    if (size < 8 || offset >= size - 8) {
+    if (size < 8 || offset > size - 8) {
         IOLog("AppleIntelTGLCompat: invalid MMIO write64 offset=%lx\n", offset);
         return;
     }

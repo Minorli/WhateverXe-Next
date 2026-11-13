@@ -23,6 +23,7 @@
 
 void DVMTCalcFix::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	applied=false;
+	dvmt=0;
 	// Enable the fix if designated boot argument or device property is found
 	enabled = checkKernelArgument("-igfxdvmt");
 	if (!enabled)
@@ -32,6 +33,7 @@ void DVMTCalcFix::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	
 	// Guard: Disable the patch if it is not available on the current Intel platforms
 	if (!available) {
+		enabled = false;
 		SYSLOG("igfx", "DVMT: This fix is not available on the current platform and has been disabled.");
 		return;
 	}
@@ -58,7 +60,10 @@ void DVMTCalcFix::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 	} else if (gms >= 0xF0 && gms <= 0xFE) {
 		dvmt = ((gms & 0x0F) + 1) * 4;
 	} else {
-		SYSLOG("igfx", "DVMT: GMS value is reserved. Check your BIOS settings. DVMT will be set to 0.");
+		// An unknown encoding is not a zero-size allocation. The framebuffer
+		// caller uses enabled to authorize rewriting its native formula.
+		enabled = false;
+		SYSLOG("igfx", "DVMT: GMS value is unsupported by this decoder. Calculation patch disabled.");
 		return;
 	}
 	
@@ -71,6 +76,7 @@ void DVMTCalcFix::processKernel(KernelPatcher &patcher, DeviceInfo *info) {
 }
 
 void DVMTCalcFix::processFramebufferKext(KernelPatcher &patcher, size_t index, mach_vm_address_t address, size_t size) {
+	if (!enabled || !available || !dvmt) return;
 	// Find the address of `AppleIntelFramebufferController::FBMemMgr_Init()`
 	auto startAddress = patcher.solveSymbol(index, "__ZN31AppleIntelFramebufferController13FBMemMgr_InitEv", address, size);
 	if (!startAddress) {
