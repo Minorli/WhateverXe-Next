@@ -544,7 +544,9 @@ bool tglCPSRestore(void *context) {
  if(noPOSH) {
   // Both native callers check this return: init builds a fresh non-POSH
   // image at 0x7C186; beginReset returns false at 0x7C995. Do not report a
-  // successfully restored image when its no-POSH fix-up was rejected.
+  // successfully restored image when its no-POSH fix-up was rejected. This is
+  // only local propagation: Scheduler5 (0x3A422) and GuC (0x1CCBE) ignore
+  // beginReset's result and continue resubmission. It is NOT a recovery gate.
   if(result) {if(!tglNoPOSHAfterRestore(context,caller==tglCPSRestoreCaller))return false;}
   else __atomic_fetch_add(&tglNoPOSHCounts[TGLNoPOSH::RestoreFalse],1,__ATOMIC_RELAXED);
  }

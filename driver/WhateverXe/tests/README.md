@@ -138,11 +138,20 @@ single delegation, disabled/non-RCS and native failure behavior. Sanitization
 failure must propagate false without downstream success callbacks. The exact
 native callers check that return at 0x7C131 and 0x7C91E: init takes its fresh-image
 path; beginReset returns false. Those caller branches are statically inspected,
-not executed by this adapter; complete scheduler error recovery remains untested.
+not executed by this adapter. Scheduler5 at 0x3A422 and GuC at 0x1CCBE ignore
+beginReset's result: local false propagation does not gate resubmission.
 Require `tgl_noposh_adapter_native` with the fixed 567511bed855…d496e accelerator
 to execute its real qualifier and independently corrupt each existing anchor.
-No Apple instructions, MMIO, kernel recovery serialization, or GPU work execute
-in that check. The gpurec helper test does not validate the complete reset hook.
+That mode additionally replays the complete native context free (0x7C5D8) and
+Scheduler5 cleanup (0x39608), with OSObject releases and the GC base tail mocked.
+The production restore wrapper precedes teardown in the no-POSH cases; allocated
+objects are fixtures, not real kernel allocations. Both set/cleared POSH and
+unrelated flag bits retain the +0xA0 pointer while releasing the other five
+members. This records an existing native cleanup omission, not a leak-free
+contract. It rejects the proposed *flag-dependent additional leak* explanation;
+it does not measure task-exit cleanup or physical kernel-memory growth.
+No MMIO, kernel recovery serialization or GPU work executes. The gpurec helper
+test does not validate the complete reset hook.
 
 | Check | Expectation and source | Boundary and exclusions |
 | --- | --- | --- |

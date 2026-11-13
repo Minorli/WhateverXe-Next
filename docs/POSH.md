@@ -12,6 +12,11 @@ only-active 标志不再阻止删除；与旧两字节实验具有相同释放�
 [#109](https://github.com/b00t0x/WhateverXe/issues/109) 的 MTL 释放开关还要求 no-POSH 实际启用。
 本机尚不满足；详见 [Deployment](Deployment.md)。原生计数竞态与该风险仍需分别处理。
 
+db7b36e 后续静态核对补充：旧/新 MTL 均含按进程分类覆盖 `PoshDisable` 的路径，
+会抑制 POSH VS 设置；内核 context POSH flag 与用户态 shader 开关不是同一状态。
+因此“释放条件相同”不能扩大为“与 #47 完整执行路径相同”。kernel no-POSH 也不绕过
+executePosh 的 wait token 优化；它本身不足以证明析构安全，详见 [REVIEW](REVIEW.md)。
+
 ## 当前进展：原子领取候选
 
 已实现独立的 `POSHAtomicClaim`，修复原生“读零值→设置 only-active→普通增加”竞态，

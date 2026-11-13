@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-13",
+  "base_commit": "db7b36e95c46c5ca63c8da0333002a1e478a7f2b",
+  "scope": "B1 read-only, A1-A3 static audit, exact native context-free CPU replay, existing phone video inspection",
+  "accelerator_sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+  "mtl_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+  "ccs_samples": [
+    {
+      "unix_time": 1794555745.5036218,
+      "properties": {
+        "TGLCCSAlignmentReady": "Yes",
+        "TGLCCSAlignmentLive": [
+          127,
+          20407729,
+          0,
+          0
+        ],
+        "TGLIOSurfaceCCSPolicyReady": "Yes",
+        "TGLIOSurfaceCCSAtStart": "0",
+        "TGLNoPOSHReady": null,
+        "TGLNoPOSHLive": null,
+        "TGLGpuRecReady": null,
+        "TGLGpuRecLive": null
+      }
+    },
+    {
+      "unix_time": 1794555966.3332632,
+      "properties": {
+        "TGLCCSAlignmentReady": "Yes",
+        "TGLCCSAlignmentLive": [
+          127,
+          21201119,
+          0,
+          0
+        ],
+        "TGLIOSurfaceCCSPolicyReady": "Yes",
+        "TGLIOSurfaceCCSAtStart": "0",
+        "TGLNoPOSHReady": null,
+        "TGLNoPOSHLive": null,
+        "TGLGpuRecReady": null,
+        "TGLGpuRecLive": null
+      }
+    }
+  ],
+  "ccs_sample_seconds": 220.8296413421631,
+  "ccs_calls_delta": 793390,
+  "absent_properties_mean": "unavailable, not zero; AtStart is not live state; calls are system-wide at this hook",
+  "user_metal_posh_policy": {
+    "source": "CFBundle Development/PoshDisable plus PID/program-name policy",
+    "policy_init": "0x10D0",
+    "policy_apply": "0x1167",
+    "device_store": "0x21FB8",
+    "old_new_identical_windows": [
+      "0x10D0..0x11D8",
+      "0x21F55..0x21FCB",
+      "0x536C6..0x536DB",
+      "0x6E2A..0x6E4F"
+    ],
+    "uu_runtime_object_observed": false,
+    "verified_uu_only_env_switch": false
+  },
+  "a1": {
+    "flag_dependent_new_leak": false,
+    "native_free_omits_a0_release": true,
+    "native_free_offset": "0x7C5D8",
+    "scheduler5_cleanup_offset": "0x39608",
+    "native_free_replayed": true,
+    "allocation_and_os_boundary": "mock allocated members, OSObject release, GC base tail; actual native free and Scheduler5 no-op cleanup",
+    "kernel_memory_growth_measured": false
+  },
+  "a2": {
+    "posh_tokens_automatically_discarded_on_cleared_flag": false,
+    "wait_optimization_still_reachable": true,
+    "bb_start_bit20_cleared": true,
+    "complete_gpu_dual_stream_semantics_proven": false,
+    "metal_lifetime_gate_resolved": false
+  },
+  "a3": {
+    "begin_reset_false_reaches_scheduler": true,
+    "scheduler_checks_result": false,
+    "host_call": "0x3A422",
+    "host_submit": "0x3A526",
+    "guc_call": "0x1CCBE",
+    "guc_reset_complete_message": "0x1CE11",
+    "safe_failure_isolation_proven": false
+  },
+  "tests": {
+    "runner": "python3 tools/test.py --only tgl_noposh_adapter --require tgl_noposh_adapter_native --accelerator EXACT_ACCELERATOR",
+    "result_directory": "driver/WhateverXe/build/tests/run-slzhvzgj",
+    "selected_passed": 2,
+    "failed": 0,
+    "unselected": 291,
+    "default_suite_rerun": false,
+    "new_build": false,
+    "gpu_tests": false
+  },
+  "phone_video": {
+    "sha256": "dfacbd9915e3508ae432ce9df8e969145c13630e018427f0979eab5863210524",
+    "duration_seconds": 20.133333333333333,
+    "export_fps": 29.999998,
+    "decoded_frames": 604,
+    "oriented_size": [
+      320,
+      568
+    ],
+    "observed_edge_change_frames": [
+      111,
+      112
+    ],
+    "restored_frame": 113,
+    "user_confirmation_pending": false,
+    "synchronous_screen_recording": false,
+    "original_capture_fps_verified": false,
+    "scanout_vs_composition_determined": false,
+    "raw_video_and_frames_published": false,
+    "user_confirmed_event": true
+  },
+  "deployment": {
+    "kernel_changed": false,
+    "efi_changed": false,
+    "bundle_changed": false,
+    "rebooted": false,
+    "uu_restarted": false,
+    "display_layout_changed": false,
+    "b2_executed": false,
+    "b3_written": false
+  },
+  "source_sha256": {
+    "driver/WhateverXe/tests/tgl_noposh_adapter.py": "ce9d8822ad5445e7c464600f92c9530fcd9aa357455394bca043f9fb9c2f6a14",
+    "driver/WhateverXe/WhateverXe/kern_xe.cpp": "ffa184db39af6ab171057c41ad33a0dbc111ff4d4dc6b78c82083e93c25d3fbd"
+  },
+  "external_review_commit": "d852aa9",
+  "user_observations": {
+    "internal_display_without_hdmi_still_flickers": true,
+    "synchronous_phone_and_screen_recording_available": false,
+    "uu_open_other_windows_also_flicker": true,
+    "other_windows_report_local_time": "2026-11-13T16:16:13+08:00",
+    "exact_onset_known": false
+  },
+  "source_sha256_note": "Hashes retained from the CPU run; later explanatory comments/docstrings do not change the exercised functions. No GPU or installation result is implied."
+}

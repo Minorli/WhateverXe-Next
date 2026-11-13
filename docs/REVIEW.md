@@ -7,6 +7,141 @@
 [脱敏审查包](../review/2026-11-13/README.md) 和
 [完整外部审查提示词](ExternalReview-20261113.md)。请先阅读新事故，再复核以下研究。
 
+## db7b36e 跟进：B1 与 A1–A3
+
+本轮先做只读观测和精确二进制审查。维护者后来确认 slow2 目标事件、单内屏仍闪，
+且无法同步录屏；后续转入 d852aa9 外部报告的 S0，不再等待同步视频。
+没有改 EFI、bundle、boot-arg、显示布局，没有退出 UU、安装驱动或重启。
+记录见 [验证摘要](../validation/uu-flicker-followup-20261113.json)。
+输入 accelerator 为 `567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e`，
+MTL 为 `25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa`；原反汇编留在本机。
+
+### B1：压缩修正和单进程开关
+
+**成立〔整机只读〕：**当前下游存在 `TGLCCSAlignmentReady=Yes`、
+`TGLIOSurfaceCCSPolicyReady=Yes`、`TGLIOSurfaceCCSAtStart=0`。
+两次采样相隔 220.83 秒，`TGLCCSAlignmentLive` 的 revision=127，
+calls 为 20,407,729 → 21,201,119；CCS_E states 和 corrected 均 0 → 0。
+布局根据生产 serializer / `wrapTGLSurfaceAux` 核对，CCS_E 判据为 `(surface[6]&7)==5`。
+Ready 是安装状态，AtStart 是启动时 accelerator+0x1474 的字节，不是当前所有表面的状态。
+native IOSurface policy 修正点为 `0x246D9`、`0x2B872`。
+`TGLNoPOSHReady/Live`、`TGLGpuRecReady/Live` 均缺失，含义是 unavailable。
+UU 客户端当时在运行，但没有验证这整个采样区间始终显示远端动态画面，也没有按进程分流计数。
+**不成立〔本次观测〕：**据此宣称“当前缺少压缩修正，或 corrected 持续增长”。
+不能反推所有纹理均无压缩，也不能将 CCS_E 压缩与 CCS 计算引擎混为一谈。
+
+**不成立〔静态〕：**`PoshDisable=1` 是一个已找到的 UU 环境变量。
+实际路径和另一个被遗漏的既有策略如下：
+
+| 路径 | 精确偏移 / 来源 | 结论 |
+| --- | --- | --- |
+| bundle 配置 | `0x21F55..0x21F97`：CFBundle → InfoDictionary → Development → PoshDisable；已解析 CFString，不靠猜键名；当前 plist 值为 0 | 全 bundle 配置，不是 getenv |
+| 进程策略初始化 | 模块初始化入口 `0x44EE` 跳至 `0x10D0`；`getprogname` / getpid 后缓存 PID 和模式；WindowServer=1，SecurityAgent=2，其余（含 UU）=3；`0x11B2..0x11D7` 仅本 PID 返回缓存模式 | 进程分类是硬编码，不是用户可选开关 |
+| PoshDisable 覆盖 | `0x21FA7` 调 `0x1167`；CFNumber 成功、类型=3、模式非0且原值≤1时，`0x119D` 写 1；`0x21FB8` 设 bPoshDisable，随后也设 bPtbrDisable | 正常模块初始化、当前 plist 下，静态路径抑制 POSH VS；尚未读取 UU 进程对象的实际布尔值 |
+| 消费者 | `0x6E38..0x6E4D` 跳过 POSH VS 状态设置；`0x536D0..0x536D5` 跳过 extractPoshVSCompilerOutput | POSH shader 编译/设置与内核 context 的 POSH flag 是不同层 |
+| 直接 getenv | `0x22992` 为 MTL_REPLACE_D32_S8_WITH_D24_S8，`0x22F73` 为 METAL_MANAGED_TEXTURE | 均不是已验证的 POSH / render-compression 开关 |
+| defaults 路径 | `0x450D` 读 com.apple.driver.mtl.intel 的 plist；`0x46B3` 包含 _kIntelSharedExFtrPoshEnable；`0x4871` 将共享设置传入 IOConnectCallStructMethod | 没有已证明的 UU-only 作用域，不应写全局 defaults 来冒充单进程实验 |
+| 另一 CFPreferences 路径 | `0x16684` 的域为 com.apple.telemetryGraphics，调用点 `0x262E` 处理字符串输出路径 | 不作为 POSH 开关 |
+
+旧 `1e5e4f5b…53c6c` 与当前 MTL 在 `0x10D0..0x11D8`、`0x21F55..0x21FCB` 和
+上述两个 VS 消费者窗口逐字节相同。**不成立〔静态〕：**把这个策略归因于 0.4.3 新修复，
+或用内核“POSH Enabled”日志证明 UU 当时必然执行 POSH shader。
+这是本机精确输入的新证据，与 #47 评论中撤回的个别设置效果说法分开。
+**证据不足：**存在可直接用于 UU 的环境变量 A/B；本轮没有改 bundle 或 defaults。
+
+### A1：no-POSH 后 POCS image 的释放
+
+**成立〔静态〕：**`0x7BB13` 测 context+0x6E bit0x10，`0x7BB25` 请求 0x4000 字节，
+`0x7BB31` 调 `IGSharedMappedBuffer::withOptions`，`0x7BB36` 把对象存入 +0xA0。
+restore 调用返回点是 `0x7C131`，所以现候选清 flag 的时机在分配之后。
+
+**不成立〔静态 + CPU〕：**析构根据该 flag 决定是否释放 +0xA0，因而清 flag 才新增泄漏。
+本机 native `IGHardwareContext::free` 整个 `0x7C5D8..0x7C721` 不读 +0xA0，也不测该 flag：
+
+| 清理动作 | 偏移 |
+| --- | --- |
+| 释放 +0xB0 / +0xB8 | `0x7C622..0x7C651` |
+| scheduler cleanupSharedPrivateData 虚调用 | `0x7C65C..0x7C66D`，vtable+0x138 |
+| host Scheduler5 对应函数是空函数 | vtable `0xD3940+0x10+0x138` → `0x39608..0x3960D` |
+| 释放 +0xA8 / +0x98 / task+0x58 | `0x7C673..0x7C6E9`，+0x98 可先 transferOwnership |
+| 基类清理 | `0x7C700..0x7C710` → IGGCObject::free `0x3B36`，移出 GC 队列、释放 GC 后进入 OSObject free |
+| C++ 析构 | `0x7B808/0x7B812/0x7B81C` 进入 IGGCObject/OSObject 析构，不补 +0xA0 释放 |
+
+GuC cleanup `0x19442` 做 TLB invalidate；Scheduler4 cleanup `0x1E126` 做 invalidate / detach，
+不是按 POSH flag 释放 +0xA0。当前 host 路径才是本轮 CPU 回放范围。
+
+`tgl_noposh_adapter_native` 现在执行**原始完整 context free 与原始 Scheduler5 空清理函数**，
+仅 OSObject release 和 GC 基类尾调用为显式 mock；分配对象为 fixture。
+在 POSH 原值 0x10 / 0xB3，以及生产 restore wrapper 清 flag 后的 0 / 0xA3 四种情况下，
+都观察到其余五个成员被释放、+0xA0 保留。默认 adapter 与 required native mode 均通过。
+**成立〔静态 + CPU〕：**存在 context teardown 层的原生释放遗漏；
+**证据不足〔整机〕：**其实际 kernel footprint 增长率、task 退出后的最终回收范围。
+测试通过表示复现遗漏，不是宣称消除了泄漏。
+
+在析构前“恢复 flag”不能修这个遗漏。提前禁止分配也不能孤立实施：
+`copyContextImage` 在 `0x7C841` 无条件读 +0xA0，`0x7C892..0x7C8A2` 取地址并复制 16KiB。
+先置空会引入另一条消费者问题。没有擅加 release、提前清 flag 或扩大 hook。
+
+### A2：清内核 flag 后，MTL token 和 batch 的去向
+
+**部分成立〔静态〕：**清 flag 影响硬件提交头；它没有使 kernel dispatcher 自动忽略 POSH token。
+
+- `IGAccelCommandQueue` 分派 `0x2F8EF..0x2F90E` 按 token 高位选择；
+  `0x2F972..0x2F9AD` 仍调 executePosh，没有 context+0x6E 准入分支。
+- `executePosh 0x53EFB` 的 0x20000..0x2000B 跳表同样不查该 flag。
+  例如 0x20005 到 `0x541FA`，照常检查 token 大小、资源、修正 wait 地址；
+  `0x5478B..0x547C1` 继续按 token bit2 与 queue+0x7A8 清空四个 dword 并更新历史。
+  no-POSH **不会修掉这个 only-active 同步优化**。资源/格式错误仍返回 native 错误。
+- `submitBatchBuffer 0x42F7A` 仍登记同一 batch 地址和参数；`0x42FFC` 读 context+0x6E，
+  `0x43021..0x43035` 将 bit0x10 移入 BB_START bit20，最后 `0x43051` 写入 ring。
+  清 flag 后该位为0；没有把整条 token 流拒绝、静默丢弃或返回“已完成”。
+
+**证据不足〔GPU〕：**以上不能证明每个用户态 POCS batch 的双流依赖都能在 RCS 正确完成，
+也不能证明所有异步消费者已停止引用 MTL 私有块。
+加上 B1 的既有用户态 VS 抑制路径，原假说必须分为“用户态还生成哪些 token”和
+“内核是否仍使用 POCS context/safe image”，不能把它们统称为一个 POSH 开关。
+**不成立〔部署推论〕：**仅 no-POSH Ready 或清 flag 就解除 0.4.3 析构风险。
+#109 的外部整机报告不能替代本机这一条端到端证据。
+
+### A3：beginReset 返回 false 后的完整去向
+
+**成立〔静态〕：**`0x7C91E` 检查 restore 结果，false 经 `0x7C995` 返回；
+它还跳过 `0x7C931..0x7C978` 的页表地址重建。
+**不成立〔静态〕：**上级因此停止重提交、重试、标记 wedged 或立即 panic。
+
+host `IGHardwareCommandStreamer5::processGPUReset` 的路径是：
+`beginReset(0x3A422)` → **不检查 AL** → `resetRing(0x3A42A)` →
+`resubmitStampToRing(0x3A43C)` → `updateRingTail(0x3A446)` →
+遍历待提交项 `0x3A44B..0x3A4BB`（部分标记，部分重新提交）→
+更新 context+0xC9 / 原子计数 `0x3A4BD..0x3A4CE` → `endReset(0x3A4D6)` →
+按需启用 stamp interrupt → `submitExecList(0x3A526)`。
+
+GuC `0x1CCBE` 调 beginReset 后也不检查 AL，`0x1CCD5` resetRing，
+`0x1CD40..0x1CDB0` 遍历工作队列 / 重提交 stamp，`0x1CDC7` endReset，
+`0x1CE11` 发送 GPU-reset-complete 消息。之后检查的是 firmware 消息是否发送成功，
+不是 beginReset 的结果。此 GuC 路径只做静态核对，不作当前模式的硬件验证。
+
+本候选 `wrapTGLCSBReset` 初始化 CSB 后直接调用 native processGPUReset，没有捕获此 false。
+所以此前修正只保证 wrapper 不虚报局部成功；**证据不足〔整机安全〕：**它比吞错更安全。
+吞错会带着未经修正的 image 继续；现在 false 也会继续，还可能跳过页表恢复。
+需在实际 scheduler 边界完成失败隔离、取消/错误通知和重提交协议，才能称完整安全恢复。
+本轮保留如实的局部失败返回，不擅自丢任务、造完成或强加 panic；候选仍禁止作为已验证修复部署。
+
+### slow2 与下一步分流
+
+**成立〔手机视频〕：**输入 slow2.mp4，20.133 秒、H.264、显示方向 320×568、
+约30fps、604帧。在帧111–112（3.700–3.733秒），上方窗口/壁纸的下沿短暂覆盖
+原本露出的终端文字；帧113（3.767秒）恢复。这是局部水平边界变化，未据此认定 tile 损坏。
+帧差排名只是定位工具，手持移动、曝光、压缩和正常内容更新都会进入排名，不作为闪烁计数。
+这份导出文件不是保留120/240fps时间采样的证据；也不能用其播放时间换算真实故障持续时间。
+
+**证据不足〔同帧对照〕：**没有这次手机视频对应的系统录屏，且远端内容是否也变化未独立核对。
+“过去录屏没命中”并不等于“这次物理屏异常时合成结果正确”；即使同帧手机有而录屏无，
+也应优先指向录制取样点之后的呈现/扫描/复用路径，而不是宣称完全排除渲染同步问题。
+维护者已确认上述事件就是目标异常，且拔掉 HDMI 后内屏仍闪；无法同步录屏。
+因此推进 framebuffer 的 S0 观测，不再把同步录制设为前置条件。单内屏可复现并不证明
+上游候选具备所需背光/训练支持；暂不更换内核候选来代替诊断。
+
 ## 2026-11-13 后续：0.8.2 + #109 可审查内核候选
 
 **部分成立〔静态 / CPU / 构建〕：候选已形成，尚未安装或取得整机验证。**
@@ -95,7 +230,8 @@ nomc 旧 written-count 回退及 no-POSH 忽略错误各有一次语义反例失
 优先审查 `pendingOwner/pendingBar` 和 good/extras 缓存对 native recovery 序列化的假设；
 RCS/CCS 并行 reset / 嵌套 replay 是否会串状态；错误后兄弟 engine 是否仍在执行；halt 的长等待和恢复顺序。
 `TGLNoPOSHReady` 表示安装/准入，不是所有 context 都已成功 sanitize；必须检查 Live 失败计数。
-no-POSH 返回 false 后完整 scheduler 错误处理、POCS 分配与释放生命周期尚需进一步复核。
+上述未知点已有本轮补充：scheduler 忽略 false；native free 与 POSH flag 无关地遗漏 +0xA0。
+详见本文开头 db7b36e 跟进，不能继续将它们当作已关闭的部署风险。
 本次录屏没有可靠命中用户确认的闪烁帧，不能宣布 POSH 已被证实为闪烁来源。
 
 ### 给下游维护者的请求草稿（未发送）

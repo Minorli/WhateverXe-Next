@@ -2,6 +2,32 @@
 
 观察日期：2026-11-12，时区 UTC+8。以下仅发布脱敏的汇总结论。
 
+## 2026-11-13：db7b36e 跟进与 slow2
+
+- **成立〔整机只读〕：**当前下游已发布 CCS alignment / IOSurface policy Ready。
+  相隔 220.83 秒，alignment calls 从 20,407,729 增至 21,201,119，CCS_E / corrected
+  始终为 0；`TGLIOSurfaceCCSAtStart=0`。这些是该 hook 的覆盖范围，不能证明全局无压缩。
+  `TGLNoPOSH*` / `TGLGpuRec*` 缺失，记录 unavailable，不写成 0。
+- **不成立〔静态〕：**发现 `PoshDisable` 字符串就能给 UU 设置同名环境变量。
+  它来自 bundle 的 Development 字典；当前 MTL 的进程策略还会将值 0 提升为 1，
+  抑制 POSH VS 设置。旧 MTL 也有相同路径，不能误记为 0.4.3 新增修复。
+- **不成立〔静态 + CPU〕：**清 POSH flag 才使原生 free 跳过 +0xA0 释放。
+  `0x7C5D8` 的 native free 在 flag 两种状态下都不释放 +0xA0；host scheduler cleanup
+  是空函数。新增 CPU 回放记录了这个原生遗漏，不能将它标为已修好的内存问题。
+- **不成立〔静态〕：**内核 no-POSH 会自动丢弃 POSH token 或消除 only-active wait 优化。
+  token 分派 / wait 清空不读 context POSH flag；batch header bit20 会随 flag 清除。
+  全部双流 GPU 语义及异步释放安全仍缺实机证据，不能据此解除 0.4.3 部署阻塞。
+- **不成立〔静态〕：**beginReset false 能阻止恢复后的重提交。host 和 GuC 均忽略它；
+  host 随后仍走 resetRing、resubmitStamp、endReset、submitExecList。现有 wrapper 也没有接住此错误。
+- **成立〔手机视频〕：**slow2 的 3.700–3.733 秒，下沿露出的终端文字短暂被上方内容覆盖，
+  3.767 秒恢复。是局部水平边缘变化；原视频导出为 30fps / 604 帧。
+  **证据不足〔整机〕：**它与系统录屏的同一帧是否不同，及它是否排除了远端内容变化。
+  原片与提取图仅保留本机，不上传桌面内容。
+
+偏移、测试边界见 [REVIEW](REVIEW.md#db7b36e-跟进b1-与-a1a3)。
+维护者已确认目标视频事件、单内屏仍闪，且不能同步录屏。后续采用 d852aa9 外部审查的 S0；
+其余 [B2 实验](Deployment.md#b2用户确认后的短时分流) 未执行，不再等待内屏结果。
+
 ## 2026-11-13 后续：#109 内核候选已进入源码审查
 
 维护者随后授权继续 #109、构建并推送自己的 main。0.4.3 的旧 MTL 匹配失败仍然有效；
