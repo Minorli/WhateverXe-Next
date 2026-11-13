@@ -4,6 +4,12 @@ This is an independent, publicly shared Intel Xe / macOS research project, inten
 to produce small, reviewable contributions to WhateverXe and machine-specific
 integration changes for the G83 EFI project. It is not a replacement EFI release.
 
+- The maintainer selected `main` as the ongoing integration line on 2026-11-13.
+  Merge completed work into `main` and push it; do not leave fixes only on a
+  long-lived research branch. A short contribution branch is appropriate for an
+  explicitly requested upstream PR. Merging research is not deployment approval
+  or a claim of hardware stability.
+
 - Preserve evidence, attribution, exact driver fingerprints and physical-device
   guards. Distinguish CPU/mock tests, in-process real GPU tests, global installation,
   boot validation and long-running acceptance. Never conflate these levels.

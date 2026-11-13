@@ -143,16 +143,17 @@
     "metal_executable_replaced": true,
     "old_bundle_backed_up": true,
     "uu_loaded_new_inode": true,
-    "existing_windowserver_loaded_old_inode": true,
     "kernel_changed": false,
     "efi_changed": false,
     "va_restored": false,
-    "rebooted": false,
-    "full_system_acceptance": false
+    "rebooted": true,
+    "full_system_acceptance": false,
+    "existing_windowserver_loaded_old_inode_before_reboot": true,
+    "windowserver_loaded_new_inode_after_reboot": true
   },
   "limitations": [
-    "No original UU hang or objective flicker captured in this window.",
-    "Screen capture contributes to sampled compositor work; CPU attribution is not established.",
+    "No original UU hang or objective flicker frame captured; after reboot the maintainer still reports Dock and lower UU view flicker.",
+    "Preboot sample showed capture work; postboot samples vary between display composition and idle. Workload/background activity is not matched, so CPU attribution is not established.",
     "Native lifecycle candidates remain restricted to their old exact donor fingerprint.",
     "Short GPU comparisons do not establish long-term or fault-recovery safety."
   ],
@@ -178,5 +179,113 @@
   "probe_sha256": {
     "metal-surface-check": "2ec9a8c1b9dc31df059500b63c97c18e4e39ef24c3a5dfa34936850580764179",
     "metal-async-check": "4ead6575df2e85954dd05c464aa6cb48f2ce08552934386dc5a9864e41a14356"
+  },
+  "postboot": {
+    "boot_local": "2026-11-13 13:16:08 +0800",
+    "diagnostic_source_commit": "69381ba403755f2f0a3e36a47d0749597e1467ec",
+    "uu_left_connected_at_maintainer_request": true,
+    "display_layout_changed": false,
+    "reduce_transparency_already_enabled": true,
+    "reduce_motion_already_enabled": true,
+    "user_reported_flicker": [
+      "local left Dock",
+      "lower part of UU remote view"
+    ],
+    "flicker_acceptance": false,
+    "original_hang_resolved": false,
+    "long_term_memory_acceptance": false,
+    "monitors": {
+      "monitor.jsonl": {
+        "samples": 25,
+        "final": {
+          "elapsed": 240,
+          "recovery_calls": 0,
+          "recovery_returns": 0,
+          "recovery_monitor": "clean",
+          "comparison_baseline_clean": true,
+          "new_gpu_reports": 0,
+          "report_monitor_available": true,
+          "report_monitor_continuous": true,
+          "failure_data": false,
+          "halt_monitor": "not_available",
+          "halt_engine_mask": 0
+        },
+        "all_recovery_calls_zero": true,
+        "all_new_reports_zero": true
+      },
+      "flicker-monitor.jsonl": {
+        "samples": 31,
+        "final": {
+          "elapsed": 300,
+          "recovery_calls": 0,
+          "recovery_returns": 0,
+          "recovery_monitor": "clean",
+          "comparison_baseline_clean": true,
+          "new_gpu_reports": 0,
+          "report_monitor_available": true,
+          "report_monitor_continuous": true,
+          "failure_data": false,
+          "halt_monitor": "not_available",
+          "halt_engine_mask": 0
+        },
+        "all_recovery_calls_zero": true,
+        "all_new_reports_zero": true
+      }
+    },
+    "temperatures": {
+      "power.txt": {
+        "samples": 80,
+        "min_c": 46.0,
+        "max_c": 74.0,
+        "other_smc_keys_unavailable": true
+      },
+      "power-flicker.txt": {
+        "samples": 12,
+        "min_c": 45.0,
+        "max_c": 60.0,
+        "other_smc_keys_unavailable": true
+      }
+    },
+    "windowserver_footprint": {
+      "footprint.txt": {
+        "samples": 24,
+        "first_bytes": 233168896,
+        "last_bytes": 376168448,
+        "min_bytes": 233168896,
+        "max_bytes": 377643008
+      },
+      "footprint-flicker.txt": {
+        "samples": 58,
+        "first_bytes": 472064000,
+        "last_bytes": 597225472,
+        "min_bytes": 283803648,
+        "max_bytes": 605958144
+      },
+      "footprint-current.txt": {
+        "samples": 1,
+        "first_bytes": 421879808,
+        "last_bytes": 421879808,
+        "min_bytes": 421879808,
+        "max_bytes": 421879808
+      }
+    },
+    "evidence_sha256": {
+      "monitor.jsonl": "a83de6fd7f8236f7202ad34a6773b2dca9e30a2512449092ec9b53ebac982d34",
+      "flicker-monitor.jsonl": "e698fe975d46c9d05c4532a834d150f8f00466a28aad99b4e0356bf7c7fbf7e1",
+      "power.txt": "8e49a6a102ad605901bfc31c551c1ecff7d9694ad771ce533317f6a62640dcea",
+      "power-flicker.txt": "9e7d36eecbfdb6a5a1dbd10b112007c60027696c142d046269cc4841026ec20a",
+      "footprint.txt": "21a50a3d9c0af66305d3ef9c435affdea39caf95e97652d68cfb494a5032de63",
+      "footprint-flicker.txt": "9a13a8fa7a80f78c8ab6933d56b5d74988f49d36024cc003ff1a0055927ed79d",
+      "footprint-current.txt": "49625bb410d352d618c8712faec5916980cbd4953c2e40efa80f10ff5fa7a4bd",
+      "loaded-mappings.txt": "493ecdc4c241934fca67420e0df55bbeb751873d6447246d07141d034652f76a",
+      "processes.txt": "522c114ffa8bf9ed47388518adc5f83435257719b13338631d27d3fd2dbdb594",
+      "processes-flicker.txt": "be3f38dc7188c63b9abeb36ba4e4caf3c8ea36a2bfc562330231c834d7571f01",
+      "processes-current.txt": "53580171d01b6a62a855883cda9908b373eea36bd6322db5d328ac449591e263",
+      "ws-uu.sample.txt": "cb5085d382f17dc69c580652d4f933c087219cb483ecd8641c7794a4b21fd4dd",
+      "ws-flicker.sample.txt": "51a29eba3aec64950e04e6701e55a426cecb37619cf8cbbde0b7da0757196f5b",
+      "uu.sample.txt": "6d19e3a3e0fba8f911223cbd16d5ba9abe013bf33cc71a0af33a9558b0e2b9ce",
+      "decoder-flicker.sample.txt": "40216f1feba611882f1880a8061465e380811819a10d58e20f9319c38197d6da",
+      "kernel-flicker.txt": "a68207b5ee83bde04ecdcb1ad4577341c19bc434092fcb3eadb5d409376f9043"
+    }
   }
 }

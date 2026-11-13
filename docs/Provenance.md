@@ -20,9 +20,10 @@ BCS 变更相对**未修改的 git archive 基线**生成，涉及
 以下表格记录调查起点的加载文件。2026-11-13 12:18 左右已将磁盘上的 Metal
 executable 单独替换为官方 Graphics `v0.4.3` 的 Tahoe 版本：
 `25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa`。
-其 bundle 其余文件与本机逐项匹配，完整签名验证通过。既有 WindowServer 仍映射表中旧版，
-新启动的 UU 映射新版，已通过 inode 区分；UUID 在两版相同。
-内核、framebuffer、EFI 与隔离的 VA 没有因此更换。整机效果待重启验收，结果见 `Validation.md`。
+其 bundle 其余文件与本机逐项匹配，完整签名验证通过。2026-11-13 13:16 重启后，
+WindowServer 与 UU 都映射新版，已通过 inode 与磁盘 SHA 区分；UUID 在两版相同。
+内核、framebuffer、EFI 与隔离的 VA 没有因此更换。用户仍报告 Dock 与 UU 下半部
+闪屏，不能视为整机通过，结果见 `Validation.md`。下表的 Metal SHA 是调查起点旧版。
 
 | 文件 | SHA-256 |
 | --- | --- |

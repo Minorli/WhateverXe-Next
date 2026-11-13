@@ -34,10 +34,10 @@ WindowServer watchdog 导致异常重启。因此任何“卡死已经修复 / �
 ## 2. 必须读取的仓库和精确版本
 
 - 显卡研究仓库：<https://github.com/Minorli/WhateverXe-Next>
-- **目标分支：`research/posh-ownership-bcs-wait-20261112`。**
+- **当前迭代分支：`main`，已整合原研究分支。**
 - 核心源码基准：`400502276ee36358bc817409b06dc3ec50ffa1bd`；后续本次审查包为文档 / 证据提交。
-- 截至整理时，默认 main 仍为 `be95a2e6953297c4357cfa29143121fbdd19119c`，
-  缺少后续 atomic / lifecycle 等研究，不要误审 main 后报告“找不到源码”。
+- 本提示词的历史证据包固定在 `5851889cb10a6a801be6256dde9090ef287dd56d`。
+  复核原报告时 checkout 该提交；审查后续修复时使用 main，并先读最新 `Validation.md`。
 - 本机主集成仓库：<https://github.com/Minorli/g83-11gen-hackintosh-tahoe-efi>，
   main `409a6c66ac6a9b7af7287b1cf261847bef83e7cd`。
 - G83 上游：<https://github.com/xiananliu/g83-11gen-hackintosh-tahoe-efi>。
