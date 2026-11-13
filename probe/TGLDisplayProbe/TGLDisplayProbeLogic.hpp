@@ -20,7 +20,10 @@
 //   SOUTH_DSPCLK_GATE_D   0xC2020, bit15 (Wa_14011294188) -- snapshot only
 //   EDP_PSR_CTL(A)        0x60800 bit31, EDP_PSR2_CTL(A) 0x60900 bit31 -- snapshot only
 //
-// Safety contract (enforced by tests):
+// Deployment boundary: this sampler does NOT acquire a display power-domain
+// lease. The kernel adapter must not call it until that boundary is qualified.
+// Version 1.0.1 ships native RAM counters only; no BAR mapping or MMIO adapter.
+// Safety contract for the CPU-tested, currently undeployed MMIO sampler:
 //  * Every access is to an offset in kAllowed. No other register is touched.
 //  * While DC_STATE_EN allows DC5/DC6/DC9 nothing beyond DC_STATE_EN is read.
 //  * A pipe's registers are read only while its power well reports on.
@@ -36,6 +39,21 @@
 #include <stddef.h>
 
 namespace TGLDP {
+
+// Used by the kernel under its work-loop gate. cancelTimeout alone does not
+// drain an executing callback: transitions must take that SAME gate first.
+struct Lifecycle {
+	bool sleeping = false, stopping = false;
+	uint64_t resumeAfter = 0;
+	void pause() { sleeping = true; resumeAfter = 0; }
+	void wake(uint64_t now) { if (!stopping) { sleeping = false; resumeAfter = now + 3000000000ULL; } }
+	void stop() { stopping = true; }
+	bool canSample(uint64_t now) const { return !sleeping && !stopping && now >= resumeAfter; }
+};
+
+// Deliberately no boot-arg bypass. A PCI/power-well snapshot is not a lease.
+constexpr bool kMMIOQualified = false;
+inline bool acceptsWriteMode(bool count, uint32_t wa) { return !count && !wa; }
 
 constexpr uint32_t kPipes = 3;
 constexpr uint32_t PIPESTATUS(uint32_t p) { return 0x70058 + 0x1000 * p; }
@@ -89,6 +107,7 @@ struct Config {
 
 struct Snapshot {
 	uint32_t valid, dcState, pwrWell;
+	uint32_t imrValid;
 	uint32_t buddyCtl[2], buddyMask[2], dcpr2, dbuf[2], southGate, psr, psr2;
 	uint32_t imr[kPipes];
 	// Workaround-relevant fields only; DC/power/IMR state changes constantly.
@@ -105,6 +124,7 @@ struct PipeStats {
 	uint64_t underruns, firstNs, lastNs;
 	uint32_t lastFrame, lastFlips, powered, stickyHeld;
 	uint32_t firstSampled, stickyAtFirstSample;  // bit31 already set when first observed
+	uint32_t baselineValid, stickyAfterGap;
 };
 
 constexpr uint32_t kRing = 64;
@@ -117,6 +137,10 @@ struct State {
 	Snapshot first, last;
 	Event ring[kRing];
 };
+
+inline void samplingGap(State &st) {
+	for (auto &p : st.pipe) { p.baselineValid = 0; p.powered = 0; }
+}
 
 // IO must provide: uint32_t read(uint32_t), void write(uint32_t, uint32_t).
 template <class IO>
@@ -133,7 +157,15 @@ inline void snapshot(IO &io, Snapshot &s, uint32_t dc, uint32_t pw) {
 	s.psr = io.read(PSR_CTL);
 	s.psr2 = io.read(PSR2_CTL);
 	for (uint32_t p = 0; p < kPipes; ++p)
-		s.imr[p] = (pw & pipePowerBit(p)) ? io.read(DE_PIPE_IMR(p)) : 0;
+		if (pw & pipePowerBit(p)) {
+			s.imr[p] = io.read(DE_PIPE_IMR(p));
+			// An IMR of all ones is a legitimate all-masked value. Availability
+			// comes from the caller's lease, never this field's value alone.
+			s.imrValid |= 1U << p;
+		}
+	for (uint32_t i = 0; i < 2; ++i)
+		if (s.buddyCtl[i] == UINT32_MAX || s.buddyMask[i] == UINT32_MAX || s.dbuf[i] == UINT32_MAX) s.valid = 0;
+	if (s.dcpr2 == UINT32_MAX || s.southGate == UINT32_MAX || s.psr == UINT32_MAX || s.psr2 == UINT32_MAX) s.valid = 0;
 }
 
 template <class IO>
@@ -143,8 +175,10 @@ inline void writeTracked(IO &io, State &st, uint32_t reg, uint32_t value) {
 }
 
 template <class IO>
-inline bool applyOne(IO &io, State &st, uint32_t reg, uint32_t want, uint32_t slot, bool &reapply) {
+inline bool applyOne(IO &io, State &st, uint32_t reg, uint32_t bits, uint32_t mask, uint32_t slot, bool &reapply) {
 	const uint32_t now = io.read(reg);
+	if (now == UINT32_MAX) { ++st.unavailable; return false; }
+	const uint32_t want = (now & ~mask) | (bits & mask);
 	if (now == want) return false;
 	writeTracked(io, st, reg, want);
 	if (st.waWrites[slot]) reapply = true;   // value reverted after our write
@@ -156,15 +190,16 @@ template <class IO>
 inline void applyWorkarounds(IO &io, State &st, const Config &cfg) {
 	bool reapply = false;
 	if (cfg.wa & WABuddyTimer)
-		for (uint32_t i = 0; i < 2; ++i) applyOne(io, st, BUDDY_CTL[i], wantBuddyCtl(io.read(BUDDY_CTL[i])), i, reapply);
+		for (uint32_t i = 0; i < 2; ++i) applyOne(io, st, BUDDY_CTL[i], BUDDY_TIMER, BUDDY_TIMER_MASK, i, reapply);
 	if ((cfg.wa & WABuddyMask) && cfg.pageMask)
-		for (uint32_t i = 0; i < 2; ++i) applyOne(io, st, BUDDY_MASK[i], cfg.pageMask, 2 + i, reapply);
+		for (uint32_t i = 0; i < 2; ++i) applyOne(io, st, BUDDY_MASK[i], cfg.pageMask, UINT32_MAX, 2 + i, reapply);
 	if (cfg.wa & WADCPR2)
-		applyOne(io, st, DCPR_2, wantDCPR2(io.read(DCPR_2)), 4, reapply);
+		applyOne(io, st, DCPR_2, DCPR2_BITS, DCPR2_BITS, 4, reapply);
 	if (cfg.wa & WADBufTrack)
 		for (uint32_t i = 0; i < 2; ++i) {
 			const uint32_t v = io.read(DBUF_CTL[i]);
-			if (v & DBUF_POWERED) applyOne(io, st, DBUF_CTL[i], wantDBuf(v), 5 + i, reapply);
+			if (v == UINT32_MAX) { ++st.unavailable; continue; }
+			if (v & DBUF_POWERED) applyOne(io, st, DBUF_CTL[i], DBUF_TRACK, DBUF_TRACK_MASK, 5 + i, reapply);
 		}
 	if (reapply) ++st.waReapplied;
 }
@@ -175,23 +210,26 @@ inline bool tick(IO &io, State &st, const Config &cfg, uint64_t nowNs) {
 	++st.ticks;
 	const uint32_t dc = io.read(DC_STATE_EN);
 	st.dcLast = dc;
-	if (dc == 0xFFFFFFFFU) { ++st.unavailable; return false; }
-	if (dc & DC_MASK) { ++st.skippedDC; return false; }
+	if (dc == 0xFFFFFFFFU) { ++st.unavailable; samplingGap(st); return false; }
+	if (dc & DC_MASK) { ++st.skippedDC; samplingGap(st); return false; }
 	const uint32_t pw = io.read(PWR_WELL_CTL2);
-	if (pw == 0xFFFFFFFFU) { ++st.unavailable; return false; }
-	if (!(pw & PW1_STATE)) { ++st.skippedPW1; return false; }
+	if (pw == 0xFFFFFFFFU) { ++st.unavailable; samplingGap(st); return false; }
+	if (!(pw & PW1_STATE)) { ++st.skippedPW1; samplingGap(st); return false; }
 	++st.sampled;
 	for (uint32_t p = 0; p < kPipes; ++p) {
 		auto &ps = st.pipe[p];
 		ps.powered = (pw & pipePowerBit(p)) != 0;
-		if (!ps.powered) { ps.stickyHeld = 0; continue; }
+		if (!ps.powered) { ps.baselineValid = 0; continue; }
 		const uint32_t status = io.read(PIPESTATUS(p));
-		if (status == 0xFFFFFFFFU) { ++st.unavailable; continue; }
-		if (!ps.firstSampled) {
+		if (status == 0xFFFFFFFFU) { ++st.unavailable; ps.baselineValid = 0; continue; }
+		if (!ps.baselineValid) {
+			const bool first = !ps.firstSampled;
 			ps.firstSampled = 1;
+			ps.baselineValid = 1;
 			if (status & UNDERRUN) {
 				// Set before we ever looked: an old/unknown-time underrun, not an event.
-				ps.stickyAtFirstSample = 1;
+				if (first) ps.stickyAtFirstSample = 1;
+				else ++ps.stickyAfterGap;
 				if (cfg.count) writeTracked(io, st, PIPESTATUS(p), UNDERRUN);
 				else ps.stickyHeld = 1;
 				continue;
@@ -210,8 +248,9 @@ inline bool tick(IO &io, State &st, const Config &cfg, uint64_t nowNs) {
 	}
 	Snapshot s;
 	snapshot(io, s, dc, pw);
-	if (!st.first.valid) st.first = s;
-	else if (!s.sameWorkaroundState(st.last)) ++st.snapshotChanges;
+	if (!s.valid) ++st.unavailable;
+	else if (!st.first.valid) st.first = s;
+	else if (st.last.valid && !s.sameWorkaroundState(st.last)) ++st.snapshotChanges;
 	st.last = s;
 	if (cfg.wa) applyWorkarounds(io, st, cfg);
 	return true;
@@ -250,11 +289,37 @@ inline bool qualify(uint64_t vptr, uint64_t metaClass, SlotReader slot, uint64_t
 	if (!vptr || (vptr & 7) || metaClass <= vptr) return false;
 	if (metaClass - vptr != kMetaClass - kVPtr) return false;
 	const uint64_t t0 = slot(kSlots[0].index);
+	if (!t0) return false;
 	for (const auto &s : kSlots) {
 		const uint64_t t = slot(s.index);
 		if (t - t0 != s.fileTarget - kSlots[0].fileTarget) return false;
 	}
 	for (uint32_t i = 0; i < 5; ++i) out[i] = vptr - kVPtr + kCounters[i];
+	return true;
+}
+
+// Verify the live increment instructions refer to the qualified DATA counters.
+// Text and DATA can have different slides. Decode the relocated RIP displacement
+// rather than assuming file offsets are runtime pointers. Reader must fail safely.
+template <class Reader>
+inline bool qualifyInstructions(uint64_t firstTextSlot, const uint64_t counters[5], Reader read) {
+	constexpr uint64_t insns[5] {0x744CA, 0x744EC, 0x74514, 0x74539, 0x74084};
+	for (uint32_t i = 0; i < 5; ++i) {
+		uint8_t b[7] {};
+		const uint64_t address = firstTextSlot + (insns[i] - kSlots[0].fileTarget);
+		if (!read(address, b, sizeof(b)) || b[0] != 0x48 || b[1] != ((i == 0 || i == 4) ? 0xFF : 0x01) || b[2] != 0x05) return false;
+		const uint32_t disp = uint32_t(b[3]) | uint32_t(b[4]) << 8 | uint32_t(b[5]) << 16 | uint32_t(b[6]) << 24;
+		if (address + 7 + static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(disp))) != counters[i]) return false;
+	}
+	return true;
+}
+
+template <class Reader>
+inline bool sample(const uint64_t addresses[5], uint64_t values[5], Reader read) {
+	uint64_t temporary[5] {};
+	for (uint32_t i = 0; i < 5; ++i)
+		if (!read(addresses[i], &temporary[i], sizeof(temporary[i]))) return false;
+	for (uint32_t i = 0; i < 5; ++i) values[i] = temporary[i];
 	return true;
 }
 } // namespace Donor

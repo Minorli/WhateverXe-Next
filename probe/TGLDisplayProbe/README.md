@@ -1,91 +1,83 @@
-# TGLDisplayProbe：Tiger Lake 显示欠载探针
+# TGLDisplayProbe：Tiger Lake 显示欠载观察
 
-用来验证 [显示侧审查](../../docs/ClaudeReview-20261113-Display.md) 里的头号假设：
-UU 打开时左下角或下半屏闪烁，是显示 FIFO underrun。
+用于验证 [显示审查](../../docs/ClaudeReview-20261113-Display.md) 的欠载假说。
+来源为外部审查提交 `3e8d0d6`，保留 BSD-3-Clause 许可。
 
-## 设计
+## 当前版本 1.0.1 的范围
 
-- 独立的 IOService kext。**不依赖 Lilu、不 hook、不打补丁、不 `open()` provider**，使用独立的
-  `IOMatchCategory`，所以可以和任何 WhateverXe 构建（包括闭源下游）共存。
-- 第二次映射 IGPU BAR0（uncached），在自己的 work loop 上每 20 ms 采样一次：
-  - `ICL_PIPESTATUS`（`0x70058 / 0x71058 / 0x72058`）的 bit31：sticky underrun 位，不受 IMR 影响；
-  - 发生 underrun 时同时记录 frame counter 和 flip counter；
-  - 快照 donor 从来不写的 TGL 显示初始化寄存器：BW_BUDDY、DCPR_2、DBUF tracker、PSR 等。
-- **原生覆盖率计数器**：framebuffer `115a4616…888e` 的 `invokeDEErrorIntrHandler` 计数（入口、pipe A/B/C 欠载位、分派）。
-  - 这是纯内存读取，不需要 MMIO 资格。
-  - 运行时地址由一个活的 `AppleIntelFramebufferController` 推出：先校验 vptr 与 `gMetaClass` 的 `__DATA` 段内差值，以及 5 个 vtable 槽之间的 text 差值，都和文件完全一致之后才读。
-  - 读取期间一直持有该对象的引用，所以 donor kext 不可能在读取中被卸载。
-  - 校验失败时 `DonorCounterState = 2`，计数被禁用，不会猜测地址。
-- **访问资格**：
-  - 每个 tick 先确认 PCI vendor 为 0x8086，且 Command 寄存器的 Memory Space 位已开启；
-  - 系统睡眠、关机、重启前通过 priority sleep/wake interest 暂停采样，完全唤醒 3 秒后再恢复；
-  - 读到全 1 记为 unavailable，DC5/6/9 记为 SkippedDC，PW_1 关闭记为 SkippedPW1Off，这些情况都不会当成 0。
-- 结果放在服务属性 `TGLDisplayProbe` 里，由 OSSerializer 在读取时现场生成，**不会周期性写 registry**。
-- 安全约束都写在 `TGLDisplayProbeLogic.hpp` 开头，并由 CPU 测试强制检查：
-  - 只访问固定白名单里的寄存器；
-  - DC5 / DC6 / DC9 允许时，除 `DC_STATE_EN` 之外什么都不读；
-  - 一个 pipe 的寄存器只在它的 power well 打开时才读（A = PW_1，B = PW_3，C = PW_4）；
-  - **默认不做任何写入**；
-  - 加 `-tgldp-count` 后，唯一的写操作是：对刚看到 bit31 的 PIPESTATUS 写 1 清零。i915 做法相同，donor 原生代码不读这个寄存器；
-  - 第一次采样时就已经置位的 sticky 位，只记为 `StickyAtFirstSample`（旧的、发生时刻未知），不算作事件；
-  - workaround 写入默认关闭，每一项单独 opt-in，只改自己那个字段，可重复执行结果不变，而且从不猜 page mask。
+**只读原生 RAM 计数，完整 MMIO 探针尚未准入。** 当前适配器不映射 BAR0、不访问显示寄存器，
+不 hook、不改驱动代码、不 `open()` provider。独立 IOService / IOMatchCategory，可与闭源下游共存。
+`-tgldp-count` 或非零 `tgldp-wa` 会明确拒绝启动，不会静默忽略后报告实验已执行。
 
-## 启动参数
+原版每次检查 PCI Memory Space / DC / power-well 后独立读取寄存器。这不是电源域持有引用，
+也没有和原生显示电源切换共同加锁，存在检查与读取之间的竞态。系统睡眠通知也不能覆盖所有显示电源切换。
+因此不能把“CPU 测试通过”当作 MMIO 准入。完整算法暂保留在 `TGLDisplayProbeLogic.hpp` 中作待审查 CPU 模型，
+**没有内核 MMIO 适配器、没有 boot-arg 绕过资格检查**。不能用本版执行 S2 workaround 对照。
 
-| 参数 | 作用 |
-| --- | --- |
-| `-tgldp-off` | 不启动 |
-| `-tgldp-count` | 对 PIPESTATUS bit31 写 1 清零，从而统计每一次新的欠载。默认关闭；默认情况下，每次置位只能看到一次，直到别人清掉它 |
-| `-tgldp-readonly` | 强制完全不写，覆盖 `-tgldp-count` 和 `tgldp-wa` |
-| `tgldp-ms=N` | 采样周期，限制在 5–1000 ms，默认 20 |
-| `tgldp-wa=MASK` | 1 = BW_BUDDY TLB timer 8（Wa_22010178259），2 = BW_BUDDY page mask，4 = DCPR_2 bit27:24（Wa_14011508470），8 = DBUF tracker 8；默认 0 |
-| `tgldp-pagemask=V` | `tgldp-wa` 含 bit 2 时必须提供。按 i915 表：DDR4 双通道 `0x1F`，LPDDR4 双通道 `0x1C`，DDR4 单通道 `0xF` |
+## 原生计数资格与生命周期
 
-所有 A/B 轮次必须使用同一个 kext SHA，**只改 boot-arg**，这样才是单变量对照。
+目标 framebuffer 完整 SHA：
+`115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e`。
+
+部署前核对文件 SHA、段布局和计数指令。运行时持有同一物理 IGPU 的活 controller 引用，检查：
+
+- 精确类名、vptr 到 gMetaClass 的 DATA 差值、原有五个 vtable 槽的相对 text 差值；
+- 五条增量指令的 opcode 和实际重定位 RIP 目标，必须指向对应 DATA 计数；
+- 每次只读五个获准的 64 位全局值。不是任意内核内存读取接口；没有修改指令或守卫。
+
+运行时布局和指令检查不等于重新计算整个加载映像 SHA；依赖部署前精确文件核验与原生映像的生命周期。
+对象引用在 timer 完全停止后才释放；活对象持有期间其 kext code/data 不会卸载。
+不会假称这是通用 no-fault 内存读取器。原生计数是非原子累计，可能漏计并发事件，且只统计实际送达处理函数的中断。
+
+采样周期默认 100 ms。priority sleep/wake 回调用同一 work-loop 的 `runAction` 排队，
+等待正在进行的 timer 回调完成后才确认暂停；唤醒后等待 3 秒。停止后即使收到 wake 也不能重新启动采样。
+注册 sleep notifier 失败则拒绝启动。serializer 只复制已有快照，之后构建字典，不读硬件，不在每次采样写 registry。
 
 ## 构建与测试
 
 ```sh
-make test          # CPU 逻辑测试（ASan/UBSan），不访问硬件
-make               # build/TGLDisplayProbe.kext，打印 SHA-256
-make fb-shared     # build/fb-shared-open：触发 WEX 的按需发布并打印 TGLStream* 等键
+make test
+make
 ```
 
-在 G83 上请用本机 SDK 重新构建，并记录 SHA。审查者是在 macOS 27.2 SDK、arm64 主机上交叉编译验证的，
-链接时有 libkmod 版本提示，这个产物不要拿去部署。
+本机使用 26.5 SDK 构建，目标为本机 26.7.3 / 25G342；不使用外部交叉构建产物。
+16 项 CPU case 包括原有计数、白名单和 RMW 逻辑，以及：
 
-变异检查（审查者手工执行）：分别删掉以下守卫后，测试都会失败：
-- DC 检查
-- pipe power 检查
-- IMR 读取前的 power 检查
-- DBUF powered 检查
-- count 写入开关
-- page mask 必须提供的检查
+- 失去采样资格后重新遇到 sticky=1 记为 `StickyAfterGap`，不认定为刚发生的新事件；
+- 配置寄存器 all-ones 使快照失效，拒绝由该值生成 WA 写入；未上电 IMR 有独立有效位；
+- pause/wake 延迟/stop 状态，以及部署版拒绝未准入写模式；
+- 改坏运行时指令 opcode、RIP 目标和读失败均拒绝资格/发布，部分读取失败不发布半组结果。
 
-donor 资格校验另有 4 个反例测试：metaClass 差值不符、vptr 未对齐、空指针、vtable 槽差值不符。
+CPU 测试不证明 IOKit 的真实时序或睡眠恢复。MMIO 模型测试也不代表部署版执行过这些访问。
 
-## 读取
+## 启动参数与读取
+
+| 参数 | 1.0.1 行为 |
+| --- | --- |
+| 不添加任何参数 | RAM-only，只读；默认 100 ms |
+| `-tgldp-off` | 不启动 |
+| `tgldp-ms=N` | RAM 计数周期，限制为 100–1000 ms |
+| `-tgldp-count` / 非零 `tgldp-wa` | 拒绝启动：写模式未准入 |
 
 ```sh
 ioreg -rw0 -c TGLDisplayProbe -k TGLDisplayProbe
 ```
 
-主要字段：
-- `PipeAUnderruns` / `PipeAFirstNs` / `PipeALastNs` / `PipeALastFrame`
-- `Events`：最近 64 次 underrun，记录 ns、pipe、frame、flips、status
-- `First*` / `Last*`：寄存器快照（BuddyCtl / BuddyMask / DCPR2 / DBufS1 / DBufS2 / PSRCtl / IMR*）
-- `PipeAStickyAtFirstSample` / `PipeAFirstSampled`
-- `SkippedDC` / `SkippedPW1Off` / `UnavailableAllOnes` / `UnavailablePCI` / `Paused`
-- `DonorCounterState`，以及 `DonorUnderrun{Entry,PipeA,PipeB,PipeC,Dispatch}` 和对应的 `…AtQualify` 基线值。它们是原生中断路径的累计值，非原子递增，数值可能偏小，而且只统计送达处理函数（未被 IMR 屏蔽）的中断
-- `Writes`：累计写入次数
+- `DonorCounterState`：0 搜索中、1 资格匹配、2 拒绝、3 搜索超时。
+- `DonorCountersValid=1` 才能使用 `DonorUnderrun{Entry,PipeA,PipeB,PipeC,Dispatch}` 与 `…AtQualify`。
+- `NowNs` 是最后一次实际采样的 uptime 纳秒；`ReadNs` 是读取字典时间，不能混用判断陈旧。
+- `Paused`、`Stopped`、`DonorSampled`、`DonorReadFailures` 说明采样覆盖。
+- `MMIOAccessState=0`、`SkippedNoPowerLease` 明确完整寄存器采样不可用。
+- `PipeAFirstSampled` / `PipeAUnderruns` / `First*` / `SkippedDC` 等硬件测量键被省略，**不是零**。
+- `Writes=0` 是本版确实没有寄存器写入。不是闪烁已修好。
 
-`NowNs` 和事件的 `Ns` 都是 `mach_absolute_time` 换算出的 ns，用来和用户记录的闪烁时刻、
-`log show` 的时间对齐。换算基准是开机以来的时间，不是墙钟时间。
+已有采集工具新增 `tgl-capture --probe PRIVATE_DIRECTORY SECONDS`：每秒按键读取字典，
+写入权限 600 的 `probe.ndjson`；每 10 秒保留原来的 ACK 交叉采集。ACK 按需发布会打开并立即关闭
+现有 type-1 shared client，仍可能触发下游 cursor observer，不能称为完全无扰动。
+目录只能放本机 `local/`。工具不会启动 UU、自动重启或修改显示布局。
 
-## 部署与回退（需要维护者确认并手动重启）
+## 部署与回退
 
-1. 用 OpenCore `Kernel → Add` 注入：`BundlePath = TGLDisplayProbe.kext`、
-   `ExecutablePath = Contents/MacOS/TGLDisplayProbe`、`PlistPath = Contents/Info.plist`、`Arch = x86_64`。
-   和 Lilu / WEX 的顺序无关。
-2. 回退任选一种：在 OpenCore 引导菜单临时加 `-tgldp-off`，或者把这一项设为 `Enabled = false`。
-3. 不需要也不允许改动现有 WEX、Graphics bundle 或镜像布局。
+见 [Deployment](../../docs/Deployment.md#tgldisplayprobe-101-本机部署)。维护者已授权配置，
+并确认以前成功进入过 UEFI Shell。2026-11-13 已写入 EFI，但尚未重启验证。
+不要假定 OpenCore 普通菜单能直接编辑 boot-args；用已验证入口恢复精确原配置。

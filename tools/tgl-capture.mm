@@ -8,6 +8,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <mach/mach_time.h>
 #include "../src/RecoveryState.hpp"
 #include "../driver/WhateverXe/WhateverXe/kern_tgl_hang_cpu.hpp"
@@ -33,12 +34,42 @@ static NSDictionary *publishDisplay() {
     if(opened==KERN_SUCCESS)result[@"close_result"]=@(IOServiceClose(client));
     return result;
 }
-static int displayCapture(io_registry_entry_t root,NSString *directory,int seconds) {
+static NSDictionary *probeSummary(id raw) {
+    NSDictionary *probe=[raw isKindOfClass:[NSDictionary class]]?raw:nil;
+    NSMutableDictionary *result=[@{@"kind":@"probe",@"unix_seconds":@([NSDate date].timeIntervalSince1970),
+        @"probe_available":@(probe!=nil),@"probe":probe?:[NSNull null]} mutableCopy];
+    for(NSString *key in @[@"NowNs",@"PipeAUnderruns",@"PipeALastNs",@"DonorUnderrunPipeA",@"DonorUnderrunEntry",
+        @"Paused",@"SkippedDC",@"SkippedPW1Off",@"UnavailableAllOnes",@"UnavailablePCI",@"SkippedNoPowerLease",
+        @"DonorCounterState",@"DonorCountersValid",@"MMIOAccessState",@"Writes"])
+        result[key]=[probe[key] isKindOfClass:[NSNumber class]]?probe[key]:[NSNull null];
+    return result;
+}
+static int displayCapture(io_registry_entry_t root,NSString *directory,int seconds,bool probeMode=false) {
     mach_timebase_info_data_t timebase{};mach_timebase_info(&timebase);
     uint64_t previousSequence=0;double previousTime=0;
     bool havePrevious=false;
-    for(int elapsed=0;elapsed<=seconds && !stopped;elapsed+=10) {
+    struct File { int fd=-1; ~File() { if(fd>=0)close(fd); } } probeLog;
+    if(probeMode) {
+        NSString *path=[directory stringByAppendingPathComponent:@"probe.ndjson"];
+        probeLog.fd=open(path.fileSystemRepresentation,O_WRONLY|O_CREAT|O_EXCL|O_NOFOLLOW,0600);
+        if(probeLog.fd<0)return 5;
+    }
+    const int step=probeMode?1:10;
+    for(int elapsed=0;elapsed<=seconds && !stopped;elapsed+=step) {
         @autoreleasepool {
+            if(probeMode) {
+                io_service_t service=IOServiceGetMatchingService(kIOMainPortDefault,IOServiceMatching("TGLDisplayProbe"));
+                id raw=service?registryValue(service,@"TGLDisplayProbe"):nil;
+                if(service)IOObjectRelease(service);
+                NSDictionary *sample=probeSummary(raw);
+                NSData *json=[NSJSONSerialization dataWithJSONObject:sample options:NSJSONWritingSortedKeys error:nil];
+                if(!json || write(probeLog.fd,json.bytes,json.length)!=(ssize_t)json.length || write(probeLog.fd,"\n",1)!=1)return 5;
+                fwrite(json.bytes,1,json.length,stdout);putchar('\n');fflush(stdout);
+                if([sample[@"Writes"] isKindOfClass:[NSNumber class]] && [sample[@"Writes"] unsignedLongLongValue]) {
+                    fprintf(stderr,"Unexpected probe writes: stop the read-only observation.\n");return 8;
+                }
+            }
+            if(elapsed%10==0) {
             NSMutableDictionary *snapshot=[NSMutableDictionary new];
             snapshot[@"publication"]=publishDisplay();
             const double now=[NSDate date].timeIntervalSince1970;
@@ -100,9 +131,10 @@ static int displayCapture(io_registry_entry_t root,NSString *directory,int secon
             NSData *json=[NSJSONSerialization dataWithJSONObject:summary options:NSJSONWritingSortedKeys error:&error];
             if(!json)return 6;
             fwrite(json.bytes,1,json.length,stdout);putchar('\n');fflush(stdout);
+            }
         }
         // Short sleeps preserve SIGINT responsiveness. No observer runs here.
-        for(int i=0;i<10 && elapsed+i<seconds && !stopped;++i)sleep(1);
+        for(int i=0;i<step && elapsed+i<seconds && !stopped;++i)sleep(1);
     }
     return 0;
 }
@@ -170,19 +202,20 @@ static NSSet<NSString *> *gpuReports(bool &readable,NSArray<NSString *> *directo
 }
 int main(int argc,char **argv) {
     @autoreleasepool {
-        const bool display=argc==4 && strcmp(argv[1],"--display")==0;
-        if (argc!=3 && !display) { fprintf(stderr,"usage: tgl-capture [--display] PRIVATE_DIRECTORY SECONDS(1..3600; display: multiples of 10)\n"); return 2; }
+        const bool probe=argc==4 && strcmp(argv[1],"--probe")==0;
+        const bool display=probe || (argc==4 && strcmp(argv[1],"--display")==0);
+        if (argc!=3 && !display) { fprintf(stderr,"usage: tgl-capture [--display|--probe] PRIVATE_DIRECTORY SECONDS(1..3600; display: multiples of 10)\n"); return 2; }
         const int first=display?2:1;
         char *end=nullptr;
         long requested=strtol(argv[first+1],&end,10);
         if (!end || *end || requested<1 || requested>3600) return 2;
-        if(display && requested%10)return 2;
+        if(display && !probe && requested%10)return 2;
         int seconds=static_cast<int>(requested);
         NSString *directory=@(argv[first]); NSError *error=nil;
         if (![[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:YES attributes:@{NSFilePosixPermissions:@0700} error:&error] || chmod(directory.fileSystemRepresentation,0700)) return 3;
         io_registry_entry_t root=IORegistryGetRootEntry(kIOMainPortDefault); if (!root) return 4;
         signal(SIGINT,stop); signal(SIGTERM,stop);
-        if(display) {const int result=displayCapture(root,directory,seconds);IOObjectRelease(root);return result;}
+        if(display) {const int result=displayCapture(root,directory,seconds,probe);IOObjectRelease(root);return result;}
         NSArray<NSString *> *reportDirectories=@[@"/Library/Logs/DiagnosticReports", @"/Library/Logs/DiagnosticReports/Retired"];
         bool reportsReadable=false;
         NSSet<NSString *> *knownReports=gpuReports(reportsReadable,reportDirectories);

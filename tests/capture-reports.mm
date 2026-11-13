@@ -7,6 +7,14 @@
 #include <cassert>
 int main() {
     @autoreleasepool {
+        auto missing=probeSummary(nil);
+        assert(![missing[@"probe_available"] boolValue] && missing[@"Writes"]==[NSNull null]);
+        assert(probeSummary(@[@1])[@"DonorUnderrunPipeA"]==[NSNull null]);
+        auto ram=probeSummary(@{@"DonorCounterState":@1,@"DonorCountersValid":@1,@"DonorUnderrunPipeA":@0,
+            @"MMIOAccessState":@0,@"Writes":@0});
+        assert([ram[@"probe_available"] boolValue] && [ram[@"DonorUnderrunPipeA"] isEqual:@0]);
+        assert(ram[@"PipeAUnderruns"]==[NSNull null] && ram[@"SkippedDC"]==[NSNull null]);
+        assert(probeSummary(@{@"Writes":@"unknown"})[@"Writes"]==[NSNull null]);
         // Production parser: an optional older driver is different from a
         // ready monitor with missing/truncated evidence. No registry access.
         assert(haltMonitor(nil,false).qualified && !haltMonitor(nil,false).observed);

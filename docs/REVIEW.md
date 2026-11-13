@@ -7,6 +7,69 @@
 [脱敏审查包](../review/2026-11-13/README.md) 和
 [完整外部审查提示词](ExternalReview-20261113.md)。请先阅读新事故，再复核以下研究。
 
+
+## 3e8d0d6 跟进：TGLDisplayProbe 准入审查与 RAM-only 部署
+
+**成立〔静态＋CPU＋本机构建＋磁盘部署〕：**外部探针经修订为1.0.1，只交付已经建立生命周期边界的
+原生内存计数部分。维护者授权配置，并确认以前成功进入过UEFI Shell；当前EFI已配置，**未重启**。
+[完整步骤](Deployment.md#tgldisplayprobe-101-本机部署)与[验证摘要](../validation/tgldisplayprobe-20261113.json)。
+
+| S1门槛 | 审查及本次处理 |
+| --- | --- |
+| 只读计数、固定donor | **成立〔静态〕**：精确文件SHA、5个vtable槽和5条计数指令均匹配；运行时保留原差值守卫并新增opcode/RIP目标检查 |
+| 文件偏移不是运行时地址 | **成立〔静态＋CPU〕**：分别从活对象vptr和text槽推导DATA/text地址，按实际重定位displacement验证目标；不同segment slide和目标错误有测试 |
+| MMIO电源域资格 | **不成立〔静态〕**：独立timer的DC/PW检查不是lease；没有共同锁阻止模式设置、runtime power或power-well切换。取消全部生产BAR映射/MMIO适配器，发布MMIO unavailable |
+| 睡眠/停止 | **成立〔代码＋CPU状态机〕**：同一work-loop的runAction同步timer，在确认sleep前完成已有采样；wake延迟3秒，stop后不能复活，notifier失败拒绝start。**证据不足〔整机〕**：未实测睡眠 |
+| unavailable不填0 | **成立〔代码＋CPU〕**：未取得/失去原生计数资格时省略测量值；完整MMIO测量全部省略；采集器写JSON null。Paused与Stopped时旧值不能当新样本 |
+| 默认无W1C | **成立〔静态〕**：适配器没有寄存器读写；本版也拒绝count/非零wa请求，防止误认S2已执行 |
+| sticky首次与采样空窗 | **成立〔CPU模型〕**：保留StickyAtFirstSample；DC/断电/读失败/外部gap后重新建立baseline，首次sticky只记StickyAfterGap。该MMIO模型没有部署，不能称实机计数已经准确 |
+
+本机framebuffer文件：
+`115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e`。
+`__DATA`为`0xC8000..0x140000`；vptr`0xCBA80`、gMetaClass`0x138B80`和全部五个计数均在同段；
+计数另落在`__llvm_prf_cnts`的`0xD0910..0xECB10`范围。
+虚函数槽0/7/183/184/185的文件目标分别匹配`0x3E7A2/0x3E852/0x446BC/0x3F1FC/0x44982`。
+计数指令`0x744CA/0x744EC/0x74514/0x74539/0x74084`的目标分别为
+`0xE6CD8/0xE6CE0/0xE6CE8/0xE6CF0/0xE6BC8`。原始反汇编、字节表和运行时指针不上传。
+
+不能把同一个work-loop存在当作已证明所有电源访问串行化：controller `getWorkLoop`在`0x462AC`，
+framebuffer `setFramebufferPowerState`在`0x24DE8`，controller `setPowerState`在`0x27342`，
+native power-well enable/disable在`0x5BEDC/0x5B366`。
+还存在AGDC和port路径；本轮没有建立覆盖这些入口的只读lease。
+`SafeReadRegister32`会请求/释放power-domain，不能悄悄以它替代并声称零硬件副作用。
+
+代码修订语义：去掉不合格MMIO部署路径；保留待审查CPU模型并修复sticky空窗重复计数、
+未供电IMR有效性、all-ones快照/WA写入和二次读取造成的陈旧RMW。
+原生读取只对映射中、生命周期被活对象持有的固定globals进行；不是通用no-fault读取器。
+运行时字节资格也不是整个内存映像的SHA校验，不扩大支持到其它donor文件。
+
+本机16项CPU case（ASan/UBSan）及现有采集器解析测试通过；前者不执行IOKit timer/PM，
+不替代重启或睡眠验收。SDK26.5构建，部署主文件SHA：
+`192e72cf5b53da0b09d7b606177470a1a1cb94b9fb002fa5e596d9892b2ecf63`。
+逐一将`nm -u`的311个导入与本机`kmutil libraries`解析表比对，无缺失；
+`registerPrioritySleepWakeInterest`、`IOService::copyMatchingService`、`IOPCIDevice::extendedConfigRead16`均可解析。
+不能只依据kmutil退出码判断所有符号均已解析。
+
+`tgl-capture --probe`每秒记录探针dictionary和墙钟；每10秒复用现有ACK按需发布。
+缺失/非字典/缺测量键的解析反例通过；新增寄存器写入计数非零时立即结束采集。
+旧`driver/TGLDisplayProbe`未跟踪草稿已移入ignored local归档，仓库只维护`probe/TGLDisplayProbe`。
+
+### 原生计数观测的一个明确盲区
+
+**成立〔静态〕：**controller start的`0x3F236..0x3F254`解析`ig`；
+`hwEnableInterrupts`在`0x757EE`测试其bit4/5，后续仅在此条件满足时解除pipe欠载bit31屏蔽。
+`0x75A90..0x75ABB`、`0x75AFC..0x75B27`、`0x75B68..0x75B93`分别覆盖A/B/C。
+handler的panic分支由bit4控制。当前EFI没有`ig`参数；本轮没有修改中断掩码或新增该参数。
+因此“原生计数不增长”等同“没有欠载”的结论**不成立**；这是native计数与PIPESTATUS独立性的实际限制。
+`ig=0x20`是后续可审查的原生报告候选，不是本轮已批准或执行的变量；`ig=0x10`会进入危险分支，不使用。
+
+**证据不足〔整机〕：**未重启、未采集新的UU窗口、没有欠载关联或闪烁改善结果。
+当前也不能按“无计数增长且低Skipped比例”排除欠载，因为MMIO覆盖完全不可用。
+
+本轮引用的生命周期API依据：[Apple IOTimerEventSource文档](https://developer.apple.com/documentation/kernel/iotimereventsource)、
+[Apple XNU IOWorkLoop源码](https://github.com/apple-oss-distributions/xnu/blob/main/iokit/Kernel/IOWorkLoop.cpp)。
+外部审查与i915依据继续保留在[原报告](ClaudeReview-20261113-Display.md)，不改写其作者结论为实机事实。
+
 ## d852aa9 跟进：显示 S0 已命中用户反馈窗口
 
 保留 [Claude 原审查](ClaudeReview-20261113-Display.md) 原文，下面是本机复核，

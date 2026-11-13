@@ -38,7 +38,7 @@ UU 与 WindowServer 都走禁用 POSH VS 设置的路径，旧 MTL 也有相同�
 S0已执行，结果见 [REVIEW](REVIEW.md#d852aa9-跟进显示-s0-已命中用户反馈窗口)。
 用户反馈闪烁时没有新的bit31 ACK，不将其当作欠载已被排除，也不直接进入寄存器修补。
 
-**S1尚未构建或安装。**独立探针需要同时解决两种读取的边界：
+**状态更新：S1 的 RAM-only 1.0.1 已本机构建并写入 EFI，尚未重启验收。完整 MMIO 部分未准入。**见下方本机部署节。两种读取边界仍分别成立：
 
 1. 原生coverage计数：只读加载后framebuffer数据，核对精确SHA/布局、计数指令锚点与映射范围；
    不能把文件偏移直接当已重定位内存地址，也不能在kext退出后保留指针。
@@ -51,8 +51,8 @@ S0已执行，结果见 [REVIEW](REVIEW.md#d852aa9-跟进显示-s0-已命中用�
 
 保持独立于闭源下游、不hook原生函数的目标；若无法在这个边界内建立MMIO读取资格，
 应先交付内存计数部分并清楚标明覆盖缺口，而不是部署任意BAR轮询。
-探针的具体源码、构建SHA、权限/休眠边界和已核验回退入口准备好后，再请维护者批准安装并选择手动重启。
-目前没有新探针可批准安装，Documents里的EFI备份也不等于OpenCore菜单里已有可启动回退项。
+维护者已授权“配置好”，并确认以前成功进入过 UEFI Shell。默认只读 RAM 版已配置；由维护者手动重启。
+完整 MMIO 的电源域同步仍没有资格，不能用该次授权扩大为任意 BAR 轮询。
 
 **S2仍未准入：**只有观察到有效欠载且配置值/平台条件不符时，才逐项提出写入候选。
 BW_BUDDY、DCPR_2、DBUF tracker分开验证，不在一个“修复”开关内同时改三组寄存器后声称定位了机制。
@@ -229,3 +229,58 @@ sudo -n shasum -a 256 /Library/GPUBundles/AppleIntelTGLGraphicsMTLDriver.bundle/
 UU GUI 可临时退出做对照，后台服务和配置保留；保留工作软件、同步和有意镜像布局。
 VA bundle 保持隔离，不以重装图形包自动恢复它。没有杀 WindowServer 或自动重启步骤。
 旧 XePOSHFix 0.1.0 两字节候选已退役，不能作为部署捷径。
+
+
+## TGLDisplayProbe 1.0.1 本机部署
+
+**成立〔静态＋CPU＋构建＋磁盘部署〕：**只读 RAM 版已添加到 OpenCore `Kernel → Add`，
+`Enabled=true`、x86_64、Darwin25 限定。没有新增任何 tgldp / ig boot-arg。
+本机 SDK26.5 构建；16项 ASan/UBSan CPU case、采集器解析测试通过；311个外部符号全部解析，
+三个指定 API 均在本机 KC 中可用；ocvalidate1.0.8 通过。
+
+主二进制 SHA：`192e72cf5b53da0b09d7b606177470a1a1cb94b9fb002fa5e596d9892b2ecf63`。
+构建与EFI副本一致。逐文件核对：只有新增探针、配置中的一项 Kernel/Add、原配置备份发生变化；
+WEX、Graphics、VA隔离、显示布局和其余EFI文件未修改。完整备份仅在 ignored local/，不上传。
+
+**不成立〔静态〕：**当前完整版已经满足 MMIO 访问门槛。
+原版 power-well 状态检查与实际读取不在原生电源生命周期锁内。
+本版没有 BAR 映射/MMIO适配器，写模式明确拒绝；只保留资格校验后的原生 RAM 计数。
+`PipeAFirstSampled=1` 及 `First*` 寄存器快照**不是本版可验收项**，缺失必须记录 unavailable。
+不得把大量 `SkippedNoPowerLease` 忽略后宣布“无欠载”。
+
+### 维护者现在怎么做
+
+1. 保存工作，使用 macOS 正常菜单手动重新启动。保持原有镜像设置即可。
+2. 回到本会话回复“已重启”。诊断端先核对加载版本、`DonorCounterState=1`、
+   `DonorCountersValid=1`、`Paused=0`、`Writes=0` 和计数持续更新，再开始有意义的UU观察。
+3. 确认开始采集后，照常用 UU 10–15 分钟；每次看到闪烁回复“闪了”，可附大概时间/次数。
+   无需系统录屏或拔 HDMI。诊断端使用 `--probe` 每秒采集并每10秒交叉保留ACK；
+   另用既有健康采集记录gpuRestart、负载、WindowServer footprint和可取得的温度。
+4. 首次恢复循环、明显无响应或原有温度/内存停止条件出现即结束本轮负载，保存日志，
+   不持续施压到强制断电。睡眠/唤醒单独安排：本机原先禁用睡眠，尚未验证可恢复，不能自动测试。
+
+**证据不足〔整机〕：**尚未重启，不能宣布探针已加载、休眠保护通过或欠载与闪烁相关。
+原生中断报告默认可能被屏蔽，RAM计数不增长不能排除欠载；不能据此跳入S2写寄存器。
+完整PIPESTATUS采样需要真正的原生电源域持有/序列化方案，或另行批准原生中断报告实验。
+
+### 不能进入 macOS 时的具体回退
+
+维护者已确认曾成功进入 `UEFI Shell (Recovery)`；磁盘上的该工具仍启用。
+精确原配置已保存在同一 EFI 分区 `EFI/OC/config.pre-tgldp.plist`，逐字节匹配配置前版本。
+
+1. 在 OpenCore 菜单选择 **UEFI Shell (Recovery)**；如辅助项隐藏，按空格显示。
+2. 输入 `map -r`，然后逐个尝试 `fs0:`、`fs1:` 等，用
+   `ls \EFI\OC\config.pre-tgldp.plist` 找到有备份的实际 EFI 分区。
+   不假定每次都是 fs0。
+3. 在正确的 fsN 下执行：
+
+```text
+cp \EFI\OC\config.pre-tgldp.plist \EFI\OC\config.plist
+```
+
+出现覆盖确认时确认，必须看到复制成功；若报错不要继续启动。
+这个恢复会移除新增的启用项。kext文件即使仍在目录里也不会被该配置注入。
+4. 输入 `exit` 返回引导菜单；若已运行的 OpenCore 仍缓存旧配置，由维护者手动重新启动一次。
+   探针配置撤销后按原方式进入 macOS。不执行 Reset NVRAM。
+
+完整回退备份路径、文件清单和原始指纹仅保留本机 local/。

@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-13",
+  "scope": "S1 native RAM counters only; MMIO not admitted",
+  "version": "1.0.1",
+  "source_baseline": "3e8d0d6",
+  "host_os": "26.7.3",
+  "host_build": "25G342",
+  "sdk": "26.5",
+  "cpu_tests": {
+    "cases": 16,
+    "sanitizers": [
+      "ASan",
+      "UBSan"
+    ],
+    "result": "passed",
+    "boundary": "no IOKit scheduling or hardware validation"
+  },
+  "capture_parser_tests": "passed",
+  "resolved_imports": 311,
+  "unresolved_imports": [],
+  "binary_sha256": "192e72cf5b53da0b09d7b606177470a1a1cb94b9fb002fa5e596d9892b2ecf63",
+  "framebuffer_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+  "vtable_slots_matched": 5,
+  "native_counter_instruction_anchors_matched": 5,
+  "ocvalidate": "1.0.8 passed",
+  "disk_deployed": true,
+  "boot_verified": false,
+  "mmio_enabled": false,
+  "write_modes": "refused",
+  "boot_args_changed": false,
+  "recovery_entry": "UEFI Shell; maintainer confirms previously booted successfully",
+  "rollback_config": "EFI/OC/config.pre-tgldp.plist",
+  "user_action": "manual reboot; then verify before UU observation",
+  "sleep_wake_verified": false,
+  "underrun_confirmed": false,
+  "flicker_fixed": false
+}

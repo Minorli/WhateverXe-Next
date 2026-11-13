@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <cstring>
 
 using namespace TGLDP;
 
@@ -189,6 +190,94 @@ static void donorQualification() {
 	assert(!qualify(vptr, meta, reader, none) && none[0] == 0);
 }
 
+static void gapsDoNotCreateEvents() {
+    for (bool count : {false, true}) for (int gap = 0; gap < 5; ++gap) {
+        auto io = poweredA(); State st {}; Config cfg; cfg.count = count;
+        tick(io, st, cfg, 1);
+        io.reg[PIPESTATUS(0)] = UNDERRUN; tick(io, st, cfg, 2);
+        assert(st.pipe[0].underruns == 1);
+        if (gap == 0) io.reg[DC_STATE_EN] = 1;
+        if (gap == 1) io.reg[PWR_WELL_CTL2] = 0;
+        if (gap == 2) io.reg[PIPESTATUS(0)] = UINT32_MAX;
+        if (gap == 3) io.reg[DC_STATE_EN] = UINT32_MAX;
+        if (gap == 4) samplingGap(st); // PCI unavailable or sleep/wake
+        else tick(io, st, cfg, 3);
+        io.reg[DC_STATE_EN] = 0; io.reg[PWR_WELL_CTL2] = PW1_STATE;
+        io.reg[PIPESTATUS(0)] = UNDERRUN; tick(io, st, cfg, 4);
+        assert(st.pipe[0].underruns == 1 && st.pipe[0].stickyAfterGap == 1);
+        io.reg[PIPESTATUS(0)] = 0; tick(io, st, cfg, 5);
+        io.reg[PIPESTATUS(0)] = UNDERRUN; tick(io, st, cfg, 6);
+        assert(st.pipe[0].underruns == 2);
+    }
+}
+
+static void invalidSnapshotsAndWrites() {
+    auto io = poweredA(); State st {}; Config cfg;
+    io.reg[DE_PIPE_IMR(0)] = UINT32_MAX; // legitimate all-masked register
+    tick(io, st, cfg, 1);
+    assert(st.first.valid && st.first.imrValid == 1 && st.first.imr[0] == UINT32_MAX);
+    io.reg[BUDDY_CTL[0]] = UINT32_MAX;
+    tick(io, st, cfg, 2);
+    assert(!st.last.valid && st.snapshotChanges == 0 && st.unavailable == 1);
+    io.reg[BUDDY_CTL[0]] = 0;
+    tick(io, st, cfg, 3);
+    assert(st.last.valid && st.snapshotChanges == 0); // invalid previous snapshot
+    for (auto reg : {BUDDY_CTL[0], BUDDY_CTL[1], BUDDY_MASK[0], BUDDY_MASK[1], DCPR_2, DBUF_CTL[0], DBUF_CTL[1]}) io.reg[reg] = UINT32_MAX;
+    cfg.wa = WAAll; cfg.pageMask = 0x1F;
+    applyWorkarounds(io, st, cfg);
+    assert(io.writes.empty()); // never transform an all-ones read into a write
+}
+
+static void lifecycleAndDeploymentBoundary() {
+    Lifecycle life;
+    assert(life.canSample(1));
+    life.pause(); assert(!life.canSample(100));
+    life.wake(100); assert(!life.canSample(3000000099ULL));
+    assert(life.canSample(3000000100ULL));
+    life.pause(); assert(!life.canSample(4000000000ULL));
+    life.stop(); life.wake(5000000000ULL);
+    assert(!life.canSample(9000000000ULL)); // wake cannot revive a stopped sampler
+    assert(!kMMIOQualified);
+    assert(acceptsWriteMode(false, 0));
+    assert(!acceptsWriteMode(true, 0) && !acceptsWriteMode(false, 1));
+    assert(!acceptsWriteMode(false, 0x80000000U)); // no silent unknown-bit masking
+}
+
+static void instructionAndReadQualification() {
+    using namespace Donor;
+    const uint64_t textSlide = 0x100000000ULL, dataSlide = textSlide + 0x200000;
+    const uint64_t offsets[] {0x744CA, 0x744EC, 0x74514, 0x74539, 0x74084};
+    uint64_t counters[5] {};
+    std::map<uint64_t, std::vector<uint8_t>> mem;
+    for (int i = 0; i < 5; ++i) {
+        counters[i] = dataSlide + kCounters[i];
+        uint64_t value = i + 1;
+        mem[counters[i]].resize(8); memcpy(mem[counters[i]].data(), &value, 8);
+        auto &bytes = mem[textSlide + offsets[i]];
+        bytes = {0x48, uint8_t(i == 0 || i == 4 ? 0xFF : 0x01), 0x05, 0, 0, 0, 0};
+        int32_t disp = int32_t(counters[i] - (textSlide + offsets[i] + 7));
+        memcpy(bytes.data() + 3, &disp, 4);
+    }
+    auto read = [&](uint64_t at, void *out, size_t size) {
+        auto it = mem.find(at);
+        if (it == mem.end() || it->second.size() != size) return false;
+        memcpy(out, it->second.data(), size); return true;
+    };
+    const uint64_t first = textSlide + kSlots[0].fileTarget;
+    assert(qualifyInstructions(first, counters, read));
+    mem[textSlide + offsets[1]][0] ^= 1;
+    assert(!qualifyInstructions(first, counters, read));
+    mem[textSlide + offsets[1]][0] ^= 1;
+    mem[textSlide + offsets[2]][3] ^= 8;
+    assert(!qualifyInstructions(first, counters, read));
+    mem.erase(textSlide + offsets[2]);
+    assert(!qualifyInstructions(first, counters, read));
+    uint64_t values[5] {};
+    assert(sample(counters, values, read) && values[4] == 5);
+    mem[counters[0]][0] = 99; mem.erase(counters[4]);
+    assert(!sample(counters, values, read) && values[0] == 1); // atomic publication on failure
+}
+
 int main() {
 	dcBlocksEverything();
 	allOnesIsUnavailable();
@@ -202,6 +291,7 @@ int main() {
 	pageMaskNeverGuessed();
 	ringWraps();
 	donorQualification();
-	puts("TGLDisplayProbe logic: 12 cases passed (CPU only, no hardware access).");
+	gapsDoNotCreateEvents(); invalidSnapshotsAndWrites(); lifecycleAndDeploymentBoundary(); instructionAndReadQualification();
+	puts("TGLDisplayProbe logic: 16 cases passed (CPU only; no IOKit scheduling or hardware validation).");
 	return 0;
 }
