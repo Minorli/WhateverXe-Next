@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.2
+
+### Fixed
+
+- Avoid diagnostic snapshot allocation and registry writes on display update and framebuffer attribute paths unless display tracing is explicitly enabled.
+
 ## 0.8.1
 
 Update WhateverXe and [WhateverXe Graphics](https://github.com/b00t0x/WhateverXe-Graphics/releases) together.

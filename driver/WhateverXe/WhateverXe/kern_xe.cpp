@@ -17845,6 +17845,9 @@ void XE::tglTrace(uint32_t stage, uint32_t id, bool done, uint32_t a, uint32_t b
 }
 
 void XE::tglSnapshotFB(void *fb) {
+	// Framebuffer attributes are queried on the composition path. Match the
+	// existing trace opt-in before copying fields or allocating registry data.
+	if (!tglDisplayTraceEnabled) return;
 	auto b = static_cast<uint8_t *>(fb);
 	uint32_t index = *reinterpret_cast<uint32_t *>(b + 0x1DC);
 	uint32_t state[] = {*reinterpret_cast<uint32_t *>(b + 0x1E0), *reinterpret_cast<uint32_t *>(b + 0x3FD8),
@@ -19715,6 +19718,9 @@ void XE::tglObserveCursorMemory(void *fb) {
 }
 
 void XE::tglObserveScanout(void *fb, void *plane, uint32_t event, bool done, uint32_t result) {
+	// updatePlane calls this twice per native update. Keep default operation
+	// free of 2 KiB OSData allocations/registry writes at this boundary.
+	if (!tglDisplayTraceEnabled) return;
 	if (!fb || event > 7) return;
 	auto b = static_cast<uint8_t *>(fb);
 	auto ctl = *reinterpret_cast<uint8_t **>(b + 0x1D0);

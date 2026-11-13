@@ -59,6 +59,11 @@ BW_BUDDY、DCPR_2、DBUF tracker分开验证，不在一个“修复”开关内
 先核实内存控制器配置；不根据16+8GB的SMBIOS标签猜双通道值。
 无欠载记录也不排除flip/buffer复用等扫描输出问题。全程不自动重启或终止WindowServer。
 
+另有可独立审查的两处trace入口修订，默认消除scanout/FB快照的registry写入，
+CPU回归与DEBUG/RELEASE构建不等于整机效果。它没有改当前闭源下游，不能单独用boot-arg
+在旧下游打开此修订；已有 `-wex-tgl-prog-off`只控制另一条记录路径，也不能代替它。
+不为这两处改动部署整个含未验收no-POSH/recovery候选的0.8.2构建；下游需单独移植后再对照。
+
 ### B2：用户确认后的短时分流
 
 **状态更新：**维护者已确认 slow2 的 3.700–3.733 秒是目标闪烁，并自行验证拔掉 HDMI 后内屏仍闪。

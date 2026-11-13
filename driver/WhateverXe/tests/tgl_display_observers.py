@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Real scanout/HDCP observers must not read mapped but unpowered MMIO."""
+"""Default plane updates publish no diagnostic data; opt-in retains memory-only observations."""
 from pathlib import Path
 import argparse,re,subprocess,tempfile
 r=Path(__file__).resolve().parents[1];p=argparse.ArgumentParser();p.add_argument('--source',type=Path);a=p.parse_args()
 s=(a.source or r/'WhateverXe/kern_xe.cpp').read_text()
-bodies='\n'.join(re.search(p,s,re.S).group() for p in [r'void XE::tglObserveScanout\(.*?\n\}',r'uint32_t XE::tglObserveHDCP1\(.*?\n\}'])
+bodies='\n'.join(re.search(p,s,re.S).group() for p in [r'void XE::tglObserveScanout\(.*?\n\}',r'uint32_t XE::tglObserveHDCP1\(.*?\n\}',r'void XE::tglSnapshotFB\(.*?\n\}',r'void XE::wrapTGLPlaneUpdate\(.*?\n\}'])
 f=r'''#include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -16,14 +16,22 @@ void clock_get_uptime(uint64_t*p){*p=42;}
 void absolutetime_to_nanoseconds(uint64_t a,uint64_t*p){*p=a;}
 void *current_thread(){return reinterpret_cast<void*>(1);}
 std::vector<uint64_t> record;
+static bool tglDisplayTraceEnabled;
+unsigned publications=0,nativeUpdates=0;
+void *nativePlane=nullptr;bool nativeFlag=false;
+void nativeUpdate(void*p,bool f){++nativeUpdates;nativePlane=p;nativeFlag=f;}
+#define FunctionCast(wrapper,original) (original)
 struct IORegistryEntry {
  static IORegistryEntry *getRegistryRoot(){static IORegistryEntry r;return &r;}
- void setProperty(const char*,void*p,size_t n){record.assign((uint64_t*)p,(uint64_t*)p+n/8);}
+ void setProperty(const char*,void*p,size_t n){++publications;record.assign((uint64_t*)p,(uint64_t*)p+n/8);}
 };
 struct XE {
  void *tglObservationController=nullptr;
+ void (*orgTGLPlaneUpdate)(void*,bool)=nativeUpdate;
  static void tglObserveScanout(void*,void*,uint32_t,bool,uint32_t);
  static uint32_t tglObserveHDCP1(void*,uint32_t,uint32_t,bool,uint32_t,uint32_t);
+ static void tglSnapshotFB(void*);
+ static void wrapTGLPlaneUpdate(void*,bool);
 };
 XE instance,*callbackXE=&instance;
 // BODIES
@@ -37,6 +45,21 @@ int main(){
  *reinterpret_cast<uint32_t*>(access+0x60)=0x1000000;
  *reinterpret_cast<void**>(ctl+0xCA0)=(uint8_t*)mmio+0x800000;
  *reinterpret_cast<uint32_t*>(ctl+0xCEC)=0x100000;
+ *reinterpret_cast<void**>(plane+0x68)=fb;
+ for(unsigned i=0;i<100;++i)XE::wrapTGLPlaneUpdate(plane,i&1);
+ assert(publications==0&&record.empty());
+ assert(nativeUpdates==100&&nativePlane==plane&&nativeFlag);
+ // Disabled observation must not even dereference the observed object.
+ XE::tglObserveScanout(mmio,mmio,2,false,0);
+ XE::tglSnapshotFB(mmio);
+ // An opt-in must retain the pre-existing 64 memory-only boundaries below.
+ tglDisplayTraceEnabled=true;
+ XE::wrapTGLPlaneUpdate(plane,false);
+ assert(nativeUpdates==101&&nativePlane==plane&&!nativeFlag);
+ // The first 32 observations each retain both First and Last properties.
+ assert(publications==4&&record.size()==256&&record[3]==2&&record[4]==1);
+ XE::tglSnapshotFB(fb);
+ assert(publications==5&&record.size()==4);
  for(unsigned pipe=0;pipe<4;++pipe)for(unsigned event=0;event<8;++event)for(unsigned done=0;done<2;++done){
   *reinterpret_cast<uint32_t*>(plane+0x78)=pipe;
   XE::tglObserveScanout(fb,plane,event,done,7);
@@ -59,4 +82,4 @@ with tempfile.TemporaryDirectory(prefix='tgl-observers-') as d:
  d=Path(d);(d/'check.cpp').write_text(f)
  subprocess.run(['clang++','-std=c++14','-O1','-g','-fsanitize=address,undefined',str(d/'check.cpp'),'-o',str(d/'check')],check=True)
  subprocess.run([str(d/'check')],check=True)
-print('PASS: 64 scanout boundaries and HDCP released-object return; inaccessible MMIO/GGTT never touched')
+print('PASS: 100 default native updates with zero publications; opt-in scanout/FB snapshots retained; 64 memory-only boundaries and HDCP released-object return')

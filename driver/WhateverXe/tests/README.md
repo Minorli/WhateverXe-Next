@@ -83,6 +83,14 @@ separate from CPU assertions.
 
 ## Selecting and requiring checks
 
+`tgl_display_observers` executes the production plane-update wrapper and its
+observers. Without display tracing, 100 updates must call the native target
+exactly once each with unchanged arguments and publish no registry data.
+Explicit tracing retains First/Last records and framebuffer snapshots; the
+existing inaccessible-MMIO and released-HDCP-object cases remain. Clock,
+registry allocation and native update are CPU stubs; this does not measure
+kernel latency or establish a physical flicker fix.
+
 ```sh
 python3 tools/test.py --list
 python3 tools/test.py --only profile_admission --only display13_power_dispatch

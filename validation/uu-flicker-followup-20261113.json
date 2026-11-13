@@ -238,5 +238,62 @@
     "raw_recordings_published": false,
     "probe_kext_built": false,
     "probe_kext_installed": false
+  },
+  "display_observer_candidate": {
+    "scope": "gate tglObserveScanout and tglSnapshotFB on existing -wex-display-trace; debug-enabled observers retain old implementation",
+    "production_changes": "two early returns; no hardware-control changes",
+    "source_sha256": "20fb671c5c3af5b30e5fff6339de74c68cf841df23d0e03a70ab8f95623390b4",
+    "test_sha256": "5a986a8c57433746b6859cabc666f09353e2a80806844bc7d5886b51b1946c2b",
+    "cpu_test": {
+      "runner": "python3 tools/test.py --only tgl_display_observers --require tgl_display_observers",
+      "final_result": "run-qm4ycm_r",
+      "passed": 1,
+      "failed": 0,
+      "unselected": 292,
+      "native_update_calls": 100,
+      "default_registry_publications": 0,
+      "optin_first_last_preserved": true,
+      "inaccessible_mmio_cases_retained": true,
+      "old_source_counterexample": "same final fixture with 67c9900 kern_xe.cpp fails publications==0 assertion",
+      "initial_fixture_failure": "run-pxmy4wyk expected two opt-in publications, but existing First+Last contract requires four; fixture corrected, production behavior retained",
+      "early_counterexample": "first fixture ordered an inaccessible-pointer check first; old source failed ASan there; reordered to demonstrate explicit default-publication assertion"
+    },
+    "builds": {
+      "debug": {
+        "WhateverXe": {
+          "version": "0.8.2",
+          "configuration": "DEBUG",
+          "sha256": "de3fb88ff4ff0b018890c8fbebb20ff8087fb644db2a82728ddff2adcbede1e4"
+        },
+        "AppleIntelTGLCompat": {
+          "version": "0.8.1",
+          "configuration": "DEBUG",
+          "sha256": "a0f73226c3dfdda814424013399bfb5e672f33e7e24f0143109ca4c856d4e743"
+        },
+        "manifest_sha256": "5fa23bb5ac50ccafc1565d4de66b556dfb1494f1e0953c952019bc82b1ab065a"
+      },
+      "release": {
+        "WhateverXe": {
+          "version": "0.8.2",
+          "configuration": "RELEASE",
+          "sha256": "767dcd18c343f5a99c7c70df42b341a80eaa52942feadaed032577950072d4c9"
+        },
+        "AppleIntelTGLCompat": {
+          "version": "0.8.1",
+          "configuration": "RELEASE",
+          "sha256": "4c24dd97b4e4600ab10353d2869d916cd1d9d659507b7be3ad4b06800b3455ae"
+        },
+        "manifest_sha256": "9cf92b38d11a19d2581f7ebee386ffa76978921f1276d6bd401359bc1e79acb5"
+      }
+    },
+    "initial_build_failure": "default dependency paths absent; resolved by explicit existing SDK and Lilu arguments",
+    "full_cpu_suite_rerun": false,
+    "installed": false,
+    "gpu_executed": false,
+    "flicker_fixed": false,
+    "hardware_latency_measured": false,
+    "current_closed_downstream_modified": false,
+    "ring_buffer_refactor_done": false,
+    "plane_program_recorder_changed": false
   }
 }
