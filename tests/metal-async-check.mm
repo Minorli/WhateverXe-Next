@@ -12,6 +12,7 @@
 #include "../src/POSHDeferred.h"
 #include "../src/POSHQueueCache.h"
 #include "../src/BoundedCount.hpp"
+#include "../src/GPUHealth.hpp"
 
 struct Results { std::atomic<unsigned> done{0}, bad{0}, errors{0}; };
 static void memory(const char *phase, unsigned n) {
@@ -32,6 +33,7 @@ int main(int argc,char **argv) {
         bool abandoned=strcmp(mode,"abandoned")==0;
         if ((!texture && !mixed && !abandoned) || count<1 || count>10000) return 2;
         if (argc>3 && !fix && !queueCache && strcmp(argv[3],"stock")!=0) return 2;
+        if (!xe::noGPURecovery()) return 14;
         id<MTLDevice> device=MTLCreateSystemDefaultDevice(); if (!device) return 3;
         if (queueCache && !installPOSHQueueCache(device.registryID)) { fprintf(stderr,"Queue-cache guard refused\n"); return 4; }
         id<MTLCommandQueue> queues[2]={[device newCommandQueue],[device newCommandQueue]};
@@ -43,6 +45,8 @@ int main(int argc,char **argv) {
         memory("start",0);
         auto start=std::chrono::steady_clock::now();
         for (int n=0;n<count;++n) {
+            if (n%16==0 && !xe::noGPURecovery()) return 14;
+            if (results->bad || results->errors) return 7;
             @autoreleasepool {
                 if (abandoned) { id<MTLCommandBuffer> cb=[queues[n&1] commandBuffer]; if (!cb) return 5; continue; }
                 if (dispatch_semaphore_wait(depth,dispatch_time(DISPATCH_TIME_NOW,10*NSEC_PER_SEC))) {
@@ -93,6 +97,8 @@ int main(int argc,char **argv) {
             if ((n+1)%500==0) memory("progress",n+1);
         }
         if (dispatch_group_wait(group,dispatch_time(DISPATCH_TIME_NOW,10*NSEC_PER_SEC))) return 12;
+        if (!xe::noGPURecovery()) return 14;
+        if (results->bad || results->errors) return 7;
         // Drain each queue: user completion blocks may precede native destruction
         // of the final CB. Sentinels don't count toward workload verification.
         for (auto queue:queues) { @autoreleasepool { auto cb=[queue commandBuffer]; [cb commit]; [cb waitUntilCompleted]; if (cb.status!=MTLCommandBufferStatusCompleted) return 6; } }

@@ -11,6 +11,7 @@
 #include <thread>
 #include "../src/POSHDeferred.h"
 #include "../src/BoundedCount.hpp"
+#include "../src/GPUHealth.hpp"
 
 int main(int argc,char **argv) {
     @autoreleasepool {
@@ -18,6 +19,7 @@ int main(int argc,char **argv) {
         if (argc>3 || (argc>1 && !xe::boundedCount(argv[1],10000,count))) return 2;
         bool mixed=argc>2 && strcmp(argv[2],"mixed")==0;
         if(count<1 || count>10000 || (argc>2 && !mixed))return 2;
+        if(!xe::noGPURecovery())return 14;
         NSOpenGLPixelFormatAttribute attributes[]={NSOpenGLPFAOpenGLProfile,NSOpenGLProfileVersion3_2Core,NSOpenGLPFAAccelerated,NSOpenGLPFAColorSize,24,0};
         NSOpenGLPixelFormat *format=[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes];
         NSOpenGLContext *context=[[NSOpenGLContext alloc] initWithFormat:format shareContext:nil];
@@ -37,6 +39,7 @@ int main(int argc,char **argv) {
             auto target=[device newBufferWithLength:1048576 options:MTLResourceStorageModeShared];
             if(!source || !target){++metalErrors;return;}memset(source.contents,0x5a,1048576);
             while(!stop && metalDone<10000){@autoreleasepool {
+                if((metalDone%16)==0 && !xe::noGPURecovery()){++metalErrors;stop=true;break;}
                 auto cb=[queue commandBuffer];auto e=[cb blitCommandEncoder];
                 if(!cb || !e){++metalErrors;break;}
                 [e copyFromBuffer:source sourceOffset:0 toBuffer:target destinationOffset:0 size:1048576];[e endEncoding];[cb commit];[cb waitUntilCompleted];
@@ -48,6 +51,7 @@ int main(int argc,char **argv) {
         for(int i=0;i<2;++i){glBindTexture(GL_TEXTURE_2D,textures[i]);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,width,height,0,GL_RGBA,GL_UNSIGNED_BYTE,nullptr);glBindFramebuffer(GL_FRAMEBUFFER,fb[i]);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,textures[i],0);}
         unsigned bad=0,errors=0,completed=0;auto begin=std::chrono::steady_clock::now();
         for(int n=0;n<count;++n){
+            if(stop || metalErrors || (n%16==0 && !xe::noGPURecovery())){++errors;break;}
             glBindFramebuffer(GL_FRAMEBUFFER,fb[0]);glViewport(0,0,width,height);
             const unsigned char r=(n*19+7)&255,g=(n*31+13)&255,b=(n*7+29)&255;
             glClearColor(r/255.0f,g/255.0f,b/255.0f,1);glClear(GL_COLOR_BUFFER_BIT);
@@ -66,6 +70,7 @@ int main(int argc,char **argv) {
             ++completed;
         }
         stop=true;if(worker.joinable())worker.join();
+        if(!xe::noGPURecovery())return 14;
         glDeleteFramebuffers(2,fb);glDeleteTextures(2,textures);
         const double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count();
         printf("{\"requested\":%d,\"completed\":%u,\"pixel_mismatches\":%u,\"gl_errors\":%u,\"metal_completed\":%u,\"metal_errors\":%u,\"seconds\":%.3f}\n",count,completed,bad,errors,metalDone.load(),metalErrors.load(),seconds);

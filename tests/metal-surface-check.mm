@@ -21,6 +21,7 @@
 #include "../src/BoundedCount.hpp"
 #include "../src/POSHQueueCache.h"
 #include "../src/POSHAtomicClaim.h"
+#include "../src/GPUHealth.hpp"
 
 static uint32_t pattern(unsigned x,unsigned y,unsigned frame) {
     const unsigned b=(x*3+frame*7)&255, g=(y*5+frame*11)&255;
@@ -53,6 +54,7 @@ static void pumpEvents() {
     [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.0001]];
 }
 static bool temperatureOK(NSString *path) {
+    if (!xe::noGPURecovery()) return false;
     if (!path) return true;
     NSDictionary *attributes=[[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     NSDate *modified=attributes[NSFileModificationDate];

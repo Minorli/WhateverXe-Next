@@ -11,6 +11,7 @@
 #include "../src/POSHDeferred.h"
 #include "../src/POSHQueueCache.h"
 #include "../src/BoundedCount.hpp"
+#include "../src/GPUHealth.hpp"
 
 static void report(const char *phase, int count) {
     task_vm_info_data_t info{};
@@ -39,6 +40,7 @@ int main(int argc, char **argv) {
         bool render = strcmp(mode, "render") == 0 || draw;
         bool overlap = strcmp(mode, "overlap") == 0 || drawOverlap;
         if (!blit && !render && !overlap && !compute && strcmp(mode, "empty") != 0) return 2;
+        if (!xe::noGPURecovery()) return 14;
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (!device) return 3;
         if (queueCache && !installPOSHQueueCache(device.registryID)) { fprintf(stderr,"Queue-cache guard refused\n"); return 4; }
@@ -90,6 +92,7 @@ int main(int argc, char **argv) {
         auto begin = std::chrono::steady_clock::now();
         report("start", 0);
         for (int i = 1; i <= count; ++i) {
+            if ((i==1 || i%16==0) && !xe::noGPURecovery()) return 14;
             @autoreleasepool {
                 const int batch = overlap ? 4 : 1;
                 id<MTLCommandBuffer> buffers[4];
@@ -133,6 +136,7 @@ int main(int argc, char **argv) {
             }
             if (i % 500 == 0 || i == count) report("progress", i);
         }
+        if (!xe::noGPURecovery()) return 14;
         bool valid = true;
         if (blit) valid = memcmp(source.contents, target.contents, length) == 0;
         if (compute) {
