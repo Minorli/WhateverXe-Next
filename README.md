@@ -30,6 +30,7 @@ G83 的 EFI 与整机设置在[独立集成仓库](https://github.com/Minorli/g8
 
 ## 阅读与审查
 
+- [2026-11-13 独立审查包](review/2026-11-13/README.md)：最新异常重启、脱敏关键日志、推送清单与可直接交给外部审查者的详细提示词。
 - [审查入口](docs/REVIEW.md)：建议阅读顺序、关键疑点及部署阻塞项，适合人工或 Claude 等代码审查。
 - [问题证据](docs/Findings.md)：内存、BCS 卡死、远程呈现闪屏与 VA 故障分别记录。
 - [POSH 生命周期设计](docs/POSH.md)：所有权、CPU / GPU 完成、已知风险和未覆盖路径。

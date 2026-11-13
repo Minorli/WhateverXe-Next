@@ -1,0 +1,393 @@
+{
+  "format": 1,
+  "kind": "sanitized_derived_incident_evidence_not_raw_reports",
+  "source_code_checkpoint": "400502276ee36358bc817409b06dc3ec50ffa1bd",
+  "timezone": "Asia/Shanghai (UTC+08:00)",
+  "report_saved_time": "2026-11-13 00:02:49.00 +0800",
+  "panic_reason": "userspace watchdog timeout: no successful checkins from WindowServer (2 induced crashes) in 120 seconds",
+  "panic_uptime_ns": 19926473677392,
+  "current_boot_local": "2026-11-13T00:02:44+08:00",
+  "first_recorded_error": {
+    "time": "2026-11-12 22:59:42.400710+0800",
+    "message": "virtual void IOAccelEventMachineFast2::checkGPUProgress() - Signaling hardware error on channel 25..",
+    "monotonic_uptime_ns": 16185982100332
+  },
+  "initial_restart_messages": [
+    {
+      "time": "2026-11-12 22:59:42.400710+0800",
+      "message": "virtual void IOAccelEventMachineFast2::checkGPUProgress() - Signaling hardware error on channel 25.."
+    },
+    {
+      "time": "2026-11-12 22:59:42.400728+0800",
+      "message": "void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartSignaled stampIdx=25 type=2 prevType=0 numStamps=64"
+    },
+    {
+      "time": "2026-11-12 22:59:42.400737+0800",
+      "message": "void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartEnqueued stampIdx=25 type=2"
+    },
+    {
+      "time": "2026-11-12 22:59:42.400751+0800",
+      "message": "void IOAccelEventMachine2::hardwareErrorEvent(): GPURestartDequeued stampIdx=25 type=2"
+    },
+    {
+      "time": "2026-11-12 22:59:45.764748+0800",
+      "message": "void IOAccelEventMachine2::restart_channel(): GPURestartBegin stampIdx=25 type=2"
+    },
+    {
+      "time": "2026-11-12 22:59:45.968344+0800",
+      "message": "Trying to restart GPU (Intel Iris Xe Graphics)..."
+    },
+    {
+      "time": "2026-11-12 22:59:45.968644+0800",
+      "message": "void IOAccelEventMachine2::restart_channel(): GPURestartEnd stampIdx=25 type=2"
+    },
+    {
+      "time": "2026-11-12 22:59:47.971043+0800",
+      "message": "virtual void IOAccelEventMachineFast2::checkGPUProgress() - Signaling hardware error on channel 25.."
+    },
+    {
+      "time": "2026-11-12 22:59:47.971053+0800",
+      "message": "void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartSignaled stampIdx=25 type=2 prevType=0 numStamps=64"
+    },
+    {
+      "time": "2026-11-12 22:59:47.971058+0800",
+      "message": "void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartEnqueued stampIdx=25 type=2"
+    },
+    {
+      "time": "2026-11-12 22:59:47.971069+0800",
+      "message": "void IOAccelEventMachine2::hardwareErrorEvent(): GPURestartDequeued stampIdx=25 type=2"
+    }
+  ],
+  "late_window_counts": {
+    "local_start": "2026-11-12T23:58:00+08:00",
+    "local_end_exclusive": "2026-11-13T00:02:00+08:00",
+    "counts": {
+      "GPURestartBegin": 15,
+      "GPURestartEnd": 15,
+      "GPURestartSkipped": 45,
+      "GPURestartDeferred": 60,
+      "GPU hang:": 15
+    },
+    "warning": "Counts are separate event types, not a sum of independent GPU resets."
+  },
+  "watchdogs": [
+    {
+      "source_report": "WindowServer-2026-11-13-000045.ips",
+      "capture_time": "2026-11-13 00:00:45.1569 +0800",
+      "termination": {
+        "flags": 0,
+        "indicator": "monitoring timed out for service",
+        "code": 1,
+        "namespace": "WATCHDOG",
+        "details": [
+          "(1 monitored services unresponsive): checkin with service: WindowServer (0 induced crashes) returned not alive with context:",
+          "unresponsive work processor(s): WindowServer main thread",
+          "40 seconds since last successful checkin, 1977 total successful checkins since 19810 seconds ago, has not exited since first loaded"
+        ]
+      },
+      "thermal_pressure": "ThermalPressureLevelNominal (0)",
+      "display_state": "OFF",
+      "windowserver_resident_bytes": 11814907904,
+      "windowserver_waiting_thread": "ws_main_thread",
+      "owner_thread": {
+        "id": 111,
+        "name": "IOServiceTerminateThread",
+        "state": [
+          "TH_WAIT",
+          "TH_UNINT"
+        ]
+      },
+      "accelerator_uuid": "BA3AA1C0-FE6B-33B3-9D85-73F848394E3D",
+      "accelerator_symbolized_return_offsets": [
+        {
+          "offset": "0x38022",
+          "symbol": "IGScheduler5::checkForProgress(IGHwCsType)",
+          "delta": "0xa4"
+        },
+        {
+          "offset": "0x15f92",
+          "symbol": "IGAccelEventMachine::eventTimeout(int)",
+          "delta": "0x70"
+        },
+        {
+          "offset": "0x15eae",
+          "symbol": "IGAccelEventMachine::finishEvent(IOAccelEvent*, unsigned int)",
+          "delta": "0x1e"
+        },
+        {
+          "offset": "0x2f25f",
+          "symbol": "IGAccelCommandQueue::commandQueueStop()",
+          "delta": "0x29"
+        }
+      ]
+    },
+    {
+      "source_report": "WindowServer-2026-11-13-000125.ips",
+      "capture_time": "2026-11-13 00:01:25.1581 +0800",
+      "termination": {
+        "flags": 0,
+        "indicator": "monitoring timed out for service",
+        "code": 1,
+        "namespace": "WATCHDOG",
+        "details": [
+          "(1 monitored services unresponsive): checkin with service: WindowServer (1 induced crashes) returned not alive with context:",
+          "unresponsive work processor(s): WindowServer main thread",
+          "80 seconds since last successful checkin, 1977 total successful checkins since 19850 seconds ago, 39 seconds since last crashed by watchdogd, , has not exited since first loaded"
+        ]
+      },
+      "thermal_pressure": "ThermalPressureLevelNominal (0)",
+      "display_state": "OFF",
+      "windowserver_resident_bytes": 11814912000,
+      "windowserver_waiting_thread": "ws_main_thread",
+      "owner_thread": {
+        "id": 111,
+        "name": "IOServiceTerminateThread",
+        "state": [
+          "TH_WAIT",
+          "TH_UNINT"
+        ]
+      },
+      "accelerator_uuid": "BA3AA1C0-FE6B-33B3-9D85-73F848394E3D",
+      "accelerator_symbolized_return_offsets": [
+        {
+          "offset": "0x38022",
+          "symbol": "IGScheduler5::checkForProgress(IGHwCsType)",
+          "delta": "0xa4"
+        },
+        {
+          "offset": "0x15f92",
+          "symbol": "IGAccelEventMachine::eventTimeout(int)",
+          "delta": "0x70"
+        },
+        {
+          "offset": "0x15eae",
+          "symbol": "IGAccelEventMachine::finishEvent(IOAccelEvent*, unsigned int)",
+          "delta": "0x1e"
+        },
+        {
+          "offset": "0x2f25f",
+          "symbol": "IGAccelCommandQueue::commandQueueStop()",
+          "delta": "0x29"
+        }
+      ]
+    }
+  ],
+  "counter_only_source_sha256": "56b2f8f192dcefc769395cc310f3e793af5844aa9c2dd2f8fd5d5552561b7d4d",
+  "earlier_recovery_snapshot": {
+    "unix_seconds": 1794495712.482861,
+    "calls": 12,
+    "returns": 12,
+    "records": [
+      {
+        "ordinal": 1,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 2,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 3,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 4,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 5,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 6,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 7,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 8,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 9,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 10,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 11,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      },
+      {
+        "ordinal": 12,
+        "stamp_index": 25,
+        "failures_before": 0,
+        "failures_after": 0,
+        "reset_ok": true
+      }
+    ]
+  },
+  "later_recovery_snapshot": {
+    "unix_seconds": 1794495895.625937,
+    "calls": 24,
+    "returns": 24
+  },
+  "post_boot_observation": {
+    "duration_seconds": 120.50044322013855,
+    "snapshot_count": 13,
+    "samples": [
+      {
+        "unix_seconds": 1794532185.1346688,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532195.166331,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532205.21796,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532215.269315,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532225.302415,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532235.3478,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532245.416676,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532255.479727,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532265.506041,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532275.5369,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532285.5683131,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532295.60132,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      },
+      {
+        "unix_seconds": 1794532305.635112,
+        "recovery_calls": 0,
+        "recovery_returns": 0,
+        "new_gpu_reports": 0,
+        "monitor_bytes": 2064
+      }
+    ],
+    "active_gpu_work_launched_by_this_investigation": false
+  },
+  "actual_recovery_root_cause_fixed": false,
+  "late_failure_relationship_to_earlier_candidate_workload": "unresolved; cannot exclude",
+  "final_private_disposal_native_validated": false,
+  "global_candidate_installed": false,
+  "latest_user_report": {
+    "date_local": "2026-11-13",
+    "source": "User observation; not actively reproduced during this investigation.",
+    "uu_remote": "User reports reliably reproducible on starting UU remote.",
+    "google_remote_desktop": "User reports no corresponding issue on starting Google Remote Desktop.",
+    "uncontrolled_variables": [
+      "launch versus connected-video stage",
+      "repeat count",
+      "duration",
+      "which symptom is reproduced",
+      "client versions",
+      "remote endpoint",
+      "resolution",
+      "frame rate",
+      "codec",
+      "decode mode"
+    ],
+    "does_not_prove_google_client_avoids_gpu": true
+  }
+}

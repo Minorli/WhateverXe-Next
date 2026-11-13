@@ -78,6 +78,12 @@ CSB intake 的错误字段没有报拒绝，但恢复计数继续增长，调用
 因此本轮长期验收明确未通过。新增私有 POSH 释放逻辑在此故障状态下无法完成 native
 验证，真实 GPU 测试停止；进度和各源码阶段的边界见 `Abandonment.md`。
 
+2026-11-13 的新 panic 与两份 watchdog 快照进一步证实：WindowServer 主线程
+等待图形内核锁，持锁的 IOServiceTerminateThread 仍在上述清理 / 检查进度链中。
+WindowServer 120 秒无 checkin、两次 induced crashes 后未退出，最终触发系统重启。
+这确认了本次重启的直接机制，最初 GPU 不前进的原因仍未确定；详细时间口径与
+证据见 [本次事故分析](Incident-20261113.md)，不要用新启动短时健康覆盖该失败。
+
 ## 3. UU 远端呈现触发闪屏
 
 用户两次观察到：显示另一台电脑的远程画面后，屏幕下半部快速闪烁；
@@ -89,6 +95,11 @@ CAMetalLayer present；root WindowServer sample 包含 IOSurface / 纹理创建�
 QuartzCore / SkyLight 与 AppleIntelTGLGraphicsMTLDriver 合成路径。
 
 这些是触发范围证据，尚不能判定闪屏一定由 POSH、BCS、解码器或某一个同步点造成。
+
+2026-11-13 用户新增对照：启动 UU 远程“必现”，Google Remote Desktop 未出现同类问题。
+本轮未主动复跑；重复次数、客户端阶段、远端与视频设置尚未匹配，不能推断后者不使用GPU。
+这组触发差异和后续对照设计已加入 [独立审查提示词](ExternalReview-20261113.md)。
+
 VA bundle 已隔离，VideoToolbox 仍可能软解后用 GPU 呈现。
 单帧截图没有捕获可识别的异常帧。UU 当前选择 60 帧，未找到公开的软解切换选项。
 

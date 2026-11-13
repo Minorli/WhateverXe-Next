@@ -1,0 +1,124 @@
+{
+  "checked_at": "2026-11-13T01:18:16.579700+00:00",
+  "status_scope": "Snapshot before the documentation-only review package commit; the core source checkpoint is pinned separately.",
+  "graphics_repository": {
+    "repo": "Minorli/WhateverXe-Next",
+    "url": "https://github.com/Minorli/WhateverXe-Next",
+    "visibility": "PUBLIC",
+    "review_branch": "research/posh-ownership-bcs-wait-20261112",
+    "core_source_checkpoint": "400502276ee36358bc817409b06dc3ec50ffa1bd",
+    "remote_refs_before_review_package": [
+      "be95a2e6953297c4357cfa29143121fbdd19119c\trefs/heads/main",
+      "400502276ee36358bc817409b06dc3ec50ffa1bd\trefs/heads/research/posh-ownership-bcs-wait-20261112"
+    ],
+    "commits": [
+      {
+        "sha": "7d13fbec0cff0fdccc5df26324e2a5fbbee7935b",
+        "title": "vendor: import WhateverXe at db438fdf4d5fe903f5dfbc65537ed3884e2ea980",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/7d13fbec0cff0fdccc5df26324e2a5fbbee7935b"
+      },
+      {
+        "sha": "80bde77568d7dbff267ead91db5844cda69c19b8",
+        "title": "diagnostics: retain bounded BCS pending submissions on hang",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/80bde77568d7dbff267ead91db5844cda69c19b8"
+      },
+      {
+        "sha": "a0af415496107e8d0fc5437fb23c7711c509acdc",
+        "title": "research: add guarded POSH lifetime probes and review evidence",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/a0af415496107e8d0fc5437fb23c7711c509acdc"
+      },
+      {
+        "sha": "be95a2e6953297c4357cfa29143121fbdd19119c",
+        "title": "ci: run native x86 CPU fixtures on an Intel runner",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/be95a2e6953297c4357cfa29143121fbdd19119c"
+      },
+      {
+        "sha": "648d0a4af35fa6c80f137da8e31b82650d54e758",
+        "title": "Admit independently verified Tahoe identity in CPU native replays",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/648d0a4af35fa6c80f137da8e31b82650d54e758"
+      },
+      {
+        "sha": "50b64337e017f664985e93de84ca9e969fbce743",
+        "title": "Add POSH ownership experiment and preserve its concurrent alias failure",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/50b64337e017f664985e93de84ca9e969fbce743"
+      },
+      {
+        "sha": "7ad417a08b1af6c3b806b5f524e3f9eb45b5d2f4",
+        "title": "Capture bounded BCS semaphore wait witnesses on native failure",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/7ad417a08b1af6c3b806b5f524e3f9eb45b5d2f4"
+      },
+      {
+        "sha": "bd671d3f10827cf19968c7706ba8e28af43a087d",
+        "title": "Make native POSH active claims atomic in guarded diagnostics",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/bd671d3f10827cf19968c7706ba8e28af43a087d"
+      },
+      {
+        "sha": "400502276ee36358bc817409b06dc3ec50ffa1bd",
+        "title": "Track abandoned POSH ownership and preserve late GPU recovery failure",
+        "url": "https://github.com/Minorli/WhateverXe-Next/commit/400502276ee36358bc817409b06dc3ec50ffa1bd"
+      }
+    ],
+    "upstream_graphics_prs_by_owner": [],
+    "own_repository_prs": []
+  },
+  "g83_repository": {
+    "repo": "Minorli/g83-11gen-hackintosh-tahoe-efi",
+    "branch": "main",
+    "head": "409a6c66ac6a9b7af7287b1cf261847bef83e7cd",
+    "remote_ref": "409a6c66ac6a9b7af7287b1cf261847bef83e7cd\trefs/heads/main",
+    "url": "https://github.com/Minorli/g83-11gen-hackintosh-tahoe-efi",
+    "upstream_repo": "xiananliu/g83-11gen-hackintosh-tahoe-efi",
+    "upstream_pull_requests": [
+      {
+        "baseRefName": "main",
+        "headRefName": "fix/tahoe-enterprise-wifi",
+        "headRefOid": "9dc45fc6f769411871b9b12d30e97b0f0a5bd153",
+        "mergeStateStatus": "CLEAN",
+        "mergedAt": null,
+        "number": 2,
+        "state": "OPEN",
+        "title": "fix: 修复 Tahoe AX201 的企业 Wi-Fi 认证超时",
+        "updatedAt": "2026-11-12T09:03:13Z",
+        "url": "https://github.com/xiananliu/g83-11gen-hackintosh-tahoe-efi/pull/2"
+      },
+      {
+        "baseRefName": "main",
+        "headRefName": "fix/opencore-config-validation",
+        "headRefOid": "df4a30930a2ba9011b9aa9f78fc87a9ef7a4e34c",
+        "mergeStateStatus": "UNSTABLE",
+        "mergedAt": null,
+        "number": 3,
+        "state": "OPEN",
+        "title": "fix: validate OpenCore 1.0.8 config and order I2C providers",
+        "updatedAt": "2026-11-12T11:26:13Z",
+        "url": "https://github.com/xiananliu/g83-11gen-hackintosh-tahoe-efi/pull/3"
+      }
+    ],
+    "local_integrations": {
+      "enterprise_wifi_commit": "9dc45fc6f769411871b9b12d30e97b0f0a5bd153",
+      "opencore_i2c_tip": "df4a30930a2ba9011b9aa9f78fc87a9ef7a4e34c"
+    },
+    "modified_for_review_package": false
+  },
+  "ci": [
+    {
+      "conclusion": "success",
+      "createdAt": "2026-11-12T14:13:32Z",
+      "databaseId": 43234974852,
+      "headSha": "bd671d3f10827cf19968c7706ba8e28af43a087d",
+      "status": "completed",
+      "updatedAt": "2026-11-12T14:19:29Z",
+      "url": "https://github.com/Minorli/WhateverXe-Next/actions/runs/43234974852"
+    },
+    {
+      "conclusion": "success",
+      "createdAt": "2026-11-12T15:17:01Z",
+      "databaseId": 43246102257,
+      "headSha": "400502276ee36358bc817409b06dc3ec50ffa1bd",
+      "status": "completed",
+      "updatedAt": "2026-11-12T15:25:40Z",
+      "url": "https://github.com/Minorli/WhateverXe-Next/actions/runs/43246102257"
+    }
+  ],
+  "ci_interpretation": "Build/CPU checks only; does not cancel the real later GPU recovery loop/watchdog or validate final private-disposal native behavior."
+}

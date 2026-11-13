@@ -1,0 +1,70 @@
+SANITIZED KEY EXCERPTS — 2026-11-13 / UTC+8
+These are selected messages, not complete original reports.
+No raw kernel/GPU addresses, boot identity, user paths or complete boot arguments.
+
+[1] Initial kernel recovery messages (verbatim timestamp and message text)
+2026-11-12 22:59:42.400710+0800 virtual void IOAccelEventMachineFast2::checkGPUProgress() - Signaling hardware error on channel 25..
+2026-11-12 22:59:42.400728+0800 void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartSignaled stampIdx=25 type=2 prevType=0 numStamps=64
+2026-11-12 22:59:42.400737+0800 void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartEnqueued stampIdx=25 type=2
+2026-11-12 22:59:42.400751+0800 void IOAccelEventMachine2::hardwareErrorEvent(): GPURestartDequeued stampIdx=25 type=2
+2026-11-12 22:59:45.764748+0800 void IOAccelEventMachine2::restart_channel(): GPURestartBegin stampIdx=25 type=2
+2026-11-12 22:59:45.968344+0800 Trying to restart GPU (Intel Iris Xe Graphics)...
+2026-11-12 22:59:45.968644+0800 void IOAccelEventMachine2::restart_channel(): GPURestartEnd stampIdx=25 type=2
+2026-11-12 22:59:47.971043+0800 virtual void IOAccelEventMachineFast2::checkGPUProgress() - Signaling hardware error on channel 25..
+2026-11-12 22:59:47.971053+0800 void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartSignaled stampIdx=25 type=2 prevType=0 numStamps=64
+2026-11-12 22:59:47.971058+0800 void IOAccelEventMachine2::signalHardwareError(eRestartRequest, int32_t): GPURestartEnqueued stampIdx=25 type=2
+2026-11-12 22:59:47.971069+0800 void IOAccelEventMachine2::hardwareErrorEvent(): GPURestartDequeued stampIdx=25 type=2
+
+[2] Repeated recovery shortly before watchdog (selected compact log lines)
+2026-11-13 00:01:01.257 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=11 type=2
+2026-11-13 00:01:04.803 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=15 type=2
+2026-11-13 00:01:08.345 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=17 type=2
+2026-11-13 00:01:11.712 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartBegin stampIdx=25 type=2
+2026-11-13 00:01:11.921 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartEnd stampIdx=25 type=2
+2026-11-13 00:01:16.487 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=11 type=2
+2026-11-13 00:01:20.054 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=15 type=2
+2026-11-13 00:01:23.599 F  kernel[0:6f] (IOAcceleratorFamily2) void IOAccelEventMachine2::restart_channel(): GPURestartSkipped stampIdx=17 type=2
+
+[3] Panic text excerpt (caller address omitted)
+userspace watchdog timeout: no successful checkins from WindowServer (2 induced crashes) in 120 seconds
+WindowServer has not exited since first loaded
+service: logd, total successful checkins in 19926 seconds: 1993, last successful checkin: 0 seconds ago
+service: WindowServer (2 induced crashes), total successful checkins in 19890 seconds: 1977, last successful checkin: 120 seconds ago
+service: opendirectoryd, total successful checkins in 19926 seconds: 1992, last successful checkin: 0 seconds ago
+service: configd, total successful checkins in 19926 seconds: 1993, last successful checkin: 0 seconds ago
+Compressor Info: 7% of compressed pages limit (OK) and 2% of segments limit (OK) with 0 swapfiles and OK swap space
+
+[4] Watchdog observations (derived from IPS and spin; not verbatim stack text)
+WindowServer-2026-11-13-000045.ips capture=2026-11-13 00:00:45.1569 +0800
+termination: (1 monitored services unresponsive): checkin with service: WindowServer (0 induced crashes) returned not alive with context: | unresponsive work processor(s): WindowServer main thread | 40 seconds since last successful checkin, 1977 total successful checkins since 19810 seconds ago, has not exited since first loaded
+WindowServer residentMemoryBytes=11814907904; spin footprint=11.00 GB
+ws_main_thread waiting for a kernel mutex owned by IOServiceTerminateThread (thread 111).
+Owner native symbol chain, exact accelerator UUID checked:
+IGAccelCommandQueue::commandQueueStop() + 0x29
+IGAccelEventMachine::finishEvent(IOAccelEvent*, unsigned int) + 0x1e
+IGAccelEventMachine::eventTimeout(int) + 0x70
+IGScheduler5::checkForProgress(IGHwCsType) + 0xa4
+WindowServer-2026-11-13-000125.ips capture=2026-11-13 00:01:25.1581 +0800
+termination: (1 monitored services unresponsive): checkin with service: WindowServer (1 induced crashes) returned not alive with context: | unresponsive work processor(s): WindowServer main thread | 80 seconds since last successful checkin, 1977 total successful checkins since 19850 seconds ago, 39 seconds since last crashed by watchdogd, , has not exited since first loaded
+WindowServer residentMemoryBytes=11814912000; spin footprint=11.00 GB
+ws_main_thread waiting for a kernel mutex owned by IOServiceTerminateThread (thread 111).
+Owner native symbol chain, exact accelerator UUID checked:
+IGAccelCommandQueue::commandQueueStop() + 0x29
+IGAccelEventMachine::finishEvent(IOAccelEvent*, unsigned int) + 0x1e
+IGAccelEventMachine::eventTimeout(int) + 0x70
+IGScheduler5::checkForProgress(IGHwCsType) + 0xa4
+
+[5] Read-only post-boot observation (derived)
+2026-11-13 09:09:45–09:11:45 +0800; 120.50 seconds; 13 snapshots.
+Every sample: recovery_calls=0, recovery_returns=0, new_gpu_reports=0.
+This investigation launched no active GPU workload in that observation.
+UU was running during the investigation; this is not a controlled UU A/B acceptance.
+
+[6] Interpretation limit
+The direct watchdog dependency is evidenced; the first failed GPU instruction/producer is unresolved.
+A returned reset function and a quiet post-boot interval do not establish a working fix.
+
+[7] Latest user observation (not a machine log or controlled replay)
+2026-11-13: UU remote reliably triggers the issue; Google Remote Desktop does not show it.
+Client stage, repeated trial count, duration, endpoint and video settings have not been matched.
+This is not proof that the Google client avoids the GPU or that one UU API is the root cause.

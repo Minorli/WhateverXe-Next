@@ -3,6 +3,12 @@
 These JSON files contain selected, non-identifying numeric summaries and source
 fingerprints, not raw logs or driver payloads.
 
+The later watchdog reboot is recorded separately in
+[`review/2026-11-13`](../review/2026-11-13/README.md), including sanitized excerpts,
+the symbolic lock dependency, repository/PR status and an independent review prompt.
+It does not invalidate the historical numeric observations, but it does prevent
+interpreting their immediate success as whole-system acceptance.
+
 - `driver-build-manifest.json`: historical RELEASE build of the BCS diagnostic change;
   outputs were not installed. Paths inside the manifest are source-relative labels.
 - `driver-tests.json`: complete names and exit codes for the 216-test run after
