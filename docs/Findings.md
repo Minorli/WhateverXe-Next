@@ -2,6 +2,32 @@
 
 观察日期：2026-11-12，时区 UTC+8。以下仅发布脱敏的汇总结论。
 
+## 2026-11-14：本机只读复核与欠载审计入口
+
+- **成立〔整机只读〕：**本次启动已运行 15 小时以上，`TGLRecoveryLive` 记录区全零，
+  没有 2026-11-13 00:02 之后的新 `gpuRestart`；WindowServer 物理占用约 411–494 MiB，
+  不是此前数 GiB 的增长形态。当前 Metal 文件 SHA 为 `25b6c72e…4faa`（0.4.3）。
+  这只说明本窗口没有新故障，不是稳定性验收。
+- **成立〔整机只读〕：**TGLDisplayProbe 1.0.1 已采样 53 万余 tick，五个原生欠载计数
+  仍为 0；`MMIOAccessState=0`，完整 MMIO 仍不可读。欠载计数为 0 **不能**排除欠载：
+  IMR 可能屏蔽对应事件，而当前没有 IMR/PIPESTATUS 读数。
+- **成立〔整机只读〕：**下游二进制仍在每次 `updatePlane` 写 2 KiB `TGLScan2` 记录；
+  空闲时约 12.8 次/秒，`TGLProgram1Count` 为 626,877。`a9aaf05` 的默认关闭只在
+  本仓库源码中，未进入当前下游。对 699 对原生 `updatePlane` 前后记录的测量显示
+  原生调用本身最长约 0.1 ms，未发现该函数内部停顿；这不能证明外层 2 KiB registry
+  写入没有造成偶发 vblank 延迟。
+- **成立〔静态＋CPU＋构建〕：**新增默认关闭的 `-wex-tgl-display-audit`。它只在原生
+  显示寄存器写返回后、调用者仍持有显示 MMIO 的上下文中采样一次，读取
+  `PIPESTATUS`、`DE_PIPE_ISR/IMR`、`BW_BUDDY`、`DCPR_2`、`DBUF_CTL`；100 ms 节流，
+  不写寄存器，失败或全一读数不提交部分快照。结果通过现有 type-1 framebuffer
+  user client 发布为 `TGLDisplayAudit`。这是只读观察，不是闪屏修复，也未安装。
+- **成立〔静态〕：**按 Linux v6.12 复核寄存器：`abox_mask=GENMASK(2,1)`，
+  `_PICK_EVEN` 对索引线性展开，因此 TGL 使用 `BW_BUDDY_CTL/PAGE_MASK` 的
+  `0x45140/0x45144` 与 `0x45150/0x45154`；`DCPR_2=0x46434` 的 bit24–27；
+  `DBUF_CTL_S1/S2=0x45008/0x44FE8`。与既有显示审查的偏移一致。
+- **证据不足：**本机欠载是否存在、闪烁是否由欠载或 flip 时序造成，仍未回答。
+  审计只有在包含当前下游 HDMI/时钟增强的构建实际部署后才能取得这些读数。
+
 ## 2026-11-13：`ig=0x20` 重启后验证
 
 - **成立〔整机〕：**重启后实际带入 `ig=0x20`；TGLDisplayProbe 1.0.1 连续采样 120.57 秒，

@@ -62,6 +62,7 @@
 #include "kern_tgl_pcode_edram.hpp"
 #include "kern_tgl_tc_cold.hpp"
 #include "kern_tgl_boot_readout.hpp"
+#include "kern_tgl_display_audit.hpp"
 #include "kern_tgl_start_order.hpp"
 #include "kern_donor.hpp"
 #include "kern_tgl_csb.hpp"
@@ -3229,6 +3230,41 @@ TGLProgramRecord tglProgramFirst[2][tglProgramCapacity] {};
 TGLProgramRecord tglProgramLast[2][tglProgramCapacity] {};
 uint32_t tglProgramCounts[2] {}, tglProgramSequence {};
 
+// Opt-in read-only display audit. Sampling only happens from a native display
+// register write, where the caller already owns the display MMIO domain.
+// Default off: no read, allocation or lock on the normal write path.
+bool tglDisplayAuditEnabled {false};
+IOSimpleLock *tglDisplayAuditLock;
+TGLDisplayAudit::State tglDisplayAudit;
+struct TGLDisplayAuditIO {
+	volatile uint8_t *base {};
+	uint32_t size {};
+	bool readable(uint32_t reg) const { return base && size >= 4 && reg <= size - 4; }
+	uint32_t read(uint32_t reg) const { return *reinterpret_cast<volatile uint32_t *>(base + reg); }
+};
+static bool tglDisplayAuditTrigger(unsigned long reg) {
+	return (reg >= 0x70000 && reg < 0x73000) || (reg >= 0x44400 && reg < 0x44440) ||
+		(reg >= 0x45000 && reg < 0x47000) || (reg >= 0x60000 && reg < 0x65000);
+}
+void tglDisplayAuditSample(void *access, unsigned long reg, void *observationController) {
+	if (!tglDisplayAuditEnabled || !tglDisplayAuditLock || !access || !tglDisplayAuditTrigger(reg)) return;
+	auto ctl = static_cast<uint8_t *>(observationController);
+	if (!ctl || *reinterpret_cast<void **>(ctl + 0xC40) != access) return;
+	auto a = static_cast<uint8_t *>(access);
+	auto base = *reinterpret_cast<volatile uint8_t **>(a + 0x50);
+	auto size = *reinterpret_cast<uint32_t *>(a + 0x60);
+	if (!base || size < 0x72100) return;
+	uint64_t ticks, ns;
+	clock_get_uptime(&ticks);
+	absolutetime_to_nanoseconds(ticks, &ns);
+	uint32_t pipeMask = 0;
+	TGLDisplayAudit::pipeOf(reg, pipeMask);
+	TGLDisplayAuditIO io {base, size};
+	const auto state = IOSimpleLockLockDisableInterrupt(tglDisplayAuditLock);
+	TGLDisplayAudit::capture(io, tglDisplayAudit, ns, TGLDisplayAudit::SampleIntervalNs, pipeMask);
+	IOSimpleLockUnlockEnableInterrupt(tglDisplayAuditLock, state);
+}
+
 void tglProgramRecord(void *access, unsigned long reg, uint32_t value, uint32_t fast, void *caller) {
 	if (!tglProgramEnabled || !tglProgramLock) return;
 	uint32_t group = 0;
@@ -3377,6 +3413,15 @@ void tglStreamPublish() {
 	uint32_t counts[8];
 	for (uint32_t i=0; i<8; ++i) counts[i] = __sync_fetch_and_add(tglStreamAckCounts + i, 0);
 	root->setProperty("TGLStreamAckCounts", counts, sizeof(counts));
+	if (tglDisplayAuditEnabled && tglDisplayAuditLock) {
+		TGLDisplayAudit::State audit {};
+		const auto state = IOSimpleLockLockDisableInterrupt(tglDisplayAuditLock);
+		audit = tglDisplayAudit;
+		IOSimpleLockUnlockEnableInterrupt(tglDisplayAuditLock, state);
+		audit.schema = TGLDisplayAudit::Version;
+		root->setProperty("TGLDisplayAudit", &audit, sizeof(audit));
+		root->setProperty("TGLDisplayAuditEnabled", true);
+	}
 	IOFree(copy, sizeof(tglStreamErrors));
 }
 struct TGLGMBusObservation {
@@ -13377,6 +13422,10 @@ bool XE::processKextFull(KernelPatcher &patcher, size_t index, mach_vm_address_t
 			}
 			tglAUXLock = IOSimpleLockAlloc();
 			tglDisplayTraceEnabled=checkKernelArgument("-wex-display-trace");
+			tglDisplayAuditEnabled=checkKernelArgument("-wex-tgl-display-audit");
+			if(tglDisplayAuditEnabled && !tglDisplayAuditLock)tglDisplayAuditLock=IOSimpleLockAlloc();
+			if(tglDisplayAuditEnabled && !tglDisplayAuditLock)tglDisplayAuditEnabled=false;
+			IORegistryEntry::getRegistryRoot()->setProperty("TGLDisplayAuditEnabled",tglDisplayAuditEnabled);
    tglInitTransitionTrace(tglDisplayTraceEnabled);
 			if (tglConnectionLock) {
 				KernelPatcher::RouteRequest link("__ZN14AppleIntelPort15checkLinkStatusEv",
@@ -19799,6 +19848,9 @@ void XE::wrapTGLRegisterWrite(void *access, unsigned long reg, uint32_t value) {
  const bool trace=tglTransitionRegister(reg);
  if(trace)tglTransitionRecord(36,false,access,reg,tglConnectionCaller(__builtin_return_address(0)),value);
 	FunctionCast(wrapTGLRegisterWrite, callbackXE->orgTGLRegisterWrite)(access, reg, value);
+	// Read after the native write: the caller still owns the display MMIO
+	// domain, and the audit cannot perturb the programming sequence it measures.
+	tglDisplayAuditSample(access, reg, callbackXE->tglObservationController);
  // Sample PWM only at a native duty write while its caller owns power.
  // IORegistry reads consume this receipt; they never touch live MMIO.
  if(callbackXE->tglActive && reg==0xC8258 && callbackXE->orgTGLRegisterRead) {
@@ -19849,6 +19901,7 @@ void XE::wrapTGLFastRegisterWrite(void *access, unsigned long reg, uint32_t valu
 	auto irq=reg==0x190010 ? tglFBIRQBegin(0,callbackXE->tglObservationController,value,
 		reinterpret_cast<uintptr_t>(__builtin_return_address(0))) : nullptr;
 	FunctionCast(wrapTGLFastRegisterWrite, callbackXE->orgTGLFastRegisterWrite)(access, reg, value);
+	tglDisplayAuditSample(access, reg, callbackXE->tglObservationController);
 	tglFBIRQEnd(irq,0);
 }
 

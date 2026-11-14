@@ -121,6 +121,7 @@
   "-wex-tgl-prog-off": [
     "-tglprogoff"
   ],
+  "-wex-tgl-display-audit": [],
   "-wex-no-host-rps": [
     "-tglnohostrps"
   ],

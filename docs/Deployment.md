@@ -64,6 +64,26 @@ CPU回归与DEBUG/RELEASE构建不等于整机效果。它没有改当前闭源�
 在旧下游打开此修订；已有 `-wex-tgl-prog-off`只控制另一条记录路径，也不能代替它。
 不为这两处改动部署整个含未验收no-POSH/recovery候选的0.8.2构建；下游需单独移植后再对照。
 
+### `-wex-tgl-display-audit`：源码内只读寄存器审计（未部署）
+
+`kern_tgl_display_audit.hpp` 与 `kern_xe.cpp` 中的调用点是默认关闭的诊断：
+仅在原生 `wrapTGLRegisterWrite` / `wrapTGLFastRegisterWrite` 完成一次显示寄存器
+写入后采样，因此沿用调用者已经持有的显示 MMIO 上下文，不自行申请电源域。
+采样读取 `PIPESTATUS`（bit31 sticky 欠载）、`DE_PIPE_ISR/IMR`、两组
+`BW_BUDDY_CTL/PAGE_MASK`、`GEN11_CHICKEN_DCPR_2` 与 `DBUF_CTL_S1/S2`；
+100 ms 节流，任何读失败或全一快照都整组拒绝，不发布部分结果，不写硬件。
+
+启用后，打开一次现有 framebuffer type-1 user client（例如
+`./build/tgl-capture --probe PRIVATE_DIR SECONDS`）会把当前快照发布为
+`TGLDisplayAudit`。关键字段：`samples`、`invalid`、`status/isr/imr[3]`、
+`underrunEver`、`underrunArms[3]`、`underrunFirstNs[3]`、`underrunSamples[3]`、
+`buddyCtl/buddyMask[2]`、`dcpr2`、`dbuf[2]`。bit31 无法在不写入的情况下清除，
+所以只能报告首次观察、仍置位的采样数及观察到的 0→1 次数；`Arms` 不是硬件事件总数。
+
+本轮只完成源码、CPU 回归与构建，**未安装**。必须先把该诊断合入保留现有 HDMI、
+CDCLK、DCOff 等下游增强的同一二进制，再做单变量对照；不能把源码构建成功当作
+欠载已观察或闪屏已修复。
+
 ### B2：用户确认后的短时分流
 
 **状态更新：**维护者已确认 slow2 的 3.700–3.733 秒是目标闪烁，并自行验证拔掉 HDMI 后内屏仍闪。

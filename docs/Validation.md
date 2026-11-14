@@ -221,6 +221,21 @@ atomic 与 queue-cache-atomic 各通过 400 次分批、400 次交错提交，0 
 CI 随后明确使用 Intel runner，并在开始检查 x86_64 ABI，保留全部测试和失败日志输出；
 不能把 ARM 上的该次运行计为完整通过。
 
+### 2026-11-14：显示欠载审计加入源码
+
+新增 `WhateverXe/kern_tgl_display_audit.hpp` 与 CPU 测试 `tests/tgl_display_audit.cpp`。
+本机用恢复的本地忽略依赖（MacKernelSDK、Lilu 1.7.2 头文件）构建 DEBUG。
+连续两次相同源码构建得到不同的组件 SHA，说明当前构建链含非确定性字段；
+本轮不把任一单次 SHA 记录为可重放指纹，部署前仍需单独核对实际加载文件。
+
+驱动测试运行器完整执行：225 通过、0 失败、69 跳过。跳过项是未提供的可选
+原版 donor / accelerator / kernel / host 输入，不是通过。新增测试覆盖完整采样、
+100 ms 节流、sticky bit31 的首次/重新置位、未采样 pipe 不会被误清、缺失寄存器与
+全一快照拒绝且不部分发布；全部为合成对象，没有访问真实 MMIO 或 GPU。
+构建仍有继承 warning，不宣称 warning-free。
+
+该审计默认关闭，未安装到 EFI，也没有整机读数；不能据此说欠载、闪屏或卡死已定位。
+
 ## 4. 整机与长期验收
 
 未完成。当前实际仍运行下游 0.8.1 DEBUG，VA 组件保持隔离。
