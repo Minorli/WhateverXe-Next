@@ -9,8 +9,13 @@
   不是此前数 GiB 的增长形态。当前 Metal 文件 SHA 为 `25b6c72e…4faa`（0.4.3）。
   这只说明本窗口没有新故障，不是稳定性验收。
 - **成立〔整机只读〕：**TGLDisplayProbe 1.0.1 已采样 53 万余 tick，五个原生欠载计数
-  仍为 0；`MMIOAccessState=0`，完整 MMIO 仍不可读。欠载计数为 0 **不能**排除欠载：
-  IMR 可能屏蔽对应事件，而当前没有 IMR/PIPESTATUS 读数。
+  仍为 0；`MMIOAccessState=0`，完整 MMIO 仍不可读。
+- **成立〔静态＋整机〕：**`ig=0x20` 启动中，原生 `hwEnableInterrupts` 会解除
+  pipe A/B/C 的 `DE_PIPE_IMR` bit31，后续 IMR 更新只做单 bit 读改写；本次
+  `kern.boottime` 为 2026-11-13 17:51:31，用户在 18:01:04、18:05:13 报告的闪屏
+  都在该启动之后。这两个窗口内原生欠载计数与 bit31 ACK 均未增长，因此
+  **pipe A 欠载从首要假设降级为基本排除**（详细链路见显示审查第 7 节）。
+  这不覆盖不产生 bit31 的显示故障，也不覆盖尚未读到 IMR 的 B/C 直接状态。
 - **成立〔整机只读〕：**下游二进制仍在每次 `updatePlane` 写 2 KiB `TGLScan2` 记录；
   空闲时约 12.8 次/秒，`TGLProgram1Count` 为 626,877。`a9aaf05` 的默认关闭只在
   本仓库源码中，未进入当前下游。对 699 对原生 `updatePlane` 前后记录的测量显示
@@ -21,6 +26,8 @@
   `PIPESTATUS`、`DE_PIPE_ISR/IMR`、`BW_BUDDY`、`DCPR_2`、`DBUF_CTL`；100 ms 节流，
   不写寄存器，失败或全一读数不提交部分快照。结果通过现有 type-1 framebuffer
   user client 发布为 `TGLDisplayAudit`。这是只读观察，不是闪屏修复，也未安装。
+  在 pipe A 欠载已降级后，它的主要价值是直接读取 B/C 状态与 IMR，以及核对
+  `BW_BUDDY`/`DCPR_2`/DBUF 的当前值；优先级低于平面编程追踪。
 - **成立〔静态〕：**按 Linux v6.12 复核寄存器：`abox_mask=GENMASK(2,1)`，
   `_PICK_EVEN` 对索引线性展开，因此 TGL 使用 `BW_BUDDY_CTL/PAGE_MASK` 的
   `0x45140/0x45144` 与 `0x45150/0x45154`；`DCPR_2=0x46434` 的 bit24–27；

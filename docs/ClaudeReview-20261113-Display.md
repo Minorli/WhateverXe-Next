@@ -216,7 +216,9 @@ framebuffer `115a4616…888e`，偏移均为文件偏移：
 ### 7.2 结合整机数据：pipe A 欠载基本排除（成立〔静态＋整机〕；有一个前提待核实）
 
 - `validation/tgldisplayprobe-ig20-20261113.json` 在 18:07:49 和 18:09:49 读到的 `DonorUnderrunEntry`、`PipeA` 都是 **0**。这是绝对值，从 framebuffer 加载起累计，不是窗口增量。bit31 ACK 也一直是开机时的 6 条。
-- 用户在 18:01:04 和 18:05:13 报告过闪烁。**前提：这两次闪烁发生在 `ig=0x20` 那次启动之后**（需用 `sysctl kern.boottime` 核实）。如果前提成立，这两次闪烁期间 pipe A 没有产生任何欠载中断。
+- 用户在 18:01:04 和 18:05:13 报告过闪烁。**前提已核实：**`kern.boottime`
+  为 2026-11-13 17:51:31，两次报告都在该启动之后。这两次闪烁期间 pipe A
+  没有产生任何欠载中断。
 - 因此原来的头号假设"UU 闪烁 = pipe A FIFO underrun"降级为**基本排除**。`tgldp-wa`（BW_BUDDY / DCPR_2 / DBUF）的实验不再优先，RAM-only 探针也不需要再取得 MMIO 资格。
 - 剩余的漏洞：
   - `enableSWDC6` 会把 IMR 全部写成 1，但这只发生在 DC6 期间，那时没有 flip，而闪烁都发生在有画面更新的时候；
