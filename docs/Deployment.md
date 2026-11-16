@@ -407,18 +407,24 @@ SyncFlip 初审1.0.1存在模式2缓存残留；后续1.0.2已修正并通过CPU
 
 **成立〔静态 / CPU / 本机构建〕：**缓存恢复与事务中途切换已修，候选二进制SHA为
 `3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec`。
-该候选检验呈现路径，未安装，不能充当RCS/CCS恢复修复。
+该候选检验呈现路径；现已获批写入活动EFI、待维护者手动重启，不能充当RCS/CCS恢复修复。
 新故障确认真实GPU hang，暂不进入32分钟长盲测；先短时无UU冒烟，再按UU单独、
 Windows App单独、并发、Google RD区分负载，每次只改一项且首个GPU错误即停。
 这些实机操作尚未执行，须另行确认。
 
 当前只有维护者曾使用过的UEFI Shell，没有独立启动验证的备用EFI。
 原SyncFlip任务明确要求备用EFI，TF-only的Shell回退批准不覆盖图形安装。
-先准备仅含新增插件与config差异的私人overlay；若维护者明确接受Shell同分区回退作为替代，
-才可按该授权安装。overlay不是独立可引导EFI，不改变WEX、Metal、VA、镜像、身份或无线。
+维护者随后对本轮明确答复“接受，我确认”，接受Shell同分区回退并批准安装已核验overlay。
+overlay不是独立可引导EFI；实际安装只新增插件与config差异，WEX、Metal、VA、镜像、身份和无线均保留。
 重启时机由维护者决定。
 
 安装方案只追加`-tglsync`并新增Kernel/Add，默认模式0，不设置tglsyncmode。
 回退恢复安装前完整config，或禁用插件条目/删去`-tglsync`后手动重启；
 运行时mode0返回失败必须明确报告，不能称已恢复。具体Shell文件路径在私人overlay说明中。
 完整证据见[本轮验证](../validation/syncflip-102-20261116.json)。
+
+**成立〔磁盘部署〕：**已备份活动config到`OC/config.plist.pre-tglsync-20261116-102`，
+逐字节匹配安装前版本。169个既有文件只有config改变，新增3个预期文件；
+安装后ocvalidate 1.0.8通过，插件SHA匹配候选。**证据不足〔启动 / 实机〕：**
+当前启动未加载插件、未切换模式；重启由维护者安排。重启后先不连接远端负载，
+检查state=routed与mode=0、显示正常，再短时冒烟。见[安装核验](../validation/syncflip-install-20261116.json)。

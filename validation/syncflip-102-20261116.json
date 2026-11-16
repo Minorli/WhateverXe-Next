@@ -124,7 +124,8 @@
       "add TGLSyncFlip 1.0.2 after existing WhateverXe entry",
       "append -tglsync; no tglsyncmode"
     ],
-    "baseline_active_EFI_config_unchanged_after_staging": true
+    "baseline_active_EFI_config_unchanged_after_staging": true,
+    "snapshot_stage": "pre-install qualification"
   },
   "conclusion": {
     "cache_restoration_fix": "established at CPU/static level; native trace pending",
@@ -141,5 +142,6 @@
     "long-running hardware AB",
     "gpurec/nomc deployment"
   ],
-  "incident_document": "../docs/Incident-20261116.md"
+  "incident_document": "../docs/Incident-20261116.md",
+  "deployment_followup": "syncflip-install-20261116.json"
 }

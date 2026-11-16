@@ -397,7 +397,12 @@ SyncFlip 初审1.0.1存在模式2缓存残留；后续1.0.2已修正并通过CPU
 - **部分成立〔用户对照〕：**两次卡死时UU与Windows App同时打开；维护者反馈Windows App单独、
   Google RD单独似乎正常。因此优先区分UU单独触发与并发触发，不能按报告归属把Windows App当起因。
 - **证据不足〔根因 / 整机修复〕：**现有证据未证明首次RCS hang由async、POSH或共享复位域造成。
-  也未确认这两次发生watchdog panic，维护者报告的是强制重启。SyncFlip未安装，不能声称已修闪屏或卡死。
+  也未确认这两次发生watchdog panic，维护者报告的是强制重启。故障发生时SyncFlip未安装；
+  后续虽已获批写入EFI，尚未启动验证，不能声称已修闪屏或卡死。
 
 候选SHA、验证边界、采样窗口与应用对照见
 [聚合记录](../validation/syncflip-102-20261116.json)；原始报告留在本机local。
+
+**成立〔磁盘部署，非启动验收〕：**维护者确认Shell回退方案后，1.0.2已安装，默认模式0，
+待手动重启。169个既有EFI文件中仅config变化，原配置备份及插件SHA匹配，
+安装后ocvalidate通过；其余图形组件与无线不变。见[安装记录](../validation/syncflip-install-20261116.json)。

@@ -81,7 +81,8 @@ ModeGate 让模式只在原生事务之间切换，避免一次 flip 前后使�
 
 plane-trace 新增 SURF 前最后观察到的 CTL 分类，处理初始未知及缺口；
 原 `async_ctl` 保留为全部CTL写入计数，不能用它要求准备阶段也为sync。
-**证据不足〔整机〕**：尚未安装或进行A/B，不能说闪屏或卡死已解决。
+**证据不足〔整机〕**：源码验证时尚未安装；后续已获批写入EFI，待手动重启，仍未进行A/B，
+不能说闪屏或卡死已解决。
 
 **成立〔历史整机日志〕**：2026-11-16 09:58:14 与11:03:42均有 WindowServer/RCS hang 报告，
 分别随后在10:04和11:05启动。第二轮11:03:45、11:03:49同一通道反复进入恢复；
@@ -95,11 +96,24 @@ End只证明软件恢复函数结束，不证明硬件成功恢复。日志没�
 RCS→CCS及stamp不前进支持继续核对#109恢复链，但没有证明共享reset域就是首次hang的根因，
 也没有证明async导致该hang。#109候选仍未部署，不伪造完成stamp。
 
-先保持短时、单变量负载，不自动再次复现至断电；SyncFlip安装仍需维护者确认恢复方案。
+先保持短时、单变量负载，不自动再次复现至断电；维护者随后明确接受Shell回退并批准SyncFlip安装。
 后续负载分别记录UU单独、Windows App单独、二者并发和Google RD，首个GPU错误即停止，
 不能把应用间差异直接当作codec或引擎归因。聚合结果见
 [本轮验证](../validation/syncflip-102-20261116.json)，详细事故时间线见
 [Incident-20261116.md](Incident-20261116.md)，原始报告只在本机local。
+
+## SyncFlip 1.0.2 已安装，等待维护者手动重启
+
+**成立〔磁盘部署〕：**维护者明确接受已使用过的UEFI Shell作为回退入口后，
+已安装精确候选`3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec`。
+唯一既有文件变化为活动config：在WEX后新增Kernel/Add、追加`-tglsync`，未设置tglsyncmode，
+启动默认0。新增完整插件两文件与原config备份；其余168个既有EFI文件逐项SHA不变。
+安装后ocvalidate 1.0.8通过；未换WEX/Graphics、恢复VA、改镜像或自动重启。
+
+**证据不足〔启动 / GPU〕：**本次启动尚未加载插件，没有切换模式或执行实机A/B。
+维护者保存工作后自行重启，先不连接UU/Windows App远端；核对state=routed、mode=0、
+显示正常后再开始短时冒烟。持久回退恢复`OC/config.plist.pre-tglsync-20261116-102`。
+安装记录见[磁盘核验](../validation/syncflip-install-20261116.json)。
 
 ## 来源
 
