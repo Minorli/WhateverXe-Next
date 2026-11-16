@@ -229,13 +229,26 @@ CI 随后明确使用 Intel runner，并在开始检查 x86_64 ABI，保留全�
 本轮不把任一单次 SHA 记录为可重放指纹，部署前仍需单独核对实际加载文件。
 
 驱动测试运行器完整执行（含并行合入的 gamma 门控与平面追踪测试）：
-226 通过、0 失败、69 跳过。跳过项是未提供的可选
+227 通过、0 失败、69 跳过。跳过项是未提供的可选
 原版 donor / accelerator / kernel / host 输入，不是通过。新增测试覆盖完整采样、
 100 ms 节流、sticky bit31 的首次/重新置位、未采样 pipe 不会被误清、缺失寄存器与
 全一快照拒绝且不部分发布；全部为合成对象，没有访问真实 MMIO 或 GPU。
+`tests/tgl_plane_ctl.cpp` 另覆盖主平面 CTL 识别、async bit9 清除、bit3 arm 标记与
+无关寄存器保持；它不执行任何寄存器写入。
 构建仍有继承 warning，不宣称 warning-free。
 
 该审计默认关闭，未安装到 EFI，也没有整机读数；不能据此说欠载、闪屏或卡死已定位。
+
+### 2026-11-16：UU 平面编程捕获与同步 flip 候选
+
+`tools/tgl-plane-trace` 在 UU 期间采集 130.2 秒、511 次发布、32,313 条窗口记录，
+`lost=0`。主平面 SURF 60.39/s，3 个 surface；23 个人工标记窗口内没有平面开关、
+尺寸/DDB 变化或欠载，async CTL 4,403 次而空闲基线为 0。详细数据只保留在本机
+`local/plane-trace-uu-20261114/`，公开摘要见 [Findings](Findings.md#2026-11-16uu-平面编程捕获与-async-flip)。
+
+新增 `WhateverXe/kern_tgl_plane_ctl.hpp` 与默认关闭的 `-wex-tgl-no-async` 候选。
+它只清除主平面 PLANE_CTL bit9；CPU 测试覆盖识别与位保持，构建通过。没有安装、
+没有硬件 A/B，也没有证明 async flip 就是闪烁原因。
 
 ## 4. 整机与长期验收
 

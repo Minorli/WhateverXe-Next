@@ -35,6 +35,37 @@
 - **证据不足：**本机欠载是否存在、闪烁是否由欠载或 flip 时序造成，仍未回答。
   审计只有在包含当前下游 HDMI/时钟增强的构建实际部署后才能取得这些读数。
 
+## 2026-11-16：UU 平面编程捕获与 async flip
+
+- **成立〔整机只读〕：**`tools/tgl-plane-trace` 在 UU 远端画面期间采集 130.2 秒，
+  511 次发布均成功，32,313 条窗口记录，`lost=0`，无环丢失。pipe A 主平面
+  7,862 次 SURF 写入（60.39/s），只有 3 个不同 surface；复用深度直方图为
+  4344/1923/1592/0/0，最小复用间隔 473 ns 来自同一帧的重复 arm 写。
+- **成立〔整机只读〕：**用户按下的 23 个闪烁标记全部覆盖有效；每个标记窗口内
+  `enable_toggles=0`、`pos_size_changes=0`、`buf_cfg_changes=0`，没有平面开关、
+  尺寸或 DDB 重配。group 0 只有 `PIPE_MISC_A` 写入，无电源/DDB 变化。
+  `bit31_ack_delta=0`，原生欠载 entry/pipeA 仍为 0。
+- **成立〔整机只读〕：**本次 UU 窗口的 7,859 次 PLANE_CTL 写入中有 4,403 次
+  async（bit9），其余 3,456 次 sync；同样的空闲基线 480 次 CTL 全部 sync。
+  快速同 buffer 复用 43 次，均在完整 plane setup 附近，不是稳态浅复用。
+  这排除了 overlay 平面、尺寸/位置变化、DDB 重配、观测环丢失和 pipe A 欠载，
+  **async 地址更新成为当前最重要的剩余解释**。
+- **成立〔静态〕：**framebuffer `115a4616…888e` 的
+  `AppleIntelPlane::configurePlane`（`0x2198`）默认把 PLANE_CTL 设为
+  `0x80000600`（async）；只有当 flip transaction 的 `+0x2C` bit0 置位，或
+  controller/path 的两个特性字节同时置位时才改用 `0x80000400`（sync）。
+  `syncPlaneUpdates`（`0x33ae`）只切换 bit3 arm 标记并写回 CTL。
+  async 地址更新允许在扫描中途生效，因此画面上下来自不同缓冲，能产生
+  局部、单帧、录屏难以复现的撕裂。
+- **成立〔静态＋CPU＋构建〕：**新增默认关闭的 `-wex-tgl-no-async` 候选：
+  在原生 PLANE_CTL 写之前清除 bit9，只把 async 地址更新改成正常 vblank
+  锁存，保留 bit3 和其他所有位；计数器通过现有 type-1 客户端发布为
+  `TGLNoAsyncFlip`。这是单变量候选，**未安装、未做硬件 A/B**，不能称为已修复。
+- **证据不足：**标记是人工按键，窗口为 −2 s/+0.5 s，不能把某次闪烁精确归到
+  某一次 async flip；还需要 Google Remote Desktop 对照（用户报告不闪）和
+  强制 sync 的 A/B 才能确认因果。若 async 不是原因，剩余方向是合成内容或
+  扫描输出缓冲内容本身错误。
+
 ## 2026-11-13：`ig=0x20` 重启后验证
 
 - **成立〔整机〕：**重启后实际带入 `ig=0x20`；TGLDisplayProbe 1.0.1 连续采样 120.57 秒，

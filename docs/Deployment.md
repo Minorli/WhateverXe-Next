@@ -89,6 +89,23 @@ IMR，以及核对 `BW_BUDDY`/`DCPR_2`/DBUF 的当前值。当前首要调查是
 CDCLK、DCOff 等下游增强的同一二进制，再做单变量对照；不能把源码构建成功当作
 欠载已观察或闪屏已修复。
 
+### `-wex-tgl-no-async`：强制同步 flip 候选（未部署）
+
+2026-11-16 的 UU 捕获显示主平面在远端画面期间使用 async 地址更新（PLANE_CTL
+bit9），而同机空闲基线全部为 sync；23 个闪烁标记窗口内没有欠载、平面开关、
+尺寸/DDB 变化或环丢失。原生 `configurePlane` 默认选择 async，只有 transaction
+`+0x2C` bit0 或特定 controller/path 标志才选择 sync。
+
+`kern_tgl_plane_ctl.hpp` 与两个 `wrapTGLRegisterWrite` 入口实现默认关闭的候选：
+在原生写之前清除 pipe A/B/C 主平面 PLANE_CTL 的 bit9，保留 bit3 arm 标记及其余
+所有位，把 async 地址更新改成正常 vblank 锁存。打开一次 type-1 客户端后，
+`TGLNoAsyncFlip = [enabled, suppressed]` 报告被转换的写入数。
+
+这是单变量候选，**未安装、未做硬件 A/B**。它可能把呈现延迟增加最多一帧，
+也可能不解决闪烁；不能把它当作已验证修复。必须先合入保留现有 HDMI/CDCLK/DCOff
+增强的同一二进制，再与控制组使用相同 UU 画面、帧率、分辨率做 A/B。若强制 sync
+后仍闪，应转向合成内容或扫描输出缓冲内容错误，而不是继续调平面寄存器。
+
 ### B2：用户确认后的短时分流
 
 **状态更新：**维护者已确认 slow2 的 3.700–3.733 秒是目标闪烁，并自行验证拔掉 HDMI 后内屏仍闪。

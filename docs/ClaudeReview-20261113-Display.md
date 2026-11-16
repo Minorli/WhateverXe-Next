@@ -251,3 +251,24 @@ framebuffer `115a4616…888e`，偏移均为文件偏移：
   - 输出 `summary.json` 和 `records.csv`，用 O_EXCL 创建、权限 0600，应放在 `local/`。
 - `wrapTGLGamma10`：没有 `-wex-display-trace` 时直接调用原生实现，不占用观察槽位，因此 `wrapTGLRegisterWrite` 不会在亮着的 pipe 上写 PAL_PREC_INDEX、读 1024 次 LUT 数据口，也不发布约 20 KiB 的 registry 记录。新增 `tgl_gamma_observer` 测试；它在旧代码上会失败。0.8.0 带有同样的代码，所以要列入给下游的合入请求。
 - 以上都**没有证明**哪一项是闪烁原因。gamma 门控与 `a9aaf05` 性质相同，属于默认路径优化。
+
+### 7.5 2026-11-16 捕获：UU 期间启用 async flip（成立〔整机＋静态〕）
+
+- **整机：**`tools/tgl-plane-trace` 采集 130.2 秒、511 次发布、32,313 条窗口记录，
+  `lost=0`。pipe A 主平面 7,862 次 SURF（60.39/s），3 个 surface；23 个人工闪烁
+  标记窗口内 `enable_toggles/pos_size_changes/buf_cfg_changes` 均为 0，group 0
+  只有 `PIPE_MISC_A`，无电源/DDB 变化；`bit31_ack_delta=0`，原生欠载仍为 0。
+- **整机：**7,859 次 PLANE_CTL 写中 4,403 次 async（bit9），同机空闲基线 480 次
+  全部 sync。快速同 buffer 复用 43 次全部落在完整 plane setup 附近，不是稳态浅复用。
+  因此 overlay、尺寸/位置、DDB、观测环、pipe A 欠载均不支持，async 是剩余首因。
+- **静态：**`AppleIntelPlane::configurePlane`（文件偏移 `0x2198`）在 `0x2229`
+  取 `0x80000600` 作为默认 CTL；仅当 flip transaction `+0x2C` bit0 置位，或
+  controller `+0x1B79` 与 path `+0xE4` 同时非零时，才在 `0x224B/0x2252` 取
+  `0x80000400`。两值在 `0x2257` OR 进 CTL，并在 `0x239E` 存回 plane `+0x100`。
+  `syncPlaneUpdates`（`0x33AE`）只改 bit3 arm 标记，不决定 async。
+- **候选：**`-wex-tgl-no-async` 在原生写前清除 PLANE_CTL bit9，保留 bit3 和其他
+  所有位，把 async 地址更新改成 vblank 锁存；计数器发布为 `TGLNoAsyncFlip`。
+  默认关闭、未安装、未做硬件 A/B，不是已验收修复。
+- **仍缺：**人工标记是 −2 s/+0.5 s 窗口，不能精确归因到某一次 flip；需要
+  Google Remote Desktop 对照和强制 sync 的 A/B。若仍闪，剩余方向是合成内容或
+  扫描输出缓冲内容本身错误，而不是平面编程时序。

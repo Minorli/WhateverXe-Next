@@ -63,6 +63,7 @@
 #include "kern_tgl_tc_cold.hpp"
 #include "kern_tgl_boot_readout.hpp"
 #include "kern_tgl_display_audit.hpp"
+#include "kern_tgl_plane_ctl.hpp"
 #include "kern_tgl_start_order.hpp"
 #include "kern_donor.hpp"
 #include "kern_tgl_csb.hpp"
@@ -3236,6 +3237,12 @@ uint32_t tglProgramCounts[2] {}, tglProgramSequence {};
 bool tglDisplayAuditEnabled {false};
 IOSimpleLock *tglDisplayAuditLock;
 TGLDisplayAudit::State tglDisplayAudit;
+
+// Opt-in synchronous-flip candidate, default off. The donor defaults primary
+// PLANE_CTL to async address update; clearing bit9 keeps the same write but
+// lets it latch at vblank. Never changes any other CTL bit.
+bool tglNoAsyncFlipEnabled {false};
+uint32_t tglNoAsyncFlipSuppressed {};
 struct TGLDisplayAuditIO {
 	volatile uint8_t *base {};
 	uint32_t size {};
@@ -3421,6 +3428,10 @@ void tglStreamPublish() {
 		audit.schema = TGLDisplayAudit::Version;
 		root->setProperty("TGLDisplayAudit", &audit, sizeof(audit));
 		root->setProperty("TGLDisplayAuditEnabled", true);
+	}
+	if (tglNoAsyncFlipEnabled) {
+		uint32_t live[] {1, __atomic_load_n(&tglNoAsyncFlipSuppressed, __ATOMIC_RELAXED)};
+		root->setProperty("TGLNoAsyncFlip", live, sizeof(live));
 	}
 	IOFree(copy, sizeof(tglStreamErrors));
 }
@@ -13426,6 +13437,8 @@ bool XE::processKextFull(KernelPatcher &patcher, size_t index, mach_vm_address_t
 			if(tglDisplayAuditEnabled && !tglDisplayAuditLock)tglDisplayAuditLock=IOSimpleLockAlloc();
 			if(tglDisplayAuditEnabled && !tglDisplayAuditLock)tglDisplayAuditEnabled=false;
 			IORegistryEntry::getRegistryRoot()->setProperty("TGLDisplayAuditEnabled",tglDisplayAuditEnabled);
+			tglNoAsyncFlipEnabled=checkKernelArgument("-wex-tgl-no-async");
+			IORegistryEntry::getRegistryRoot()->setProperty("TGLNoAsyncFlipEnabled",tglNoAsyncFlipEnabled);
    tglInitTransitionTrace(tglDisplayTraceEnabled);
 			if (tglConnectionLock) {
 				KernelPatcher::RouteRequest link("__ZN14AppleIntelPort15checkLinkStatusEv",
@@ -19824,6 +19837,9 @@ void XE::wrapTGLRegisterWrite(void *access, unsigned long reg, uint32_t value) {
 		}
 	}
     comboClockTranslateWrite(access,reg,value,reinterpret_cast<uintptr_t>(__builtin_return_address(0)));
+	if (tglNoAsyncFlipEnabled && TGLPlaneCtl::isPrimaryPlaneControl(reg) &&
+		TGLPlaneCtl::forceSynchronous(value))
+		__sync_fetch_and_add(&tglNoAsyncFlipSuppressed, 1);
 	auto &tx = tglClockOffTransaction;
 	if (callbackXE->tglClockOffCaller && reinterpret_cast<uintptr_t>(__builtin_return_address(0)) == callbackXE->tglClockOffCaller &&
 		reg == tx.clockReg && !(value & 0xF0000000U) &&
@@ -19896,6 +19912,9 @@ void XE::wrapTGLRegisterWrite(void *access, unsigned long reg, uint32_t value) {
 }
 
 void XE::wrapTGLFastRegisterWrite(void *access, unsigned long reg, uint32_t value) {
+	if (tglNoAsyncFlipEnabled && TGLPlaneCtl::isPrimaryPlaneControl(reg) &&
+		TGLPlaneCtl::forceSynchronous(value))
+		__sync_fetch_and_add(&tglNoAsyncFlipSuppressed, 1);
 	tglProgramRecord(access, reg, value, 1, __builtin_return_address(0));
 	tglStreamAck(access, reg, value, 1, __builtin_return_address(0));
 	auto irq=reg==0x190010 ? tglFBIRQBegin(0,callbackXE->tglObservationController,value,
