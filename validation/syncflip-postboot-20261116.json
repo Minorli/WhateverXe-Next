@@ -275,10 +275,13 @@
     "participant_observation_status": "Previous coarse counts withdrawn by participant as uncertain; no symptom efficacy conclusion. Retry requested."
   },
   "current_state": {
-    "mode": 0,
+    "mode": 1,
     "mode_confirmed_after_test": true,
     "formal_AB_pending": true,
-    "runtime_default_changed": false
+    "runtime_default_changed": false,
+    "persistent_default_mode": 0,
+    "runtime_override_active": true,
+    "dense_capture_running": false
   },
   "UU_retest": {
     "state": "completed; final mode0",
@@ -465,5 +468,92 @@
     "mode2_UU_tested": false,
     "gpu_error_log_matches": 0,
     "next_gate": "Candidate remains opt-in with persistent default0. A matched-load repeat with reliable observer/video marks and longer safety observation is needed before selecting a default; this is not a GPU-hang recovery test."
+  },
+  "UU_continuous_sync": {
+    "state": "completed; runtime mode1 retained for ordinary-use observation",
+    "evidence_level": "whole-machine requested-write trace and participant interim observation; not a blinded or long-running acceptance",
+    "formal_blinded_randomized_AB": false,
+    "baseline": {
+      "mode": 0,
+      "trace_seconds": 14.910279389,
+      "plane1": {
+        "surf": 840,
+        "surf_async_ctl": 688,
+        "surf_sync_ctl": 152,
+        "surf_ctl_unavailable": 0
+      },
+      "ring0_lost": 0,
+      "ring1_lost": 0,
+      "gap_count": 0,
+      "publish_failures": 0,
+      "donor_underrun_delta": {
+        "entry": 0,
+        "pipe_a": 0
+      },
+      "flickers_exact": null,
+      "observation": "No reliable count for this 15-second baseline; earlier native-mode flicker was reported outside this window."
+    },
+    "sync1": {
+      "mode": 1,
+      "trace_seconds": 299.753815785,
+      "plane1": {
+        "surf": 19437,
+        "surf_async_ctl": 0,
+        "surf_sync_ctl": 19437,
+        "surf_ctl_unavailable": 0
+      },
+      "ring0_lost": 0,
+      "ring1_lost": 0,
+      "gap_count": 0,
+      "publish_failures": 0,
+      "donor_underrun_delta": {
+        "entry": 0,
+        "pipe_a": 0
+      },
+      "counter_interval_seconds": 314.95103473,
+      "flips_delta": 17390,
+      "forced_delta": 10748,
+      "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+        17358,
+        0,
+        0,
+        0,
+        0,
+        32
+      ],
+      "mode_max_ms_cumulative": 17.064,
+      "duration_ge16_fraction": 0.0018401380103507763,
+      "flickers_exact": null,
+      "observation": "Participant reported temporarily not seeing the original flicker while mode1 was active. Response is not a complete timed count of the five-minute trace; do not infer zero events over the whole interval."
+    },
+    "health": {
+      "start_wallclock": "2026-11-16T12:31:29.097248+08:00",
+      "last_saved_wallclock": "2026-11-16T12:37:50.566643+08:00",
+      "saved_samples": 39,
+      "last_elapsed_seconds": 380,
+      "recovery_calls_max": 0,
+      "recovery_returns_max": 0,
+      "new_gpu_reports_max": 0,
+      "report_monitor_continuous": true,
+      "halt_monitor_available": false,
+      "collection_stopped": "SIGINT to this collection process only after completion of the five-minute trace"
+    },
+    "end_load_snapshot": {
+      "cpu_user_percent": 8.53,
+      "cpu_sys_percent": 10.28,
+      "cpu_idle_percent": 81.18,
+      "cpu_die_temperature_c": 60.0,
+      "controlled_performance_comparison": false,
+      "meaning": "Short snapshots with changing interaction; not evidence of a causal CPU or temperature reduction."
+    },
+    "log_gpu_error_matches": 0,
+    "application_scope": "Participant temporarily opened and then closed Windows App during this general observation. Not a controlled UU-only or concurrent-client hang acceptance test.",
+    "verdict": "Partial support for transaction-sync presentation candidate. Requested-write conversion established; long-term flicker elimination and RCS/CCS hang repair not established.",
+    "final_runtime_mode": 1,
+    "persistent_default_mode": 0,
+    "WEX_or_graphics_replaced": false,
+    "display_layout_changed": false,
+    "next": "Retain runtime mode1 for ordinary use; quantify latency and longer safety before any persistent-default decision. Keep RCS/CCS recovery investigation separate.",
+    "log_counting": "Count actual eventMessage records only; exclude log footer {count, finished}."
   }
 }
