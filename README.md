@@ -54,6 +54,8 @@ DEBUG / RELEASE 构建完成；没有安装，尚不能替换机器特定下游�
 首个研究平台是 i7-1165G7、Iris Xe 96EU、物理 `8086:9A49 rev01`、
 macOS Tahoe 26.7.3 / Darwin 25.6.0。这里的硬件记录不是对全部 Xe 平台的支持承诺。
 G83 的 EFI 与整机设置在[独立集成仓库](https://github.com/Minorli/g83-11gen-hackintosh-tahoe-efi)维护。
+当前脱敏配置、完整EFI指纹和固定提交入口见[本机基线](deployments/g83-current/README.md)；
+后续上游跟踪、两仓库整合和本机部署遵循[长期维护流程](docs/Maintenance.md)。
 
 ## 阅读与审查
 
@@ -101,4 +103,5 @@ make cpu-test
 
 自有 `src/`、根 `tests/`、`tools/` 与文档采用 [MIT](LICENSE)；
 继承的 WhateverXe 源码保留 [BSD-3-Clause](driver/WhateverXe/LICENSE.txt)。
+独立TGLSyncFlip与TGLDisplayProbe插件采用各目录随附的BSD-3-Clause许可。
 第三方代码、固件及商标属于各自权利人，详见 [NOTICE](NOTICE.md)。

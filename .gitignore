@@ -21,6 +21,7 @@ ExpectedPage.hpp
 *.pkg
 *.dmg
 config.plist*
+!/deployments/g83-current/config.plist
 *.bin
 /probe/TGLDisplayProbe/build/
 /probe/TGLSyncFlip/build/

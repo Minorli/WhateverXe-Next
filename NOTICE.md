@@ -22,6 +22,11 @@ Apple, or WhateverXe release. It does not claim authorship of inherited code.
 - `probe/TGLSyncFlip/` implementation files carry BSD-3-Clause SPDX identifiers.
   The accompanying `LICENSE` preserves the Lilu notice and the local contributor
   notice for redistribution of the deployed standalone plugin.
+- `probe/TGLDisplayProbe/` implementation files carry BSD-3-Clause SPDX identifiers;
+  the accompanying `LICENSE` supplies the notice for the deployed RAM-only probe.
+  `deployments/g83-current/` contains only a redacted configuration and fingerprints;
+  third-party EFI binaries are distributed by the separate G83 integration repository
+  under their respective licenses.
 - The work was informed by the public WhateverXe issue discussions, including
   issue 47 (POSH leak and texture-reset concerns) and issue 81 (VA compatibility).
 - Native Apple drivers, driver code pages, full disassemblies, firmware payloads,

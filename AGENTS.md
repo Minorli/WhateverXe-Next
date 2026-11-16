@@ -31,3 +31,10 @@ integration changes for the G83 EFI project. It is not a replacement EFI release
   is the direction. This is not permission to call an untested candidate stable
   or to submit unrelated changes to the existing enterprise-Wi-Fi PR.
 - Do not spawn agents. Keep progress updates concise and in Chinese.
+
+- For ongoing upstream tracking and cross-repository deployment, read
+  `docs/Maintenance.md` and `deployments/g83-current/README.md`. Check both the
+  WhateverXe and G83 upstreams during relevant maintenance, integrate and validate
+  in the maintainer's repositories first, then deploy only the authorized change.
+  Update fingerprints and distinguish candidate, disk deployment, boot validation
+  and long-running acceptance. This is not unattended-update authorization.
