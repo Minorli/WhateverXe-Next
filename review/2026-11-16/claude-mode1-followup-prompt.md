@@ -73,7 +73,7 @@ log show --last boot --predicate 'eventMessage CONTAINS "tglsync"' | tail
 | 模式 0 ≥ 4 次，模式 1 = 0 次 | 成立〔整机盲测〕：模式 1 消除了本机 UU 闪烁。写出 p 值 |
 | 模式 0 ≥ 4 次，模式 1 有明显减少但不为 0 | 部分成立，写出 p 值和两种模式的速率 |
 | 模式 0 ≤ 1 次 | 本轮未复现。不能归功给模式 1，也不能否定它。如实记录，不追加轮次，交给维护者决定 |
-| 两种模式差不多 | 不成立。保持模式 1（它无害），但明确写"闪烁未被消除" |
+| 两种模式差不多 | 不成立。可以保持模式 1，但它对卡死率的影响未知；明确写"闪烁未被消除" |
 
 每块都要核对是否真的生效：
 
@@ -87,13 +87,13 @@ log show --last boot --predicate 'eventMessage CONTAINS "tglsync"' | tail
 已知事实见 `docs/Incident-20261116.md`：
 
 - 两次卡死都是 WindowServer context 6 的 RCS 先出问题；
-- 最后一次 context switch 的原因是 `ELEMENT_SWITCH | WAIT_ON_SCANLINE`，只有 CS 未完成；
+- 最后一次 context switch 的原因是 `ELEMENT_SWITCH | WAIT_ON_SCANLINE`。第一次 CS 和 SDE 未完成、最后指令为 PIPE_CONTROL；第二次只有 CS 未完成、NO ACTIVE ELEMENTS；
 - 第二次在 RCS reset 之后，Windows App 的 CCS 反复挂起；
 - 两次发生时 UU 和 Windows App 都开着。
 
 ### C1. 主线索：WindowServer 的 RCS 是否在等一个永远不来的显示事件
 
-`WAIT_ON_SCANLINE` 是 CSB 的 context switch 原因位，意思是该 context 执行了 scanline 类的 `MI_WAIT_FOR_EVENT`，被切换出去等待。如果显示事件一直不送达 render 引擎，CS 就会永远停在那里，看起来和这次的现场一致。注意：这仍是**假说**。
+**已更正（见 `docs/ClaudeReview-20261116-Mode1-Hang.md` 发现 1）：**`WAIT_ON_SCANLINE` 来自 WEX 的 Gen12→旧格式 CSB 转换，不能证明当前正在等扫描线；本机 accelerator 的 scanline 等待由 inhibit 包住，第二次现场也不是引擎阻塞在等待上。下面 C1 的静态问题仍有用，但请先按审查文档第 0 步解码已有报告。
 
 **Claude 的一处静态发现**：在 framebuffer `115a4616…888e` 里，`DE_RRMR`/`DERRMR`（`0x44050`，Display Engine Render Response Mask）只被写过一次，位置是 `CamelliaTcon2::DisablePsrDC6` 的 0x80422，写入值是 `0xFFFFFFFF`，即全部屏蔽；`0x44054` 也被写成全 1。除此之外，framebuffer 本身不解除任何屏蔽。Camellia 是 Apple 自家面板的 TCON，G83 很可能根本不走这条路径，请核实。
 
