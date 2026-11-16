@@ -1,0 +1,150 @@
+请作为独立的 macOS / Intel Gen12 图形驱动审查者，帮助审查 Minorli/WhateverXe-Next，找出当前卡死、高负载和恢复失败的具体代码原因，并给 Codex 一个值得优先实现的最小修复方向。
+
+仓库：https://github.com/Minorli/WhateverXe-Next
+审查基线：main 472984d503208bac2e1674d755e2b3f30e0a3cf8，以及增加本提示词和 high-load-mode1-20261116.json 的提交。先记录你实际读到的 HEAD。后续提交如有变化，明确区分，不把不同版本的证据混用。
+
+这次请直接审查代码和故障链，挑战既有判断。不要只复述文档、泛泛建议更新驱动，或再增加一套与现有工具重复的诊断框架。目标是回答：最先坏在哪里，后续为什么恢复不了，哪个最小修复值得做。
+
+一、工作边界
+
+先完整阅读根 AGENTS.md；进入 driver/WhateverXe 时还须阅读其 AGENTS.md。
+中文报告，不 spawn agent。
+本任务是独立静态审查和必要的 CPU 验证，不是本机部署授权：不改 EFI/boot-args，不换驱动/Metal，不运行 UU 压力负载，不复现卡死，不重启，不杀 WindowServer，不改镜像/Dock，不恢复已隔离的 VA bundle。
+不跳过 GPU 等待、不伪造完成 stamp、不静默丢任务、不放宽 SHA/字节/设备守卫。若认为必须改变等待或取消协议，先给出完整错误传播与资源生命周期方案。
+原始报告、运行时地址、寄存器快照和完整反汇编仅放 ignored local/。公开报告只写必要文件偏移、指纹及脱敏摘要，不上传 Apple 二进制。
+没有精确 Apple 二进制或原始现场时，明确标记“依据仓库已有静态证据，未独立复核”；不要声称已经反汇编或捕获了本机。
+本机后续实施仍遵循 claude-mode1-followup-prompt.md 的 A→B→C：A 等维护者手动重启，B 隐藏顺序，C 只读。不因本次审查自动开始这些实验。
+
+二、先理解实际部署，避免审错版本
+
+设备：i7-1165G7 / Iris Xe 96EU，物理 PCI 8086:9A49 rev01，24GB；macOS Tahoe 26.7.3（25G342），Darwin 25.6.0，OpenCore 1.0.8，Lilu 1.7.2。有意镜像内屏和 HDMI；拔掉 HDMI 后也曾闪烁。VA bundle 保持隔离。
+
+实际部署指纹：
+TGLSyncFlip 1.0.2：3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec
+WhateverXe：df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3
+AppleIntelTGLGraphicsFramebuffer：115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e
+AppleIntelTGLGraphics：567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e
+AppleIntelTGLGraphicsMTLDriver 0.4.3：25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa
+
+当前 WEX 是闭源下游发行 0.8.1 DEBUG，内部版本报 0.8.0。仓库 driver/WhateverXe 是基于上游 0.8.2 的研究候选，并非这份实际运行二进制的完整对应源码。G83 仓库的新版 EFI 模板也不等于活动 ESP；请分别标记“部署代码”和“未部署候选”。
+
+截至本次材料整理：TGLSyncFlip 运行时已切到 routed / armed / mode=1（事务同步）；EFI 于 2026-11-16 14:20:23+08:00 追加 tglsyncmode=1。但当前启动仍是当天 11:54:40，早于固化，因此下次开机默认模式尚未实机验收。不要把“配置已写入”当作“重启已验证”。
+
+三、阅读入口
+
+先读这些证据，再沿相应生产调用链读源码；无需按历史顺序遍历所有旧文档：
+1. docs/Incident-20261116.md：两次卡死现场。
+2. validation/syncflip-persist-mode1-20261116.json：部署指纹、约21分钟观察、固化边界。
+3. validation/high-load-mode1-20261116.json：之后高负载短采的脱敏摘要。
+4. docs/REVIEW.md：尤其 A1–A3（POCS释放、executePosh、beginReset错误传播）及持久模式1审查。
+5. docs/ClaudeReview-20261113-Display.md 第7.5、7.6节，以及 review/2026-11-16/review-prompt.md、validation/plane-trace-async-20261116.json。
+6. docs/Deployment.md、docs/Findings.md、docs/Provenance.md。
+7. review/2026-11-16/claude-mode1-followup-prompt.md：既有计划；其中未经证明的判断也在本次审查范围内。
+
+核心代码：
+- probe/TGLSyncFlip/TGLSyncFlip.cpp、TGLSyncFlipLogic.hpp、tests/logic_test.cpp。
+- driver/WhateverXe/WhateverXe/kern_xe.cpp 中对应 wrapper、安装点和错误处理；不要只审纯逻辑 helper。
+- 同目录 kern_tgl_gpurec.hpp、kern_tgl_noposh.hpp、kern_tgl_nomc.hpp、kern_tgl_csb.hpp、kern_tgl_csb_failure.hpp 及对应 tests/。
+- src/ 下与 POSH 同步、所有权相关的实际实现，只沿可疑故障链扩展阅读。
+
+四、已知事实与必须保留的限制
+
+1. 闪屏：模式1后维护者暂未再看到原来的 Dock 下部/UU 下沿闪烁。这是本机用户观察，尚无有效的完整盲测计数。旧第一轮次数已被用户撤回，不能用于统计。不能宣称像素级根因或长期无闪已经证明。
+
+2. 两次卡死发生于 2026-11-16 09:58:11、11:03:38，均在安装 TGLSyncFlip 之前，且 UU 和 Windows App 同时开着。先挂的是 WindowServer RCS context6；第二次 RCS 多次 reset 后，Windows App CCS context185 才反复挂起。用户随后强制重启；没有新的 panic/watchdog 文件，不要写成系统自动 panic。
+
+两次最后 context-switch reason 均含 ELEMENT_SWITCH | WAIT_ON_SCANLINE，POSH LRCA 非零。但第一次未完成 CS+SDE，最后指令记录 PIPE_CONTROL；第二次仅 CS 未完成、RCS HEAD/TAIL 相同。最后切换原因不等于当前阻塞指令，HEAD=TAIL 也不证明所有单元已完成。
+
+3. 模式1下约1274.7秒观察未见新增恢复/GPU报告；之后14:35:25–14:36:25+08:00的60.28秒短采同样无新恢复。RCS/CCS状态事件继续增长，不能代替逐客户端 submitted/returned stamp，也不能证明将来不会卡死。
+
+后一个窗口的 CPU 有效样本只覆盖约40秒：总CPU平均 user20.23%、sys12.02%、idle67.93%；按单核口径，WindowServer平均53.89%/最高72.3%，UU39.95%/62%，VTDecoder28.31%/55.8%。另一个约5秒温度短采为60–64℃，风扇RPM不可用。负载未固定，不能归因于mode1，也不能把风扇加速/CPU升高直接判断为GPU即将崩溃。
+
+4. UU进程样本出现 VTDecompressionSessionDecodeFrameWithOptionsAndOutputHandler 和 CVMetalTextureCacheCreateTextureFromImage；VTDecoder执行VCPHEVC代码。支持有HEVC CPU处理，不证明完整解码全部走软件，也不授权恢复VA。VCS/VECS观测通道未ready，不把其0计数当作硬解关闭证明。Google Remote Desktop 的实际codec/解码器仍不能仅凭“它没出问题”推断。
+
+5. 新短采RCS事件+13752、CCS+680、BCS+6122；BCS retry+2是HWSP sentinel的有界1µs重读，不是GPU重试/复位。必须保持计数语义准确。
+
+五、审查优先级一：首次RCS挂起，是否真的来自显示事件等待
+
+请先尝试证伪 WAIT_ON_SCANLINE 假说，再决定是否沿它修复。
+
+沿实际accelerator/Metal/显示提交链回答：
+- 谁发出scanline相关等待，在什么条件下发出，等待哪个pipe、哪个范围？
+- WAIT_ON_SCANLINE 在这份Gen12硬件报告中的精确定义是什么？历史CSB原因、当前指令、资源依赖，分别有什么证据？
+- 同步呈现是否会改变GPU等待、fence或buffer复用关系，而不仅仅是CTL bit9？是否可能改善闪屏却增加另一种等待？
+- 镜像、pipe切换、电源域、PSR/DC状态是否存在等待目标不再产生事件的合法/异常路径？有没有超时和取消协议？
+- 对两次不同的未完成单元和最后指令，哪种机制能同时解释，哪种不能？
+
+既有线索：外部审查称 framebuffer 的 CamelliaTcon2::DisablePsrDC6 在文件偏移0x80422写DERRMR/DE_RRMR寄存器0x44050，以及0x44054；但不能仅凭搜到这一处常量就断言没有其他写入，也不能证明G83走了Apple面板TCON路径。
+请查计算地址、间接MMIO、其他模块及固件边界；明确谁负责解除相关屏蔽。核对Intel Gen12资料和Linux i915对应代际实现，不能机械套用Gen7的MI_WAIT_FOR_EVENT/MI_LOAD_SCAN_LINES编码或寄存器语义。
+没有Apple二进制时，给出需要本机提取的最小函数/指令窗口、SHA与偏移，而不是请求全量反汇编。
+
+同时提出不超过两个有证据支持的竞争解释，例如fence/资源生命周期、POSH同步或上下文恢复；说明什么最小证据能区分它们。不要把所有故障硬归入scanline。
+
+六、审查优先级二：#109能修复哪一段恢复链
+
+参考来源：
+https://github.com/b00t0x/WhateverXe/issues/109
+https://github.com/b00t0x/WhateverXe/issues/75
+SaqibAlMalik补丁：e0aff60038de42520c078d833e0138a50cde2495
+https://github.com/SaqibAlMalik/WhateverXe/commit/e0aff60038de42520c078d833e0138a50cde2495
+保留NootedGreen / vikenzo196来源及原许可；外部作者自测不能代替本机验收。
+
+已静态确认RCS/CCS共享GDRST bit1，而原生reset只回放本引擎部分状态。注意既有更正：RCS NONPRIV在保存表中，但缺默认恢复值；不要再写“完全不在reset表”。
+
+请审完整的gpurec安装与生产调用链，重点检查：
+- 在实际reset顺序中，保存/回放状态是否可能已经来自被兄弟reset破坏后的值？
+- power domain、forcewake、锁顺序、并发RCS/CCS reset以及第二次reset时的幂等性。
+- 字节/布局校验失败或只安装部分route时，是否真正停止危险修改并保持原生语义？
+- 恢复成功如何落实到scheduler、错误通知、资源回收和真实stamp前进；不是仅看resetOK=1。
+- 共享复位能否解释第二次事故的后续CCS，而不能解释首次RCS？请分开判定。
+
+现有候选未部署，也不含stampfix；不允许补写returned=submitted来“救活”。给一个最小可审核修复草图；若存在可靠失败隔离所必需的上层改动，明确点名调用者，不要停在局部返回false。
+
+七、审查优先级三：同步插件的真实契约和性能
+
+模式1临时设置params+0x34 bit0，调用原生PerformFlipTransaction，返回后仅撤销自己设置的位。模式2只在syncPlaneUpdates(false)取CTL/SURF提交值期间临时清缓存bit9，返回恢复。两route完整ready才改变行为，ModeGate使运行中调用不能跨模式切换。
+
+请检查这些契约是否真的成立，不能把已有CPU测试通过当作答案：
+- params的所有权、跨线程/嵌套调用、原生是否在返回后保留指针，以及恢复flag会不会影响异步消费者。
+- ModeGate只固定模式，是否还需要原生锁来保护共享参数/plane缓存？哪些锁确实已由调用者持有？
+- 强制sync对完成通知、错误返回、超时、缓存比较和下一次原生事务的影响。
+- 原生忙等/等待发生在哪条路径，计时直方图实际覆盖哪段；17ms级尾延迟是否有正常vblank解释，不能当作端到端输入延迟。
+- 如有具体缺陷，给最小触发条件、反例和CPU回归；若只是缺调用契约证据，说清需要哪一处调用者/汇编来判定。
+
+已知独立脚本bug：ab-run.sh退出/中断固定恢复mode0，应该恢复开始时mode，并支持显式恢复模式。claude-mode1-followup-prompt.md已经安排修复，尚未执行。这不是新的GPU根因，不要花主要篇幅重复发现它，更不要直接运行脚本改变本机模式。
+
+性能上另有明确但未部署的源码改进：a9aaf05默认门控tglObserveScanout/tglSnapshotFB；实际旧下游仍每次updatePlane前后替换2KiB registry快照，历史约190条/秒是全局记录频率，不是190fps。tglProgramRecord另有中断锁记录开销，-wex-tgl-prog-off只关这个program环，不能一起关闭上述快照。
+请按真实调用频率、分配/锁/关中断时长、功能影响评估最小移植，而不是用几百KiB/s载荷就推断内存带宽耗尽。关闭追踪会失去plane-trace证据，这个代价也要写清。未做固定负载A/B前，不宣称优化能降温或修卡死。
+
+八、POSH和错误传播：避免重复已否定的缺陷描述
+
+请先读REVIEW的A1–A3，再决定还有什么值得查：
+- +0xA0的16KiB POCS image确实在no-POSH清flag前分配；但native free 0x7C5D8..0x7C721根本不读该字段，也不按flag释放。现有native CPU回放支持“原生teardown遗漏”，不支持“清flag新引入条件泄漏”。copyContextImage无条件消费+0xA0，不能直接提前置空或随手release。
+- executePosh 0x53EFB仍分派token，0x5478B..0x547C1仍可按token bit2/queue history清等待。清context的POSH硬件flag不自动修用户态only-active竞态，也不证明MTL私有块已没有消费者。因此不能仅凭NoPOSH Ready解除Metal0.4.3的生命周期风险。
+- beginReset虽然传播false，host processGPUReset在0x3A422调用后不检查AL，仍resetRing、重提stamp、endReset、submitExecList；GuC也有类似边界。“局部传播错误＝完整安全恢复”不成立。
+
+如果你找到更直接的所有权/同步缺陷，请指出生产消费者、释放时机与至少一个具体失败交错。不要把no-POSH、nomc、gpurec和Metal更换捆成一次实验，也不要把禁止CCS当作“CCS不存在”的永久修复。
+
+九、交付要求
+
+先给最多三条、按优先级排列的具体发现。每条都写：
+1. 成立 / 不成立 / 证据不足；层级是静态、CPU、进程内GPU还是整机。
+2. 对应实际部署还是未部署候选；文件行号/提交或二进制SHA+文件偏移。
+3. 触发条件和完整故障链，哪些箭头已证实、哪些尚属推断。
+4. 最小修复建议，或者明确否定哪种修法以及原因。
+5. 一个最小反例/回归测试；若缺证据，具体列出最少的采集字段及可区分的结果。
+
+最后只推荐一个下一步单变量实验，写方案、不执行：保持哪些组件和mode1不变，改变什么，观察什么，何时停止，如何回退。不要默认恢复VA、禁用CCS或全量升级。
+
+如确认可修的代码缺陷，可以提供小diff及只覆盖真实失败语义的CPU测试；不必为了交付强行造patch，不增加重复工具。只运行与改动相关的一次必要测试，不跑GPU或系统压力。
+
+建议把完整结果保存为docs/ClaudeReview-20261116-Mode1-Hang.md，开头记录审查HEAD、已读文件、是否有精确Apple二进制、实际运行的测试。不要覆盖历史证据。
+
+请特别纠正旧材料中这些过强表述：
+- “模式1与卡死无关/它无害”：尚未证明。它不能解释安装前的两次事故，但可能改变之后的故障率。
+- “两次都只有CS未完成”：不准确，第一次还有SDE。
+- “WAIT_ON_SCANLINE证明当前正在等扫描线”：不成立，仅凭历史context-switch原因不足。
+- “没有新恢复或总事件继续增长证明稳定”：不成立，缺逐客户端进度与长期受控证据。
+- “没有欠载证明扫描输出无问题”：不成立，观测通道/电源访问资格有边界。
+
+目标是交给Codex一条可动手的因果链和最小修复候选；如果还无法定位，明确指出最有区分力的一项缺失证据，而不是再列一长串泛化可能性。

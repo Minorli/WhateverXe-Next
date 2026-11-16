@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "purpose": "Sanitized review input for elevated load while transaction-sync mode1 remains active; not a controlled A/B or hang reproduction",
+  "baseline_commit": "472984d503208bac2e1674d755e2b3f30e0a3cf8",
+  "evidence_level": "whole-machine short telemetry and process sampling",
+  "component_fingerprints": "syncflip-persist-mode1-20261116.json#/components",
+  "private_source": "local/load-20261116-1435/health-summary.json and process samples; raw data not published",
+  "runtime": {
+    "mode": 1,
+    "load_controlled": false,
+    "visual_flicker_count": null,
+    "per_client_submitted_returned_stamps_captured": false
+  },
+  "health_window": {
+    "start": "2026-11-16T14:35:25+08:00",
+    "end": "2026-11-16T14:36:25+08:00",
+    "elapsed_s": 60.28,
+    "saved_samples": 7,
+    "recovery_calls_max": 0,
+    "recovery_returns_max": 0,
+    "new_gpu_reports_max": 0,
+    "halt_monitor_available": false,
+    "engines": [
+      {"engine": "RCS", "ready": true, "error": 0, "status_events_delta": 13752, "retry_delta": 0, "reset_delta": 0},
+      {"engine": "CCS", "ready": true, "error": 0, "status_events_delta": 680, "retry_delta": 0, "reset_delta": 0},
+      {"engine": "BCS", "ready": true, "error": 0, "status_events_delta": 6122, "retry_delta": 2, "reset_delta": 0},
+      {"engine": "VCS0", "ready": false, "status_events_delta": null},
+      {"engine": "VCS1", "ready": false, "status_events_delta": null},
+      {"engine": "VECS", "ready": false, "status_events_delta": null}
+    ],
+    "counter_semantics": [
+      "CSB status-event deltas are not per-client completion stamps.",
+      "BCS retry means bounded 1 us HWSP sentinel re-read, not GPU execution failure or reset.",
+      "Unqualified VCS/VECS channels are represented as unavailable, not zero activity."
+    ]
+  },
+  "cpu_window": {
+    "measured_intervals": 8,
+    "interval_s": 5,
+    "measured_duration_s": 40,
+    "covers_full_health_window": false,
+    "mean_system_percent": {"user": 20.23, "sys": 12.02, "idle": 67.93},
+    "last_system_percent": {"user": 25.96, "sys": 14.63, "idle": 59.39},
+    "processes": {
+      "WindowServer": {"single_core_cpu_mean_percent": 53.89, "single_core_cpu_max_percent": 72.3, "last_reported_footprint_mib": 584},
+      "UURemote": {"single_core_cpu_mean_percent": 39.95, "single_core_cpu_max_percent": 62.0, "last_reported_footprint_mib": 151},
+      "VTDecoderXPCService": {"single_core_cpu_mean_percent": 28.31, "single_core_cpu_max_percent": 55.8, "last_reported_footprint_mib": 44},
+      "Windows App": {"single_core_cpu_mean_percent": 5.7, "single_core_cpu_max_percent": 9.3, "last_reported_footprint_mib": 211}
+    },
+    "footprint_qualification": "Single rounded end readings from top, not a slope or proof of a leak."
+  },
+  "temperature_window": {
+    "approx_elapsed_s": 5,
+    "samples_c": [60, 60, 60, 62, 64],
+    "covers_full_health_window": false,
+    "fan_rpm_available": false,
+    "thermal_or_performance_warning_observed": false,
+    "cpu_speed_limit_percent": 100,
+    "swap_used_bytes": 0
+  },
+  "process_sample_observations": [
+    "UU called VTDecompressionSessionDecodeFrameWithOptionsAndOutputHandler and CVMetalTextureCacheCreateTextureFromImage.",
+    "VTDecoder executed VCPHEVC code, supporting CPU HEVC processing without qualifying the complete hardware/software decode path.",
+    "WindowServer sampled in SkyLight/QuartzCore Metal composition with backdrop/blur work; ordinary wait stacks are not deadlock evidence."
+  ],
+  "conclusions": [
+    {"claim": "No new recovery or GPU report was observed in this short health window", "result": "成立", "evidence_level": "whole-machine short telemetry"},
+    {"claim": "Higher CPU or fan activity predicts an imminent RCS/CCS crash", "result": "证据不足", "reason": "No observed reset, no controlled failing-load correlation and no per-client stamp capture."},
+    {"claim": "Mode1 causes this load increase or has fixed RCS/CCS recovery", "result": "证据不足", "reason": "Uncontrolled content and workload; no same-load A/B; short aggregate progress only."},
+    {"claim": "All video decode is software-only", "result": "证据不足", "reason": "Process stacks and unavailable VCS/VECS observers do not qualify the complete codec path."}
+  ],
+  "collection_completed": true,
+  "persistent_monitors_left_running": false,
+  "configuration_changed_for_capture": false,
+  "reboot_performed": false
+}
