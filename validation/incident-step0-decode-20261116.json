@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "reviewed_commit": "26ec608",
+  "purpose": "Step 0 only: classify existing RCS/CCS reports without new workload or driver changes",
+  "evidence_levels": [
+    "existing whole-machine fault reports",
+    "read-only current and archived registry snapshots",
+    "static exact deployed WEX binary"
+  ],
+  "components": {
+    "WEX": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "framebuffer": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "accelerator": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+    "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+  },
+  "reports": [
+    {
+      "incident_time": "2026-11-16T09:58:14+08:00",
+      "report_sha256": "b68b0f5999ecf72dbb5d02de473986bcb1f01799e74de5a4052b159fd76c689a",
+      "engine": "RCS",
+      "RING_CTRL_waiting_bit11": false,
+      "RING_CTRL_semaphore_waiting_bit10": false,
+      "ring_enabled_at_sample": true,
+      "head_tail_offset_equal": false,
+      "stuck_event_line_present": false,
+      "DE_RRMR_available": false,
+      "active_element": false,
+      "unfinished_units": [
+        "CS",
+        "SDE"
+      ],
+      "EIR_nonzero": false,
+      "command_fault_nonzero": false,
+      "ACTHD_available_in_register_dump": true,
+      "ACTHD_in_valid_batch_proven": false,
+      "BB_state_valid": false,
+      "register_reliability_warning": false,
+      "classification": "E1-compatible, partial only",
+      "M1_or_M1prime_current_hardware_wait_supported": false
+    },
+    {
+      "incident_time": "2026-11-16T11:03:42+08:00",
+      "report_sha256": "bd9de1acbdad4ca04e9ccac82da9ce424e28216ea22874a1a1a1435b8a2f1358",
+      "engine": "RCS",
+      "RING_CTRL_waiting_bit11": false,
+      "RING_CTRL_semaphore_waiting_bit10": false,
+      "ring_enabled_at_sample": true,
+      "head_tail_offset_equal": true,
+      "stuck_event_line_present": false,
+      "DE_RRMR_available": false,
+      "active_element": false,
+      "unfinished_units": [
+        "CS"
+      ],
+      "EIR_nonzero": false,
+      "command_fault_nonzero": false,
+      "ACTHD_available_in_register_dump": true,
+      "ACTHD_in_valid_batch_proven": false,
+      "BB_state_valid": false,
+      "register_reliability_warning": false,
+      "classification": "M2-compatible, partial only",
+      "M1_or_M1prime_current_hardware_wait_supported": false
+    },
+    {
+      "incident_time": "2026-11-16T11:03:52+08:00",
+      "report_sha256": "4fb786feb72a8bfe464e0b17702bc7bc4ab179896eadeb404c69118268985138",
+      "engine": "CCS",
+      "RING_CTRL_waiting_bit11": false,
+      "RING_CTRL_semaphore_waiting_bit10": false,
+      "ring_enabled_at_sample": false,
+      "head_tail_offset_equal": true,
+      "stuck_event_line_present": false,
+      "DE_RRMR_available": false,
+      "active_element": null,
+      "unfinished_units": null,
+      "EIR_nonzero": null,
+      "command_fault_nonzero": null,
+      "ACTHD_available_in_register_dump": true,
+      "ACTHD_in_valid_batch_proven": false,
+      "BB_state_valid": null,
+      "register_reliability_warning": true,
+      "classification": "post-reset CCS failure; unqualified pipeline decode",
+      "M1_or_M1prime_current_hardware_wait_supported": false
+    },
+    {
+      "incident_time": "2026-11-16T11:03:52+08:00",
+      "report_sha256": "7a296e9a31ba42a1fcf0fb71af28d6ba0108da32ed959008e72367a6ddebcbca",
+      "engine": "CCS",
+      "RING_CTRL_waiting_bit11": false,
+      "RING_CTRL_semaphore_waiting_bit10": false,
+      "ring_enabled_at_sample": false,
+      "head_tail_offset_equal": true,
+      "stuck_event_line_present": false,
+      "DE_RRMR_available": false,
+      "active_element": null,
+      "unfinished_units": null,
+      "EIR_nonzero": null,
+      "command_fault_nonzero": null,
+      "ACTHD_available_in_register_dump": true,
+      "ACTHD_in_valid_batch_proven": false,
+      "BB_state_valid": null,
+      "register_reliability_warning": true,
+      "classification": "post-reset CCS failure; unqualified pipeline decode",
+      "M1_or_M1prime_current_hardware_wait_supported": false
+    },
+    {
+      "incident_time": "2026-11-16T11:04:12+08:00",
+      "report_sha256": "91b7623a3eec54c442f562b653e179a59b1e3a46681fc976357aad55c5188d28",
+      "engine": "CCS",
+      "RING_CTRL_waiting_bit11": false,
+      "RING_CTRL_semaphore_waiting_bit10": false,
+      "ring_enabled_at_sample": false,
+      "head_tail_offset_equal": true,
+      "stuck_event_line_present": false,
+      "DE_RRMR_available": false,
+      "active_element": null,
+      "unfinished_units": null,
+      "EIR_nonzero": null,
+      "command_fault_nonzero": null,
+      "ACTHD_available_in_register_dump": true,
+      "ACTHD_in_valid_batch_proven": false,
+      "BB_state_valid": null,
+      "register_reliability_warning": true,
+      "classification": "post-reset CCS failure; unqualified pipeline decode",
+      "M1_or_M1prime_current_hardware_wait_supported": false
+    }
+  ],
+  "CSB_history": {
+    "current_record_count": 5,
+    "current_uptime_range_s": [
+      10.937395256,
+      10.937775811
+    ],
+    "all_observed_details": [
+      0
+    ],
+    "current_SingleChannelIndex": 0,
+    "incident_raw_Gen12_CSB_available": false,
+    "incident_accel_flags_available": false,
+    "historical_roots_checked": 3,
+    "historical_roots_predate_incident_boot": true,
+    "historical_roots_not_substituted_for_fault_time": true,
+    "record_layout_qualification": {
+      "binary": "deployed WEX df96a2ca",
+      "consumer_file_offset": "0x127460",
+      "raw_dword_stores": [
+        "0x127745",
+        "0x127763"
+      ],
+      "accel_flags_read_file_offset": "0x1277de",
+      "q44_store_file_offset": "0x1277ea",
+      "meaning": "q13/14 raw Gen12 doubleword; q44 accelerator+0x1190 low32, qualified against deployed binary, not only research source"
+    }
+  },
+  "conclusions": [
+    {
+      "claim": "M1/M1prime: sampled RCS engine was currently blocked in a hardware event wait",
+      "result": "不成立〔该现场〕",
+      "evidence": "bit11/bit10 clear in both RCS reports; no conditional stuck-event section; DE_RRMR unavailable, not zero."
+    },
+    {
+      "claim": "Second incident is M2: unfinished context was switched away and not resubmitted",
+      "result": "部分成立〔整机现场〕",
+      "evidence": "Empty ring and no active elements match; no incident-time Gen12 away/to sequence to establish the missing resubmission."
+    },
+    {
+      "claim": "First incident is E1: a specific 3D/resource defect has been identified",
+      "result": "证据不足",
+      "evidence": "CS/SDE unfinished support E1-compatible triage; EIR/command fault zero and invalid BB state prevent proving ACTHD resides in a valid batch."
+    },
+    {
+      "claim": "CCS detailed all-busy pipeline strings locate the original failure",
+      "result": "不成立〔该解码依据〕",
+      "evidence": "CCS reports show disabled engine and explicit reserved-bit reliability warnings after RCS reset."
+    }
+  ],
+  "decision": "Do not install the proposed generateSync observer yet. Prioritize static qualification of the actual deployed CSB wait/retention/resubmission path; a call counter alone cannot supply the missing M2 away/to transition chain.",
+  "driver_code_changed": false,
+  "EFI_changed": false,
+  "automatic_reboot": false,
+  "new_GPU_workload": false,
+  "tests_run": []
+}

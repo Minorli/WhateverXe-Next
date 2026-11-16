@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "purpose": "Bounded read-only system audit alongside GPU incident decoding, not complete functional acceptance",
+  "baseline_commit": "26ec608",
+  "source_window": {
+    "start": "2026-11-16T11:14:00+08:00",
+    "end": "2026-11-16T15:13:59+08:00",
+    "includes_prior_boot": true,
+    "current_boot_start": "2026-11-16T11:54:40+08:00",
+    "raw_logs_published": false,
+    "private_directory": "local/review-decode-20261116-1511/"
+  },
+  "graphics": {
+    "runtime_mode": 1,
+    "routed": true,
+    "component_fingerprints": "incident-step0-decode-20261116.json#/components",
+    "additional_GPU_reports_after_current_boot": 0,
+    "today_GPU_reports": 5,
+    "today_system_panic_reports": 0,
+    "fallback_display_transaction_failures": {
+      "whole_log_window": 13,
+      "current_boot": 9,
+      "confirmed_status_at_151222": "IOPRESENTMENT_METHOD_FAILURE / IOReturn 0x2e3",
+      "display_power_off_time": "2026-11-16T15:12:07+08:00",
+      "failures_at_151207": 3,
+      "failures_at_151222": 3,
+      "restored_backlight_log_at_151222": true,
+      "association_result": "成立〔时间关联〕",
+      "root_cause_result": "证据不足",
+      "scope": "Six failures near display off/restoration; not six GPU hangs; no deliberate display experiment.",
+      "not_a_proven_new_defect": true,
+      "qualification": "NoPower during display power-off/restoration can be expected refusal; no active-use failure or hang correlation established.",
+      "decoded_status": "kIOReturnNoPower (iokit_common_err(0x2e3)), not kIOReturnNotReady"
+    },
+    "MTLCompilerService_sandbox_denials": {
+      "whole_log_window": 29,
+      "current_boot": 14,
+      "files": [
+        "XeCompilerAdapter.bundle/Contents/MacOS/adapter.dylib",
+        "XeCompilerAdapter.bundle/Contents/MacOS/libigc-tgl.dylib",
+        "XeCompilerAdapter.bundle/Contents/MacOS/runtime.igc64.bc"
+      ],
+      "qualification": "Log entry counts, including duplicate-report messages; not unique failed builds."
+    },
+    "compile_request_errors": {
+      "mediaanalysisd_whole_log_window": 3124,
+      "mediaanalysisd_current_boot": 2394,
+      "Grok_Bot_current_boot": 598,
+      "relation_to_MTL_sandbox": "unproven; no per-request correlation or failing shader fixture",
+      "decoder_claim": "CPU HEVC processing previously observed; predominant cause of total load not quantified."
+    },
+    "audit_display_state": {
+      "both_displays_reported_asleep": true,
+      "sync_flip_counters_unchanged_between_audit_statuses": true,
+      "qualification": "Read-only audit did not wake displays; CPU/power short samples are not a visible-UU presentation baseline."
+    }
+  },
+  "processor_power": {
+    "X86PlatformPlugin_attached": true,
+    "logical_CPUs_available": 8,
+    "CPU_speed_limit_percent": 100,
+    "core_C6_residency_observed": true,
+    "frequency_scaling_observed": true,
+    "package_C_state_residency_percent": [
+      0,
+      0.04,
+      0.19
+    ],
+    "energy_model_package_power_W": [
+      21.15,
+      17.43,
+      14.79
+    ],
+    "temperature_short_samples_C": [
+      64,
+      71,
+      62
+    ],
+    "thermal_warning_recorded": false,
+    "performance_warning_recorded": false,
+    "fan_RPM_available": false,
+    "SMC_invalid_key_warnings": true,
+    "qualification": "Three one-second loaded samples concurrent with audit; not an idle baseline or calibrated power measurement. Both displays reported asleep, with no flip-count progress between audit statuses; not a visible-UU performance control."
+  },
+  "memory_storage": {
+    "RAM_GB": 24,
+    "SMBIOS_DDR4_MHz": 2667,
+    "physical_channel_configuration_qualified": false,
+    "top_last_three_CPU_idle_percent": [
+      77.99,
+      72.49,
+      75.52
+    ],
+    "swapins_during_top": 0,
+    "swapouts_during_top": 0,
+    "NVMe_SMART": "Verified",
+    "NVMe_TRIM": true,
+    "NVMe_link": "PCIe 3.0 x4 reported",
+    "data_volume_available_GiB": 381,
+    "NVMe_timeout_reset_in_scoped_logs_observed": false,
+    "qualification": "Read-only health snapshot; no RAM stress, filesystem repair or storage benchmark."
+  },
+  "peripherals_configuration": {
+    "RTS522A_controller_attached": true,
+    "RTS522A_functional_card_read_write_tested": false,
+    "internal_speakers_and_microphone_enumerated": true,
+    "TGLDmic_enumerated": true,
+    "bluetooth_controller_on": true,
+    "bluetooth_AirDrop_Handoff_tested": false,
+    "system_sleep_timer_ac_and_battery": 0,
+    "sleep_wake_tested_this_audit": false,
+    "touchpad_forced_polling_boot_arg_present": true,
+    "XHCI_unsupported_speed_mantissa_warnings_observed": true,
+    "XHCI_functional_failure_proven": false,
+    "FileVault": "Off"
+  },
+  "battery": {
+    "reported_full_capacity": 1516,
+    "reported_design_capacity": 3450,
+    "reported_capacity_fraction": 0.4394,
+    "reported_cycle_count": 560,
+    "reported_condition": "Check Battery",
+    "AC_connected": true,
+    "reported_adapter_W": 60,
+    "qualification": "EC/SMC-reported condition; cross-platform battery/adapter measurement not performed, no causal link to GPU hang established."
+  },
+  "account_services": {
+    "current_user_accountsd_running": true,
+    "current_user_accountsd_exit_count": 0,
+    "explicit_accountsd_disabled_override_found": false,
+    "repeated_account_service_lookup_errors_observed": true,
+    "all_errors_not_interpreted_as_user_iCloud_outage": true,
+    "services_changed": false
+  },
+  "priorities": [
+    "Static actual-WEX CSB retention/resubmission analysis for M2-compatible incident, distinct from the first E1-compatible incident.",
+    "Qualify a minimal failed compiler request before linking sandbox denials to mediaanalysisd retry workload; use supported narrow integration, not global security changes.",
+    "Do not chase the six display-power-transition NoPower refusals as a proven new GPU defect without active-display correlation.",
+    "Defer diagnostic-overhead optimization until evidence channel preservation is planned; no controlled load A/B yet.",
+    "Review reported battery health and sleep/input limitations separately from GPU root cause."
+  ],
+  "configuration_changed": false,
+  "installation_performed": false,
+  "reboot_performed": false,
+  "tests_run": []
+}
