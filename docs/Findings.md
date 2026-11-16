@@ -2,6 +2,25 @@
 
 观察日期：2026-11-12，时区 UTC+8。以下仅发布脱敏的汇总结论。
 
+## 2026-11-16：两次 RCS→CCS 显示卡死
+
+- **成立〔整机〕：**09:58:11 与 11:03:38 各出现一次 RCS 进度失败；两次首个
+  `GPU hang` 都是 WindowServer hardware context 6，最后 context switch reason
+  为 `ELEMENT_SWITCH | WAIT_ON_SCANLINE`，POSH LRCA 非零且相同。用户分别于
+  10:04、11:05 手动重启；AppleSMC 记录 `Previous shutdown cause: 5`，无新 panic
+  或 watchdog spin。
+- **成立〔整机〕：**第二次在 RCS reset 之后出现 Windows App 的 CCS context 185
+  反复挂起；RCS 报告在 11:03:42 时 ring 已空、仅 CS 未完成，09:58 报告则停在
+  PIPE_CONTROL。恢复循环多次出现 `no channel associated`，直到手动重启。
+- **成立〔整机＋磁盘〕：**两次卡死及当前启动都运行实际 ESP 上的旧 WhateverXe
+  0.8.0 `df96a2ca…d3`；仓库中的 0.8.2 `fbd0495d…e79` 只写在数据盘工作副本，
+  没有同步到 `/Volumes/EFI/EFI/OC/Kexts`。不能声称 0.8.2 已部署或已被本次故障排除。
+- **证据不足：**初始故障是 POSH 生命周期、共享 GDRST 影响兄弟引擎、显示/扫描线
+  停摆还是 0.4.3 Metal 释放路径，仍未区分。`WAIT_ON_SCANLINE` 只是最后一次
+  context switch 原因，不能单独解释为欠载。
+- 详细时间线、报告字段与边界见 [Incident-20261116](Incident-20261116.md)；本轮
+  没有安装、改 ESP 或重启。
+
 ## 2026-11-14：本机只读复核与欠载审计入口
 
 - **成立〔整机只读〕：**本次启动已运行 15 小时以上，`TGLRecoveryLive` 记录区全零，
