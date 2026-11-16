@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "purpose": "Maintainer-approved device-specific transaction-sync persistence; independent review handoff",
+  "evidence_levels": [
+    "static source and existing build manifest",
+    "whole-machine runtime telemetry",
+    "maintainer visual observation",
+    "ESP configuration validation; next boot pending"
+  ],
+  "components": {
+    "plugin": {
+      "name": "TGLSyncFlip",
+      "version": "1.0.2",
+      "sha256": "3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec",
+      "deployment_target": "10.9",
+      "source_sha256": {
+        "TGLSyncFlip.cpp": "363adf04b0864ceb282fd9eb5ef6a99199678e46c1dfee209b5f774dc0196c6d",
+        "TGLSyncFlipLogic.hpp": "5423847653e590f2e91da7f81106204e404eab926d77628dc3142fad0ea18983"
+      }
+    },
+    "plugin_source_commit": "24dcd3254ef98c1efa0ce31db60c80fb1929e662",
+    "WhateverXe_sha256": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "WhateverXe_distribution": "downstream 0.8.1 DEBUG, internal 0.8.0",
+    "framebuffer_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "accelerator_sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+    "Metal_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+    "Lilu_version": "1.7.2",
+    "Lilu_sha256": "ff98508b40a1eb5fb477029db8886412520f8e39965279ea331c99e3d2e3b274"
+  },
+  "observation": {
+    "start": "2026-11-16T13:57:01+08:00",
+    "end": "2026-11-16T14:18:16+08:00",
+    "health_elapsed_s": 1274.7,
+    "health_saved_samples": 128,
+    "planned_seconds": 1800,
+    "stopped_early_at_maintainer_request": true,
+    "collection_processes_stopped": true,
+    "runtime_state": "routed",
+    "runtime_armed": true,
+    "runtime_mode": 1,
+    "flickers_exact": null,
+    "maintainer_report": "No current issue noticed during observation; maintainer considers transaction sync to have eliminated the observed flicker and requests persistence.",
+    "visual_count_limitation": "No full-window timestamped event count; do not replace null with zero or calculate a new Poisson significance.",
+    "UU_present": true,
+    "Windows_App_present": true,
+    "Windows_App_active_remote_session": "unverified",
+    "load_controlled": false
+  },
+  "sync": {
+    "start": "2026-11-16T13:57:20+08:00",
+    "end": "2026-11-16T14:17:52+08:00",
+    "elapsed_s": 1232.0,
+    "all_statuses_routed_mode1": true,
+    "samples": 42,
+    "flips_delta": 29310,
+    "forced_delta": 10836,
+    "duration_hist_delta": [
+      29272,
+      0,
+      0,
+      0,
+      0,
+      38
+    ],
+    "duration_ge16_fraction": 0.0012964858410098943,
+    "max_ms_cumulative": 17.117,
+    "duration_hist_bounds_ms": [
+      "<1",
+      "1-4",
+      "4-8",
+      "8-12",
+      "12-16",
+      ">=16"
+    ],
+    "max_ms_scope": "cumulative since plugin load, not reset for this window",
+    "not_end_to_end_latency": true,
+    "plane_trace_repeated_in_this_window": false
+  },
+  "health": {
+    "recovery_calls_max": 0,
+    "recovery_returns_max": 0,
+    "new_gpu_reports_max": 0,
+    "report_monitor_continuous": true,
+    "halt_monitor_available": false,
+    "gpu_filtered_log_events": 0,
+    "engine_counters": [
+      {
+        "engine": "RCS",
+        "error": 0,
+        "consumed_events_delta": 166498,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 1
+      },
+      {
+        "engine": "CCS",
+        "error": 0,
+        "consumed_events_delta": 11331,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 1
+      },
+      {
+        "engine": "BCS",
+        "error": 0,
+        "consumed_events_delta": 66538,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 1
+      },
+      {
+        "engine": "VCS0",
+        "error": 0,
+        "consumed_events_delta": 0,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 0
+      },
+      {
+        "engine": "VCS1",
+        "error": 0,
+        "consumed_events_delta": 0,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 0
+      },
+      {
+        "engine": "VECS",
+        "error": 0,
+        "consumed_events_delta": 0,
+        "retry_delta": 0,
+        "reset_delta": 0,
+        "ready": 0
+      }
+    ],
+    "engine_counter_meaning": "CSB consumed status events, not client submitted/returned stamps. Not-ready engines are not qualified hardware-decode evidence."
+  },
+  "cpu": {
+    "samples": 84,
+    "last_user_sys_idle": [
+      10.78,
+      5.87,
+      83.34
+    ],
+    "mean_user_sys_idle": [
+      8.78,
+      5.23,
+      86.11
+    ]
+  },
+  "processes": {
+    "Windows App": {
+      "samples": 85,
+      "cpu_single_core_last_percent": 2.8,
+      "cpu_single_core_mean_percent": 3.01,
+      "footprint_first_mib": 209.0,
+      "footprint_last_mib": 207.0,
+      "footprint_min_mib": 204.0,
+      "footprint_max_mib": 217.0,
+      "footprint_ols_mib_per_minute": -0.358
+    },
+    "UURemote": {
+      "samples": 85,
+      "cpu_single_core_last_percent": 16.6,
+      "cpu_single_core_mean_percent": 18.8,
+      "footprint_first_mib": 138.0,
+      "footprint_last_mib": 123.0,
+      "footprint_min_mib": 123.0,
+      "footprint_max_mib": 138.0,
+      "footprint_ols_mib_per_minute": -0.895
+    },
+    "WindowServer": {
+      "samples": 85,
+      "cpu_single_core_last_percent": 22.2,
+      "cpu_single_core_mean_percent": 16.61,
+      "footprint_first_mib": 463.0,
+      "footprint_last_mib": 485.0,
+      "footprint_min_mib": 424.0,
+      "footprint_max_mib": 686.0,
+      "footprint_ols_mib_per_minute": 5.204
+    }
+  },
+  "temperature_c": {
+    "samples": 42,
+    "min": 41.0,
+    "max": 51.0,
+    "last": 48.0
+  },
+  "fan_rpm_available": false,
+  "memory_conclusion": "WindowServer footprint fluctuated 424-686 MiB, 463 to 485 MiB, OLS +5.204 MiB/min; this does not establish absence of a leak.",
+  "display_probe": {
+    "DonorCounterState": 1,
+    "DonorCountersValid": 1,
+    "DonorReadFailures": 0,
+    "Paused": 0,
+    "Stopped": 0,
+    "Writes": 0,
+    "DonorUnderrunEntry_end": 0,
+    "DonorUnderrunPipeA_end": 0,
+    "DonorUnderrunPipeB_end": 0,
+    "DonorUnderrunPipeC_end": 0,
+    "MMIOAccessState": 0,
+    "qualification": "No MMIO power lease; native RAM counters only. Skipped/available MMIO fraction cannot support ruling out all scanout faults."
+  },
+  "persistence": {
+    "installed": true,
+    "installed_at": "2026-11-16T14:20:23+08:00",
+    "maintainer_explicitly_authorized": true,
+    "runtime_mode_preserved": 1,
+    "next_boot_requested_mode": 1,
+    "existing_activation_arg_preserved": "-tglsync",
+    "only_boot_arg_appended": "tglsyncmode=1",
+    "NVRAM_delete_contains_boot_args": true,
+    "direct_nvram_write": false,
+    "existing_EFI_files_changed": [
+      "OC/config.plist"
+    ],
+    "only_semantic_change": "append the single boot argument",
+    "all_other_existing_EFI_files_unchanged": true,
+    "new_backup_relative_to_EFI": "OC/config.plist.pre-sync-default1-20261116-141953",
+    "backup_matches_previous_config": true,
+    "ocvalidate_version": "1.0.8",
+    "ocvalidate_passed": true,
+    "identity_and_all_other_boot_args_preserved": true,
+    "WEX_or_Graphics_upgraded": false,
+    "display_layout_changed": false,
+    "VA_restored": false,
+    "automatic_reboot_performed": false,
+    "next_boot_default_verified": false
+  },
+  "rollback": {
+    "runtime": "sudo -n probe/TGLSyncFlip/build/tglsync-ctl mode 0; verify sudo status; does not undo next-boot default",
+    "persistent": "Remove tglsyncmode=1 or change it to tglsyncmode=0; full disable via -tglsyncoff or Kernel/Add Enabled=false; maintainer manual boot",
+    "UEFI_Shell": "map -r; find the filesystem containing the named backup; cp \\EFI\\OC\\config.plist.pre-sync-default1-20261116-141953 \\EFI\\OC\\config.plist; confirm success; exit and manually boot. Do not reset NVRAM."
+  },
+  "conclusions": [
+    {
+      "claim": "Transaction sync eliminated the previously observed UU flicker on this device during maintainer use",
+      "result": "成立（本机用户观察范围）",
+      "evidence": "whole-machine request trace from earlier windows plus maintainer observation; not blinded, not a pixel-level root-cause proof"
+    },
+    {
+      "claim": "Boot configuration now requests transaction-sync mode1 with the same deployed plugin",
+      "result": "成立",
+      "evidence": "ESP semantic diff, file checksums and ocvalidate; actual next boot pending"
+    },
+    {
+      "claim": "RCS/CCS hang, shared-reset recovery or stamp non-retirement has been fixed",
+      "result": "证据不足",
+      "evidence": "No such code changes; short no-error observation without a controlled failing-load reproduction"
+    },
+    {
+      "claim": "All rendering memory, latency, power and scanout faults are resolved",
+      "result": "证据不足",
+      "evidence": "Uncontrolled load, no qualified MMIO, fluctuating footprint; no latency/power control"
+    }
+  ],
+  "prior_evidence": "syncflip-postboot-20261116.json; first-round symptom counts remain withdrawn; reuse only the explicitly confirmed repeat observations",
+  "review_focus": [
+    "Does mode1 preserve native transaction completion and caller-visible return/flag semantics?",
+    "Does the existing mode gate and fail-closed route guard remain valid across clients and nested calls?",
+    "Keep this device-specific presentation mitigation separate from RCS/CCS hang and POSH ownership/recovery work.",
+    "Next manual boot: routed/armed/mode1; do not silently treat requested EFI mode as verified startup behavior."
+  ]
+}

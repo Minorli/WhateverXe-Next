@@ -19,6 +19,9 @@ Apple, or WhateverXe release. It does not claim authorship of inherited code.
 - `src/`, root `tests/`, `tools/`, the root Makefile and project documentation
   are provided under the root MIT license. `research/XePOSHFix-v0.1.0.cpp` is
   a retired local MIT experiment, with no generated Apple code page included.
+- `probe/TGLSyncFlip/` implementation files carry BSD-3-Clause SPDX identifiers.
+  The accompanying `LICENSE` preserves the Lilu notice and the local contributor
+  notice for redistribution of the deployed standalone plugin.
 - The work was informed by the public WhateverXe issue discussions, including
   issue 47 (POSH leak and texture-reset concerns) and issue 81 (VA compatibility).
 - Native Apple drivers, driver code pages, full disassemblies, firmware payloads,

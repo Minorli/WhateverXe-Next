@@ -484,13 +484,51 @@ halt专用监控不可用。随后维护者在模式0另报一次闪烁：单列
 12:31:29–12:37:50健康快照恢复调用和新增GPU报告均0，halt专用监控不可用。
 结束CPU温度60℃、空闲81.18%仅是当时快照，不能解释成同步带来的降温。
 
-当前继续保留**运行时模式1**，密集采集已停止；开机默认仍为0，没有修改EFI、
+该阶段继续保留**运行时模式1**，密集采集已停止；当时开机默认仍为0，没有修改EFI、
 显示布局或WEX。若出现新GPU错误、卡顿或不可接受的延迟，直接执行
 `sudo probe/TGLSyncFlip/build/tglsync-ctl mode 0`并用sudo刷新status确认。
-重新启动也会回到默认0；不自动重启。是否改持久默认仍待维护者决定。
+当时重新启动会回到默认0；后续维护者已批准固化，见下节。不自动重启。
 
 后续优先保留事务层sync候选，沿原生flip完成通知、sync/async触发完整setup的切换、
 以及扫描缓冲与渲染fence的生命周期核对。模式2保留原生忙等，尚无必要为了区分机制立即施加。
 同步呈现没有改变RCS/CCS恢复逻辑或GPU完成stamp；本轮Windows App临时开关过，
 不能算受控的并发卡死验收。完整聚合仍在
 [启动与短测](../validation/syncflip-postboot-20261116.json)的`UU_continuous_sync`。
+
+### 14:20：停止观察，固化本设备事务同步模式1
+
+**成立〔本机用户观察〕：**维护者认为同步后此前的UU局部闪屏已消失，明确要求暂停观察、
+固化配置并交给外部审查。13:57:01–14:18:16的1274.7秒健康窗口已提前结束，所有本轮
+外部采集进程已停止，工作软件与镜像布局保留。未取得全窗逐次闪烁数，因此计数仍为null。
+
+**成立〔磁盘配置核验〕：**活动EFI唯一语义变化是向原boot-args追加`tglsyncmode=1`，
+保留`-tglsync`、原参数顺序和插件1.0.2；没有更换WEX、Graphics、VA或身份。
+同分区备份`OC/config.plist.pre-sync-default1-20261116-141953`与修改前逐字节相同；
+全部其它既有EFI文件未变，活动配置通过ocvalidate 1.0.8。NVRAM/Delete已包含boot-args，
+由OpenCore下次启动读取新配置，本轮没有直接写NVRAM。
+
+当前仍为`state=routed armed=1 mode=1(transaction)`。**下次启动请求模式1，实际开机默认值
+尚未验证**；没有自动重启。维护者下次自行启动后，仅需执行：
+
+```sh
+sudo -n probe/TGLSyncFlip/build/tglsync-ctl status
+```
+
+应显示`state=routed armed=1 mode=1(transaction)`。否则按实际状态报告，不能把EFI参数
+存在当作route或同步已生效。插件与组件完整SHA见[本次聚合](../validation/syncflip-persist-mode1-20261116.json)。
+
+临时回退执行`sudo -n probe/TGLSyncFlip/build/tglsync-ctl mode 0`并用sudo刷新status；
+这不撤销下次启动默认1。持久回退删除`tglsyncmode=1`或改为`tglsyncmode=0`；
+完全禁用可用`-tglsyncoff`或将Kernel/Add条目设为false。
+若无法启动，从已使用过的UEFI Shell执行`map -r`，逐个`fsN:`找到上述备份，再执行：
+
+```text
+cp \EFI\OC\config.plist.pre-sync-default1-20261116-141953 \EFI\OC\config.plist
+```
+
+必须确认复制成功，`exit`后由维护者手动启动；不Reset NVRAM。此备份保留插件但恢复默认0。
+完整撤销插件安装的更早备份仍为`config.plist.pre-tglsync-20261116-102`。
+
+**证据不足〔RCS／CCS卡死修复〕：**本次无恢复调用、返回或新增GPU报告；但没有逐客户端
+submitted/returned stamp、受控并发故障复现或长期验收。模式1没有修改复位、POSH或GPU完成值。
+这项固化是本机呈现改善，不解除既有0.4.3/POSH风险，也不把仓库0.8.2模板视为已实测配置。
