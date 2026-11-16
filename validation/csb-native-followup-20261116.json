@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-16",
+  "base_commit": "2a073da",
+  "purpose": "Refute a specific lost-work path and correct report provenance; add local-only read-only collection",
+  "components": {
+    "WEX": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "framebuffer": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "accelerator": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+    "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+  },
+  "report_label_provenance": {
+    "verdict": "不成立",
+    "rejected_claim": "LastContextSwitchReason text is generated from WEX legacyEntry",
+    "evidence_level": "static, exact deployed accelerator and WEX",
+    "accelerator_file_offsets": {
+      "gatherKeyRingData_save": "0x2DD5B–0x2DD61",
+      "dumpExecutionListStatus_read": "0x45606",
+      "reason_print": "0x45864–0x45880"
+    },
+    "WEX_file_offsets": {
+      "original_arguments_forwarded": "0x8F0D9–0x8F0E1"
+    },
+    "limits": [
+      "A historical reason is not current RING_CTRL wait state",
+      "Gen12 interpretation of every native label bit not independently established"
+    ]
+  },
+  "native_wait_path": {
+    "verdict": "不成立（限已测CPU串行输入）",
+    "rejected_claim": "Accepted signal semaphore wait silently loses unfinished work",
+    "evidence_level": "exact-binary CPU replay; no GPU",
+    "file_offsets": {
+      "WEX_consumer": "0x127460",
+      "native_wait_queue": "0x3C444",
+      "ElementSwitch": "0x3C5D8",
+      "ActiveToIdle": "0x3C854",
+      "evaluate_wait_queue": "0x3B4EE",
+      "prepare_submit": "0x3B9D2",
+      "submit_callsite": "0x3BA68"
+    },
+    "positive_cases": [
+      {
+        "path": "active-to-idle",
+        "queue_index": 1,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      },
+      {
+        "path": "active-to-idle",
+        "queue_index": 15,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      },
+      {
+        "path": "active-to-idle",
+        "queue_index": 31,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      },
+      {
+        "path": "element-switch",
+        "queue_index": 1,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      },
+      {
+        "path": "element-switch",
+        "queue_index": 15,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      },
+      {
+        "path": "element-switch",
+        "queue_index": 31,
+        "retained_before_dependency": true,
+        "resubmitted_after_dependency": true,
+        "no_pretend_completion": true
+      }
+    ],
+    "rejected_inputs": 24,
+    "negative_matrix": {
+      "paths": [
+        "ActiveToIdle",
+        "ElementSwitch"
+      ],
+      "queue_indices": [
+        1,
+        15,
+        31
+      ],
+      "rejected_inputs_per_case": [
+        "SingleChannelIndex bit combination 1",
+        "SingleChannelIndex bit combination 2",
+        "SingleChannelIndex bit combination 3",
+        "unsupported unfinished detail3"
+      ]
+    },
+    "result": "PASS",
+    "fixture_sha256": "d05b7542c9c0a5dbf8be22159cfabd1d2e87ee96e21ffc93f1d07f73fba031f1",
+    "modeled_dependencies": [
+      "SDK-contract atomic returns",
+      "clock",
+      "statistics and idle notifications",
+      "cross-engine notify",
+      "virtual-address backing of stamp buffer",
+      "record-only submission endpoint"
+    ],
+    "not_covered": [
+      "real IRQ or notification delivery",
+      "concurrent scheduling",
+      "outer CSB drain/MMIO",
+      "outer rejection/fatal path",
+      "GPU execution or completion",
+      "producer progress in either incident"
+    ],
+    "development_failures": "User-space Python fixture crashes were excluded from natural GPU/whole-machine incident counts"
+  },
+  "channel29_timeline": {
+    "verdict": "部分成立",
+    "evidence_level": "existing whole-machine log plus static lookup",
+    "progress_error_time": "2026-11-16T11:03:38.981796+08:00",
+    "restart_begin_time": "2026-11-16T11:03:42.000917+08:00",
+    "error_precedes_first_logged_restart_seconds": 3.019121,
+    "default_table_engine": "CCS",
+    "default_eventTimeout_table_file_offset": "0xA0290",
+    "default_table_reference_file_offset": "0x15F67",
+    "independent_notify_table_reference_file_offset": "0x38869",
+    "outstanding_stamp_difference_at_report": 33,
+    "incident_flags_available": false,
+    "default_mapping_active_during_incident": null,
+    "header_caveat": "Multiple channels text excludes value1 only; values0/2/3 share the text, while eventTimeout uses SCI table for any nonzero bits",
+    "corrected_claim": "CCS detailed hang reports follow the first RCS restart; first involvement of CCS has not been proven to begin after that restart",
+    "not_inferred": [
+      "channel index is not hardware context ID",
+      "first logged restart excludes all earlier unlogged hardware resets",
+      "shared-reset recovery explains first fault"
+    ]
+  },
+  "local_capture": {
+    "remote_login_enabled": false,
+    "resident_service_installed": false,
+    "driver_or_EFI_changed": false,
+    "mode_changed": false,
+    "tool": "tools/hang-capture.sh",
+    "contract_tests": 2,
+    "shellcheck": "PASS",
+    "bash_n": "PASS",
+    "make_cpu_test": "PASS",
+    "live_smoke": {
+      "evidence_level": "one-shot whole-machine diagnostics, no fault induced",
+      "started_at": "2026-11-16T16:26:24.025566+08:00",
+      "finished_at": "2026-11-16T16:26:50.028958+08:00",
+      "commands": 25,
+      "successful_commands": 25,
+      "component_state": "TGLSyncFlip routed/armed/mode1; no mode mutation",
+      "captured_reports_note": "Private development reports may be present; not classified as new natural GPU incidents"
+    },
+    "limitations": [
+      "No added kernel or wait-queue instrumentation",
+      "Post-reboot registry is a new boot, not fault state",
+      "A fully unresponsive machine may not schedule the collector",
+      "Persisted logs may be incomplete after forced power-off"
+    ]
+  },
+  "next_focus": [
+    "dependency producer progress",
+    "cross-engine completion notification",
+    "re-entry into scheduler; preserve M2/E1 split"
+  ],
+  "deployment_performed": false,
+  "root_cause_fixed": false
+}
