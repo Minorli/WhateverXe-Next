@@ -58,12 +58,16 @@ build/recovery-state: tests/recovery-state.cpp src/RecoveryState.hpp | build
 build/capture-reports: tests/capture-reports.mm tools/tgl-capture.mm src/RecoveryState.hpp $(HALT_HEADERS) | build
 	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -fobjc-arc -fsanitize=address,undefined $< -framework Foundation -framework IOKit -o $@
 
-cpu-test: build/bounded-count build/posh-atomic-code build/recovery-state build/capture-reports build/tgl-plane-trace-test
+build/tglsyncflip-test: probe/TGLSyncFlip/tests/logic_test.cpp probe/TGLSyncFlip/TGLSyncFlipLogic.hpp | build
+	$(CXX) $(CXXFLAGS) $(PREFIX_MAP) -O1 -fsanitize=address,undefined $< -o $@
+
+cpu-test: build/bounded-count build/posh-atomic-code build/recovery-state build/capture-reports build/tgl-plane-trace-test build/tglsyncflip-test
 	./build/bounded-count
 	./build/posh-atomic-code
 	./build/recovery-state
 	./build/capture-reports
 	./build/tgl-plane-trace-test
+	./build/tglsyncflip-test
 
 clean:
 	rm -rf build

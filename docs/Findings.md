@@ -59,7 +59,10 @@
   `AppleIntelPlane::configurePlane`（`0x2198`）默认把 PLANE_CTL 设为
   `0x80000600`（async）；只有当 flip transaction 的 `+0x2C` bit0 置位，或
   controller/path 的两个特性字节同时置位时才改用 `0x80000400`（sync）。
-  `syncPlaneUpdates`（`0x33ae`）只切换 bit3 arm 标记并写回 CTL。
+  `syncPlaneUpdates`（`0x33ae`）只切换 bit3 并写回 CTL。（复审更正：bit3 是与
+  `0x44500` DOUBLE_BUFFER_CTL 配套的 double-buffer-update-disable 允许位；`+0x2C` bit0
+  是调用方每次事务传入的 sync 请求，即 `FlipTransactionParams+0x34`；async 事务在
+  `armUpdate` 后忙等 flip-done；切换会触发完整 setup。见显示审查 7.6。）
   async 地址更新允许在扫描中途生效，因此画面上下来自不同缓冲，能产生
   局部、单帧、录屏难以复现的撕裂。
 - **成立〔静态＋CPU＋构建〕：**新增默认关闭的 `-wex-tgl-no-async` 候选：

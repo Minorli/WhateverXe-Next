@@ -278,3 +278,56 @@ framebuffer `115a4616…888e`，偏移均为文件偏移：
 - **仍缺：**人工标记是 −2 s/+0.5 s 窗口，不能精确归因到某一次 flip；GRD 对照
   满足“无 async、无闪烁”但存在上述混杂。需要强制 sync 的 A/B 才能确认因果；
   若仍闪，剩余方向是合成内容或扫描输出缓冲内容本身错误。
+
+### 7.6 2026-11-16 复审：async 结论成立，候选实现与部署路径需要更换（Claude）
+
+**静态复核〔静态，framebuffer `115a4616…888e`〕**
+
+- `configurePlane` 的偏移和立即数都已逐字节核对：`0x2211` `testb %al,0x2C(%r15)`、`0x2229` `B8 00 06 00 80`、`0x2252` `B8 00 04 00 80`、`0x239E` 存 `+0x100`。bit9 是 async address update，结论成立。
+- 两处文字需要更正：
+  - **"sync bit8/bit10"不对。**`0x80000400` 里的 bit10 是 tiling 字段（X tile），`0x2336/0x234D` 会按 `args+0x3C` 重写；sync 和 async 只差 bit9。
+  - **bit3 不是"arm 标记"。**`syncPlaneUpdates(true)` 会先写 `0x44500=1`，再写带 bit3 的 CTL；`syncPlaneUpdates(false)` 写 `0x44500=0`。所以 bit3 是和 DOUBLE_BUFFER_CTL `0x44500` 配套的 per-plane "allow double buffer update disable" 位，用于把多寄存器更新做成原子操作。
+- "默认 async"的说法要改。`args+0x2C` bit0 就是 `FlipTransactionParams+0x34`：`0x2B620` 处 `args = params+8`，`0x2B7F4` 处只接受单 plane。它是调用方（IOAccel 显示管线）按每次事务传进来的 sync 请求。所以更准确的说法是：**UU 的呈现路径提交了非 sync 事务，原生驱动照做了**。空闲桌面和 GRD 的事务都带 sync 请求。
+- **新发现：async 事务在原生里另走一条完成路径。**
+  - bit0=0 时，`PerformFlipTransaction` 不做提交前的 vblank 等待。
+  - `armUpdate` 之后（`0x2C247..0x2C325`）用 `IODelay(50)`（`0x2C301` 重定位）循环最多 `1e6/(refresh×50)` 次，60 Hz 下为 333 次，轮询 `controller+0xA0+pipe`。这个标志由 `processDEInterrupt` `0x73542` 在 pipe IIR bit3（flip done）时置位。
+  - 轮询结束后写 `fb+0x4008=-1`，`IsTransactionComplete` 直接返回这个值。
+- **新发现：sync/async 切换会触发完整 plane setup。**`0x21CF` 处 `memcmp(args+8, plane+0x18, 0x50)` 的比较范围包含 `+0x2C`，每切换一次都会走 `updatePlane` 的完整路径（scaler、DBUF、水位、全部 plane 寄存器）。UU 段的 829 次完整 setup 与此一致，也就是说它们是 async 请求的副产品，不是独立混杂。
+
+**对 `-wex-tgl-no-async`（15b3d90/34dbf4d）的审查**
+
+- 正确性：它只在寄存器写入时清 bit9，原生软件状态仍按 async 处理，所以上面那段 IODelay 轮询仍会执行，但 flip-done 要等到 vblank 才来。
+  - 结果是每次 flip 在提交线程里忙等，平均约半帧、最长约一帧。UU 每秒约 60 次 flip，相当于持续占用接近半个核心的内核时间。
+  - 原生轮询的上限约 16.65 ms 加循环开销，基本能覆盖一帧。如果真的超时，会在锁存前标记完成，提前释放旧缓冲。
+  - sync/async 切换引起的完整 setup 也仍然存在。
+- 部署：这个候选在 WEX 源码里，机器上跑的是闭源下游 0.8.0/0.8.1。要部署就得替换整个 WEX，会丢掉 HDMI/背光/CDCLK 增强，A/B 不再是单变量。
+- 结论：代码保留，默认关闭，但**不作为本轮 A/B 的载体**。
+
+**替代：`probe/TGLSyncFlip` 独立 Lilu 插件〔静态＋CPU＋构建〕**
+
+- 不碰正在运行的 WEX。
+  - 只有带 `-tglsync` 才会 route `PerformFlipTransaction` 和 `configurePlane`。
+  - route 前校验符号、"基址加偏移"和 11 处字节锚点。
+  - 默认模式 0（透传），管理员可在运行时切换模式，同一次启动里就能做 ABAB。
+- 模式 1（transaction）：调用前置 `params+0x34` bit0，返回后只清回这一位。
+  - 原生整条 sync 路径保持一致：CTL、vblank 等待、完成方式都走 sync，也不再在 sync/async 之间切换导致完整 setup。
+  - 未知项：调用方拿回结果后，是不是仍按"async 已完成"处理。
+- 模式 2（plane-ctl）：`configurePlane` 之后清掉 `+0x100` 的 bit9。
+  - 原生仍会轮询，所以要等真实锁存后才标记完成，缓冲生命周期是安全的。
+  - 效果等同于 `-wex-tgl-no-async`，只是落在 plane 缓存上，可以部署。
+- 插件按模式分别统计 `PerformFlipTransaction` 耗时直方图，直接量化模式 2 的忙等代价和可能的超时（≥16 ms）。
+- 判读：
+  - 模式 2 能消除闪烁，说明原因是硬件 async 扫描；
+  - 只有模式 1 能消除，说明原因是切换导致的完整 setup 或 sync 节奏；
+  - 两种都不能消除，说明 async 假说不成立，转向合成内容或缓冲内容本身。
+- 测试：
+  - CPU 测试 4 组，变异测试 6 个全部杀死；
+  - 锚点已对真实 framebuffer 文件核对；
+  - 内核扩展用与 WEX 相同的 ABI 参数构建，`nm -u` 只含 kpi、Lilu 和 IOKit 符号。
+  - **没有安装，没有做整机测试。**
+
+**上游与下游（2026-11-16 核对）**
+
+- b00t0x/WhateverXe 在 11-13 之后只有 0.8.2 说明合并，Graphics 出了 0.4.4。
+- 上游 #129 报告：9A49、0.8.2 + Graphics 0.4.4，2560×1440 视频转换会让 WindowServer abort。G83 的分辨率相同，升级前需要单独评估。
+- xiananliu 下游在 11-14 发布了 0.8.2（RELEASE 二进制 `fbd0495d…1e79`）。它去掉了下游 VA 回退和 Metal 泄漏补丁，要求搭配 Graphics 0.4.4。二进制里**没有** `TGLProgram%uCount`，升级后 `tgl-plane-trace` 会失效（rc=3）。所以本轮 A/B 必须留在当前下游二进制上，升级另作单独一步。

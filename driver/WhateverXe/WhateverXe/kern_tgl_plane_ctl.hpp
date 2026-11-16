@@ -3,8 +3,12 @@
 // configurePlane defaults PLANE_CTL to the async-address-update value
 // (0x80000600) unless the flip transaction requests synchronous presentation.
 // Async address updates are allowed to take effect mid-frame, which can produce
-// a partial-frame tear. Clearing PLANE_CTL bit9 makes the same write a normal
-// double-buffered sync flip; the donor's idle path already uses that form.
+// a partial-frame tear. Clearing PLANE_CTL bit9 makes the hardware latch the
+// write at vblank, but the donor still treats the transaction as async: after
+// armUpdate it busy-polls IODelay(50) for flip-done (0x2C247..0x2C325), which
+// now arrives only at vblank, and sync/async request toggles still force full
+// plane setups. probe/TGLSyncFlip is the deployable A/B vehicle (see display
+// review 7.6); keep this default-off.
 #ifndef kern_tgl_plane_ctl_hpp
 #define kern_tgl_plane_ctl_hpp
 #include <stdint.h>
@@ -23,7 +27,8 @@ inline bool isPrimaryPlaneControl(unsigned long reg) {
 }
 
 // Returns true only when the requested write was an async flip and has been
-// converted. Other bits, including the donor's bit3 arm marker, are untouched.
+// converted. Other bits, including bit3 (allow double-buffer-update disable,
+// paired with DOUBLE_BUFFER_CTL 0x44500), are untouched.
 inline bool forceSynchronous(uint32_t &value) {
     if (!(value & AsyncFlipBit)) return false;
     value &= ~AsyncFlipBit;

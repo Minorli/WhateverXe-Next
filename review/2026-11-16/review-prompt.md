@@ -71,11 +71,12 @@
   - `0x224B/0x2252` 在特定 transaction/controller/path 条件下改用
     `0x80000400`（sync）；
   - `0x2257` OR 进 CTL，`0x239E` 存回 plane `+0x100`。
-- `syncPlaneUpdates`（`0x33AE`）只切换 CTL bit3（arm 标记），不决定 async。
+- `syncPlaneUpdates`（`0x33AE`）只切换 CTL bit3，不决定 async。（2026-11-16 复审更正：bit3 是与
+  DOUBLE_BUFFER_CTL `0x44500` 配套的 "allow double buffer update disable" 位，见显示审查 7.6。）
 - i915 定义 `PLANE_CTL_ASYNC_FLIP = REG_BIT(9)`，并说明除 bit9 外该寄存器是
   双缓冲的；async 地址更新允许在扫描中途生效。
-- async bit9 与 sync bit8/bit10 的组合对应实际观测值 `0x82000600/0x82000400`
-  及带 bit3 的 `0x82000608/0x82000408`。
+- 实际观测值 `0x82000600/0x82000400` 及带 bit3 的 `0x82000608/0x82000408` 只差 bit9。
+  （复审更正：bit10 是 X tiling 字段，不是 sync 位；bit8 不参与。）
 
 ### 4.4 候选
 
