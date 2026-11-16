@@ -137,7 +137,8 @@
     "ABI_regression_test": "old 10.6 imports removed IOService slots 0/1; 10.9 selected to consume IOReport slots",
     "ABI_fix_commit": "450d305",
     "native_AB_admitted": false,
-    "cpu_SDK_vtable_regression_test_passed": true
+    "cpu_SDK_vtable_regression_test_passed": true,
+    "historical_initial_review": true
   },
   "DeepSeek": {
     "provided_files": [
@@ -221,5 +222,6 @@
     "postinstall_only_expected_config_change_and_backup": true
   },
   "source_commit_reviewed": "eeace38",
-  "G83_integration_commit": "154d13f"
+  "G83_integration_commit": "154d13f",
+  "followup": "syncflip-102-20261116.json"
 }

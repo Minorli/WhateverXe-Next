@@ -4,9 +4,11 @@ TGLSyncFlip 是一个独立的 Lilu 插件，用来在同一次启动里对比 a
 
 它是诊断候选，不是修复。没做整机 A/B 之前，不能说它解决了闪烁。
 
-**2026-11-16 部署暂停：**模式2清除的是持久 plane CTL 缓存，切回0后 native 参数命中快路径时
-可能沿用被清掉的 bit9，污染对照组。当前尚未修正，不能开始0/1/2盲测；构建/ABI通过不解除此门槛。
-详见 [本轮审查](../../docs/Integration-20261116.md#syncflip-新发现模式2的缓存回退门槛)。
+**2026-11-16 候选 1.0.2：**已修正模式2持久污染缓存以及事务中途切换模式的问题，
+完成 CPU 回归、真实 framebuffer 锚点、本机构建和链接检查；没有安装或进行整机 A/B。
+维护者刚报告两次卡死，日志确认 RCS / CCS 恢复循环，因此暂停长时间盲测；先解决恢复入口，
+再由维护者确认安装和短时冒烟。此插件检验呈现路径，不能当作 GPU hang 恢复修复。
+详见 [本轮审查](../../docs/Integration-20261116.md#syncflip-102修正与uu并发故障)。
 
 ## 原理（静态依据，framebuffer `115a4616…888e`）
 
@@ -25,14 +27,23 @@ TGLSyncFlip 是一个独立的 Lilu 插件，用来在同一次启动里对比 a
 
 | 模式 | 作用 | 硬件 CTL | 原生软件状态 | 代价 |
 | --- | --- | --- | --- | --- |
-| 0 off | 透传，只计时 | 原样 | 原样 | 无 |
+| 0 off | 透传，只计时 | 原样 | 原样 | 计时和原子计数开销，整机尚未量化 |
 | 1 transaction | 调用前置 `params+0x34` bit0，返回后只清回这一位 | sync | 完整 sync 路径，不再在 sync/async 之间切换 | 调用方（IOAccel）怎么理解返回，没有静态证据 |
-| 2 plane-ctl | `configurePlane` 返回后清 plane `+0x100` 的 bit9 | sync | 仍按 async 处理：忙等但存在超时出口 | 每次 flip 最多约一帧的 `IODelay` 忙等；完整 setup 仍会发生 |
+| 2 plane-ctl | 只在 `syncPlaneUpdates(false)` 调用期间清主平面缓存 bit9，返回前恢复这一位 | 最终 CTL/SURF 提交包为 sync | 仍按 async 处理：忙等但存在超时出口 | 每次 flip 最多约一帧的 `IODelay` 忙等；完整 setup 仍会发生 |
+
+1.0.2 不再 route `configurePlane`，改为 route `syncPlaneUpdates`。后者在 `0x351D/0x3525`
+把 CTL **值**放入原生提交包，然后在 `0x356E/0x3576` 放入 SURF；
+`PrepareTriggerPacket 0x92555` 复制值，不持有缓存指针。返回前只恢复 bit9，
+保留原生 bit3 等其他修改。下次参数相同、命中 configurePlane 快路径时也能恢复原生 async。
+只处理 A/B/C 主平面，初始 `syncPlaneUpdates(true)` 不变，不碰 WEX 已 route 的 updatePlane。
+
+模式从一个完整原生事务持续到其返回；期间切换返回 Busy，控制工具在用户态最多重试约2秒。
+失败必须如实报告，不能打印“已恢复”。没有在内核中等待 GPU 或新增覆盖原生调用的锁。
 
 区分方式：
-- 模式 2 有效，说明问题在硬件 async 扫描；
-- 只有模式 1 有效，说明问题在切换引起的完整 setup，或 sync 路径的节奏；
-- 两个都无效，说明 async 假说不成立。
+- 模式2有效，支持最终提交锁存路径与闪烁相关；仍需量化原生忙等和超时，不能证明缓冲生命周期安全。
+- 只有模式1有效，优先区分完整 setup、sync 节奏及完成路径的影响。
+- 两个都无效且 trace 证实生效，降低 async 假说优先级，转查内容、缓冲及 fence。
 
 ## 安全边界
 
@@ -40,10 +51,11 @@ TGLSyncFlip 是一个独立的 Lilu 插件，用来在同一次启动里对比 a
 - route 前要同时满足：
   - 符号存在；
   - 符号地址等于映像基址加固定偏移；
-  - 11 处字节锚点逐字节相符。
+  - 21 处字节锚点逐字节相符，保留旧版全部11处检查。
   - 只要有一项不符，状态就是 `shape-mismatch`，不 route。
   - 如果别的插件已经 route 了这两个函数，它们的序言会被改写，锚点同样不符，插件也会拒绝。
-- 启动后的默认模式是 0，可用 `tglsyncmode=N` 修改。运行时改模式需要管理员权限（`setProperties`）。计数只在查询时发布，不会每次 flip 都写 registry。
+  - 两个route都安装成功才启用修改；部分失败时，已安装wrapper保持透传，即使请求了非零启动模式。
+- 启动后的默认模式是 0，可用 `tglsyncmode=N` 修改；首轮不要设置该参数。运行时改模式需要管理员权限（`setProperties`），且只在原生事务之间允许切换。计数只在查询时发布，不会每次 flip 都写 registry。
 - 不写任何显示寄存器，不改其他 CTL 位：bit3 是 DOUBLE_BUFFER_CTL `0x44500` 配套的 "allow double buffer update disable" 位，保持不动。
 
 ## 构建与测试
@@ -73,6 +85,13 @@ probe/TGLSyncFlip/tools/ab-run.sh local/syncflip/ab1 240 "0 2 0 2 1 0 1 0"
 - `PerformFlipTransaction` 耗时直方图（<1/<4/<8/<12/<16/≥16 ms）及最大值。
 
 模式 2 的耗时会明显变长，这是原生忙等的直接计量。≥16 ms 的条目可能是原生轮询超时（超时后提前标记完成），要单独报告。
+
+**1.0.2 的生效判据有变化：**原生准备阶段仍可能写 async CTL，不能再要求整个块的
+`async_ctl == 0`。新版 plane-trace 另外记录每次 SURF 之前最后观察到的 CTL：
+`surf_async_ctl`、`surf_sync_ctl`、`surf_ctl_unavailable`。无丢失、无计数器重载且覆盖完整时，
+模式0要求 `surf_async_ctl > 0`；模式1/2要求 `surf_async_ctl == 0`、`surf_sync_ctl > 0`，
+并分别检查 forced / plane_cleared 增长。初始或经过日志缺口无法确定 CTL 的 SURF 记 unavailable，
+不能算同步。它们是写入顺序观察，不能替代硬件实际锁存证明。
 
 `ab-run.sh` 在维护者自己的终端运行：
 - 每个块都会切换模式并运行一次 `tgl-plane-trace`；

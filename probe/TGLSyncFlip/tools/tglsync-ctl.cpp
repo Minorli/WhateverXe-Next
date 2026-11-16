@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "../TGLSyncFlipLogic.hpp"
 
 static const char *modeName(uint32_t m) {
@@ -68,7 +69,14 @@ int main(int argc, char **argv) {
 		if (!end || *end || m < 0 || m >= TGLSync::ModeCount) { fprintf(stderr, "mode must be 0, 1 or 2\n"); IOObjectRelease(svc); return 64; }
 		int32_t mm = (int32_t)m;
 		CFNumberRef n = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &mm);
-		kern_return_t kr = send(svc, CFSTR("Mode"), n);
+		kern_return_t kr;
+		// An active native flip pins its mode. Retry outside the kernel; never
+		// turn an in-flight mode-2 submission into a half-converted transaction.
+		for (unsigned attempt = 0;; ++attempt) {
+			kr = send(svc, CFSTR("Mode"), n);
+			if (kr != kIOReturnBusy || attempt == 199) break;
+			usleep(10000);
+		}
 		CFRelease(n);
 		if (kr != KERN_SUCCESS) { fprintf(stderr, "set mode failed: 0x%x (need sudo; routes must be ready)\n", kr); IOObjectRelease(svc); return 5; }
 		rc = printStatus(svc);

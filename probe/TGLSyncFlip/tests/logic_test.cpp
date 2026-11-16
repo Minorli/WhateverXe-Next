@@ -5,12 +5,14 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <atomic>
+#include <thread>
 #include <vector>
 
 using namespace TGLSync;
 
 static std::vector<uint8_t> syntheticImage() {
-	std::vector<uint8_t> img(0x2C800, 0xCC);
+	std::vector<uint8_t> img(0x92600, 0xCC);
 	for (const auto &a : Anchors) memcpy(&img[a.offset], a.bytes, a.length);
 	return img;
 }
@@ -31,10 +33,13 @@ static void anchors() {
 	assert(!matches(routed.data(), routed.size()));
 	routed = img; routed[ConfigurePlaneOffset] = 0xE9;
 	assert(!matches(routed.data(), routed.size()));
+	routed = img; routed[SyncPlaneUpdatesOffset] = 0xE9;
+	assert(!matches(routed.data(), routed.size()));
 	// Every assumption the wrappers rely on is anchored: both entry points, the
 	// args sync test, both CTL immediates, the CTL cache store, args = params+8,
 	// both reads of params+0x34, the single-plane check and the call edge.
-	const uint32_t required[] {0x2198, 0x2211, 0x2229, 0x2252, 0x239E, 0x2B602, 0x2B620, 0x2B62F, 0x2B79B, 0x2B7F4, 0x2BE4E};
+	const uint32_t required[] {0x2198, 0x2211, 0x2229, 0x2252, 0x239E, 0x2B602, 0x2B620, 0x2B62F, 0x2B79B, 0x2B7F4, 0x2BE4E,
+		0x33AE, 0x3406, 0x3513, 0x3525, 0x3564, 0x3576, 0x2C0C1, 0x2C1C5, 0x92549, 0x92555};
 	assert(sizeof(Anchors) / sizeof(Anchors[0]) == sizeof(required) / sizeof(required[0]));
 	for (uint32_t off : required) {
 		bool found = false;
@@ -77,6 +82,105 @@ static void planeCtl() {
 	assert(!clearPlaneAsync(nullptr));
 }
 
+// Model the donor's final commit: clear its bit3, copy CTL by value, then
+// commit SURF. Deliberately do not rerun configurePlane between equal args.
+// The old persistent bit9 patch fails the 2->0 assertion below.
+static void commitTransitions() {
+	alignas(8) uint8_t plane[0x200] {};
+	auto &ctl = *reinterpret_cast<uint32_t *>(plane + PlaneCtlCache);
+	auto &reg = *reinterpret_cast<uint32_t *>(plane + PlaneCtlRegister);
+	reg = 0x70180;
+	ctl = 0x82000608;
+	const auto commit = [&](uint32_t mode, bool begin = false) {
+		uint32_t packet;
+		{
+			PlaneCommitScope scope(plane, mode == PlaneCtl && !begin);
+			ctl &= ~8U; // the native method's bit3 edit must survive restoration
+			packet = ctl;
+		}
+		return packet;
+	};
+	assert(!(commit(PlaneCtl) & AsyncFlip));
+	assert(ctl == 0x82000600); // cache restored; native bit3 edit preserved
+	assert(commit(Off) & AsyncFlip); // 2->0, with unchanged configurePlane args
+	assert(!(commit(PlaneCtl) & AsyncFlip));
+	// 2->1: native transaction sync recalculates CTL once; scope must not
+	// resurrect an async bit that the native sync path deliberately removed.
+	ctl = 0x82000408;
+	assert(!(commit(Transaction) & AsyncFlip));
+	assert(ctl == 0x82000400);
+	ctl = 0x82000608;
+	assert(commit(PlaneCtl, true) & AsyncFlip); // initial DB-disable call untouched
+	// Cursor/sprite/pipe-D controls are outside this candidate's scope.
+	for (uint32_t other : {0x70080U, 0x70280U, 0x73180U}) {
+		reg = other;
+		assert(commit(PlaneCtl) & AsyncFlip);
+	}
+	for (uint32_t primary : {0x70180U, 0x71180U, 0x72180U}) {
+		reg = primary;
+		assert(!(commit(PlaneCtl) & AsyncFlip));
+		assert(ctl & AsyncFlip);
+	}
+	PlaneCommitScope nullScope(nullptr, true);
+	assert(!nullScope.changed());
+}
+
+static void modeBoundary() {
+	ModeGate gate;
+	assert(gate.mode() == Off && gate.set(PlaneCtl));
+	assert(gate.enter() == PlaneCtl); // outer PerformFlipTransaction
+	assert(!gate.set(Off));
+	assert(gate.enter() == PlaneCtl); // nested syncPlaneUpdates
+	assert(!gate.set(Transaction));
+	gate.leave();
+	assert(!gate.set(Off));
+	gate.leave();
+	assert(gate.set(Off) && gate.mode() == Off);
+	assert(!gate.set(ModeCount));
+}
+
+static void concurrentModeBoundary() {
+	ModeGate gate;
+	std::atomic<bool> start {false};
+	auto reader = [&] {
+		while (!start.load()) std::this_thread::yield();
+		for (unsigned i = 0; i < 10000; ++i) {
+			const uint32_t mode = gate.enter();
+			assert(gate.mode() == mode);
+			assert(gate.enter() == mode);
+			assert(!gate.set((mode + 1) % ModeCount));
+			gate.leave();
+			assert(gate.mode() == mode);
+			gate.leave();
+		}
+	};
+	std::thread a(reader), b(reader);
+	start.store(true);
+	for (unsigned i = 0; i < 10000; ++i) gate.set(i % ModeCount);
+	a.join(); b.join();
+	assert(gate.set(Off) && gate.mode() == Off);
+}
+
+static void routeAdmission() {
+	alignas(8) uint8_t params[0x60] {};
+	alignas(8) uint8_t plane[0x160] {};
+	*reinterpret_cast<uint32_t *>(plane + PlaneCtlRegister) = 0x70180;
+	auto &ctl = *reinterpret_cast<uint32_t *>(plane + PlaneCtlCache);
+	ctl = 0x82000600;
+	for (uint32_t requested = 0; requested < ModeCount; ++requested) {
+		// The first route can succeed and the second fail. A boot request for
+		// either experimental mode must not mutate the surviving wrapper's data.
+		const uint32_t mode = activeMode(requested, false);
+		assert(mode == Off);
+		if (mode == Transaction) requestSync(params);
+		{ PlaneCommitScope scope(plane, mode == PlaneCtl); assert(!scope.changed()); }
+		assert(*reinterpret_cast<uint32_t *>(params + ParamsFlags) == 0);
+		assert(ctl == 0x82000600);
+		assert(activeMode(requested, true) == requested);
+	}
+	assert(activeMode(ModeCount, true) == Off);
+}
+
 static void buckets() {
 	assert(bucketOf(0) == 0 && bucketOf(999999) == 0 && bucketOf(1000000) == 1);
 	assert(bucketOf(7999999) == 2 && bucketOf(8000000) == 3 && bucketOf(15999999) == 4);
@@ -100,7 +204,8 @@ static int framebuffer(const char *path) {
 
 int main(int argc, char **argv) {
 	anchors(); transaction(); planeCtl(); buckets();
-	puts("TGLSyncFlip logic: 4 cases passed (CPU only).");
+	commitTransitions(); modeBoundary(); concurrentModeBoundary(); routeAdmission();
+	puts("TGLSyncFlip logic: 8 cases passed (CPU only, including cached-args transitions, concurrent switching and partial-route admission).");
 	if (argc == 3 && !strcmp(argv[1], "--framebuffer")) return framebuffer(argv[2]);
 	return 0;
 }

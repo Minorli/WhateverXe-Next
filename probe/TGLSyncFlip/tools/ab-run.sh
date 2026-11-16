@@ -17,9 +17,16 @@ SCHED=${3:-"0 2 0 2 1 0 1 0"}
 mkdir -p "$OUT"; chmod 700 "$OUT"
 sudo -v
 ( while true; do sudo -n true; sleep 50; done ) & KEEP=$!
-restore() { sudo -n "$CTL" mode 0 >"$OUT/final-status.txt" 2>&1 || true; kill $KEEP 2>/dev/null || true; }
+restore() {
+  if sudo -n "$CTL" mode 0 >"$OUT/final-status.txt" 2>&1; then
+    echo "mode 0 restored"
+  else
+    echo "mode 0 restoration failed; see $OUT/final-status.txt" >&2
+  fi
+  kill $KEEP 2>/dev/null || true
+}
 trap restore EXIT
-trap 'echo; echo "interrupted: mode 0 restored"; exit 130' INT TERM
+trap 'echo; echo "interrupted: stopping and requesting mode 0"; exit 130' INT TERM
 sudo -n "$CTL" status >"$OUT/start-status.txt" 2>&1 || { echo "TGLSyncFlip not routed; see $OUT/start-status.txt"; exit 4; }
 i=0
 for m in $SCHED; do

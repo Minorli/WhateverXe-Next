@@ -393,7 +393,8 @@ WindowServer physical footprint首尾287.28→392.40MiB，峰值577.09MiB；
 **成立〔静态 / CPU / 本机构建〕：**G83 1.4.6 已合入本机维护线模板；实际机器 TF-only 与
 无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
 源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
-SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
+SyncFlip 初审1.0.1存在模式2缓存残留；后续1.0.2已修正并通过CPU回归、21处锚点及构建检查，
+尚未安装。最新UU并发故障及当前准入条件见下节。
 睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。
 随后经维护者批准，TF-only 配置已写入活动EFI；唯一语义变化为启用现有读卡器，
 同分区原配置备份与安装后 ocvalidate / 全文件差异核验通过，待手动重启与插卡验收。
@@ -401,3 +402,23 @@ SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入�
 
 完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
 及 [validation/integration-20261116.json](../validation/integration-20261116.json)。
+
+## TGLSyncFlip 1.0.2：当前部署边界
+
+**成立〔静态 / CPU / 本机构建〕：**缓存恢复与事务中途切换已修，候选二进制SHA为
+`3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec`。
+该候选检验呈现路径，未安装，不能充当RCS/CCS恢复修复。
+新故障确认真实GPU hang，暂不进入32分钟长盲测；先短时无UU冒烟，再按UU单独、
+Windows App单独、并发、Google RD区分负载，每次只改一项且首个GPU错误即停。
+这些实机操作尚未执行，须另行确认。
+
+当前只有维护者曾使用过的UEFI Shell，没有独立启动验证的备用EFI。
+原SyncFlip任务明确要求备用EFI，TF-only的Shell回退批准不覆盖图形安装。
+先准备仅含新增插件与config差异的私人overlay；若维护者明确接受Shell同分区回退作为替代，
+才可按该授权安装。overlay不是独立可引导EFI，不改变WEX、Metal、VA、镜像、身份或无线。
+重启时机由维护者决定。
+
+安装方案只追加`-tglsync`并新增Kernel/Add，默认模式0，不设置tglsyncmode。
+回退恢复安装前完整config，或禁用插件条目/删去`-tglsync`后手动重启；
+运行时mode0返回失败必须明确报告，不能称已恢复。具体Shell文件路径在私人overlay说明中。
+完整证据见[本轮验证](../validation/syncflip-102-20261116.json)。

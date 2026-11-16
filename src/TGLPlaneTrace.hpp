@@ -140,6 +140,9 @@ struct PlaneStats {
 	uint64_t writes = 0, surf = 0, ctlEnableWrites = 0, ctlDisableWrites = 0, enableTransitions = 0, disableTransitions = 0;
 	uint64_t postArm = 0, wm = 0, bufCfg = 0, bufCfgChanges = 0, auxWrites = 0, asyncCtl = 0, rcCtl = 0, mcCtl = 0;
 	uint64_t surfSameAsPrev = 0, surfReuse = 0, minReuseNs = UINT64_MAX, firstSurfNs = 0, lastSurfNs = 0;
+	// Last observed CTL at each SURF write, not proof of hardware latch. Initial
+	// DB-disable CTL writes may remain async even when the final commit is sync.
+	uint64_t surfAsyncCtl = 0, surfSyncCtl = 0, surfCtlUnavailable = 0;
 	std::map<std::string, uint64_t> byName, postArmByName;
 	std::map<uint32_t, uint64_t> ctl, posSize, bufCfgValues;   // posSize key: index into rects
 	std::vector<std::pair<uint32_t, uint32_t>> rects;          // (pos,size)
@@ -174,6 +177,7 @@ inline Report analyze(const Trace &t, const Params &p = {}) {
 	for (auto &g : rep.gaps) rep.lost[g.group] += g.lost;
 
 	struct PState { bool haveCtl = false, enabled = false; uint32_t lastCtl = 0, lastPos = 0, lastSize = 0, lastBuf = 0;
+		uint64_t lastCtlNs = 0;
 		bool havePos = false, haveSize = false, haveBuf = false; bool haveSurf = false; uint64_t surfNs = 0, lastSurf = 0;
 		std::map<uint64_t, uint64_t> lastUse; std::vector<uint64_t> order; };
 	PState st[kPlanes];
@@ -217,7 +221,7 @@ inline Report analyze(const Trace &t, const Params &p = {}) {
 			if (c.async) ++ps.asyncCtl; if (c.rcDecomp) ++ps.rcCtl; if (c.mcDecomp) ++ps.mcCtl;
 			if (s.haveCtl && s.enabled != c.enable) { c.enable ? ++ps.enableTransitions : ++ps.disableTransitions; evs.push_back({r.ns, 4}); }
 			if (s.haveCtl && s.lastCtl != v) evs.push_back({r.ns, 7});
-			s.haveCtl = true; s.enabled = c.enable; s.lastCtl = v; break;
+			s.haveCtl = true; s.enabled = c.enable; s.lastCtl = v; s.lastCtlNs = r.ns; break;
 		}
 		case POS: if (s.havePos && s.lastPos != v) evs.push_back({r.ns, 5}); s.havePos = true; s.lastPos = v; break;
 		case SIZE: if (s.haveSize && s.lastSize != v) evs.push_back({r.ns, 5}); s.haveSize = true; s.lastSize = v; break;
@@ -228,6 +232,12 @@ inline Report analyze(const Trace &t, const Params &p = {}) {
 		case AUX_DIST: case AUX_OFFSET: ++ps.auxWrites; break;
 		case SURF: {
 			++ps.surf; if (!ps.firstSurfNs) ps.firstSurfNs = r.ns; ps.lastSurfNs = r.ns;
+			bool knownCtl = s.haveCtl;
+			for (const auto &gap : t.gaps())
+				if (gap.group == 1 && gap.toNs > s.lastCtlNs && gap.fromNs < r.ns) knownCtl = false;
+			if (!knownCtl) ++ps.surfCtlUnavailable;
+			else if (decodeCtl(s.lastCtl).async) ++ps.surfAsyncCtl;
+			else ++ps.surfSyncCtl;
 			const uint64_t addr = v & ~0xFFFULL;
 			if (s.haveSurf && s.lastSurf == addr) ++ps.surfSameAsPrev;
 			auto it = s.lastUse.find(addr);
@@ -301,6 +311,7 @@ inline std::string toJSON(const Report &r, const Params &p = {}) {
 		j += ",\"ctl_enable_writes\":" + num(ps.ctlEnableWrites) + ",\"ctl_disable_writes\":" + num(ps.ctlDisableWrites);
 		j += ",\"enable_transitions\":" + num(ps.enableTransitions) + ",\"disable_transitions\":" + num(ps.disableTransitions);
 		j += ",\"async_ctl\":" + num(ps.asyncCtl) + ",\"rc_decomp_ctl\":" + num(ps.rcCtl) + ",\"mc_decomp_ctl\":" + num(ps.mcCtl);
+		j += ",\"surf_async_ctl\":" + num(ps.surfAsyncCtl) + ",\"surf_sync_ctl\":" + num(ps.surfSyncCtl) + ",\"surf_ctl_unavailable\":" + num(ps.surfCtlUnavailable);
 		j += ",\"aux_writes\":" + num(ps.auxWrites) + ",\"wm_writes\":" + num(ps.wm) + ",\"buf_cfg_writes\":" + num(ps.bufCfg);
 		j += ",\"buf_cfg_changes\":" + num(ps.bufCfgChanges) + ",\"post_arm_writes\":" + num(ps.postArm);
 		j += ",\"after_surf_delta_hist\":["; for (int b = 0; b < 6; ++b) { if (b) j += ","; j += num(ps.postArmHist[b]); } j += "]";

@@ -28,23 +28,49 @@ constexpr uint32_t Version = 1;
 constexpr const char *PerformFlipSymbol =
 	"__ZN21AppleIntelFramebuffer22PerformFlipTransactionEP30IOAccelDisplayPipeTransaction2yP21FlipTransactionParams";
 constexpr const char *ConfigurePlaneSymbol = "__ZN15AppleIntelPlane14configurePlaneEP19FlipTransactionArgs";
+constexpr const char *SyncPlaneUpdatesSymbol = "__ZN15AppleIntelPlane16syncPlaneUpdatesEb";
 constexpr uint32_t PerformFlipOffset = 0x2B602;
 constexpr uint32_t ConfigurePlaneOffset = 0x2198;
+constexpr uint32_t SyncPlaneUpdatesOffset = 0x33AE;
 
 constexpr size_t ParamsFlags = 0x34;
 constexpr uint32_t SyncRequest = 1U << 0;
 constexpr size_t PlaneCtlCache = 0x100;
+constexpr size_t PlaneCtlRegister = 0x98;
 constexpr uint32_t AsyncFlip = 1U << 9;
 
 // Off: pure pass-through (only timing is recorded).
 // Transaction: the flip is presented to the native code as a synchronous request,
 //   so CTL, the pre-vblank wait, completion and the args cache all take the
 //   native sync path that idle and Google Remote Desktop already use.
-// PlaneCtl: the native request stays async (it still polls for flip-done), but
-//   the plane CTL cache loses bit9, so hardware latches at vblank. The native
-//   poll then waits for the real latch; it costs CPU, not buffer lifetime.
+// PlaneCtl: the native request stays async (including its bounded flip-done
+//   poll). Only the CTL value consumed by syncPlaneUpdates(false) loses bit9;
+//   the cache is restored before returning. Poll timeout is NOT proof of latch.
 enum Mode : uint32_t { Off = 0, Transaction = 1, PlaneCtl = 2, ModeCount = 3 };
 inline bool validMode(uint32_t m) { return m < ModeCount; }
+// A partial route installation must remain pass-through even if a nonzero
+// boot mode was requested. Only the complete two-route set activates changes.
+inline uint32_t activeMode(uint32_t m, bool routesReady) {
+	return routesReady && validMode(m) ? m : Off;
+}
+
+// Pin the selected mode across a native flip and its nested plane callback.
+// Control requests may switch only at a quiescent boundary; they never wait
+// inside the kernel or change an in-flight transaction's mode.
+class ModeGate {
+
+	uint32_t state {Off}; // low two bits: mode; remaining bits: active calls
+public:
+	uint32_t enter() { return __atomic_fetch_add(&state, 4U, __ATOMIC_ACQUIRE) & 3U; }
+	void leave() { __atomic_fetch_sub(&state, 4U, __ATOMIC_RELEASE); }
+	uint32_t mode() const { return __atomic_load_n(&state, __ATOMIC_ACQUIRE) & 3U; }
+	bool set(uint32_t next) {
+		if (!validMode(next)) return false;
+		uint32_t expected = __atomic_load_n(&state, __ATOMIC_ACQUIRE);
+		if (expected & ~3U) return false;
+		return __atomic_compare_exchange_n(&state, &expected, next, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+	}
+};
 
 struct Anchor { uint32_t offset; uint8_t length; uint8_t bytes[17]; };
 constexpr Anchor Anchors[] {
@@ -59,6 +85,17 @@ constexpr Anchor Anchors[] {
 	{0x2B79B, 4, {0x44,0x8B,0x79,0x34}},
 	{0x2B7F4, 3, {0x80,0x39,0x02}},
 	{0x2BE4E, 5, {0xE8,0x45,0x63,0xFD,0xFF}},
+	// Additional guards for the temporary commit scope. Keep all old anchors.
+	{0x33AE, 17, {0x55,0x48,0x89,0xE5,0x41,0x57,0x41,0x56,0x53,0x50,0x41,0x89,0xF7,0x48,0x89,0xFB,0x48}},
+	{0x3406, 6, {0x8B,0x83,0x00,0x01,0x00,0x00}},
+	{0x3513, 16, {0x48,0x8B,0x7B,0x70,0x8B,0xB3,0x98,0x00,0x00,0x00,0x8B,0x93,0x00,0x01,0x00,0x00}},
+	{0x3525, 5, {0xE8,0xD2,0xEF,0x08,0x00}},
+	{0x3564, 16, {0x48,0x8B,0x7B,0x70,0x8B,0xB3,0xB8,0x00,0x00,0x00,0x8B,0x93,0x20,0x01,0x00,0x00}},
+	{0x3576, 5, {0xE8,0x81,0xEF,0x08,0x00}},
+	{0x2C0C1, 5, {0xE8,0xE8,0x72,0xFD,0xFF}},
+	{0x2C1C5, 5, {0xE8,0xA6,0xCA,0x00,0x00}},
+	{0x92549, 16, {0x4C,0x8D,0x04,0x40,0x42,0x89,0xB4,0x87,0xF0,0x32,0x00,0x00,0x42,0x89,0x94,0x87}},
+	{0x92555, 16, {0x42,0x89,0x94,0x87,0xF4,0x32,0x00,0x00,0x42,0x89,0x8C,0x87,0xF8,0x32,0x00,0x00}},
 };
 
 // Every anchor must lie inside the image and match byte for byte.
@@ -93,6 +130,26 @@ inline bool clearPlaneAsync(uint8_t *plane) {
 	*ctl &= ~AsyncFlip;
 	return true;
 }
+
+// syncPlaneUpdates(false) consumes the CTL by value at 0x351D/0x3525,
+// before the SURF packet at 0x3576. Its native bit3 edits must survive.
+// Restoring only bit9 leaves configurePlane's unchanged-args fast path valid.
+class PlaneCommitScope {
+	uint8_t *plane {nullptr};
+public:
+	PlaneCommitScope(uint8_t *p, bool enabled) {
+		if (!p || !enabled) return;
+		const uint32_t reg = *reinterpret_cast<const uint32_t *>(p + PlaneCtlRegister);
+		if (reg != 0x70180 && reg != 0x71180 && reg != 0x72180) return;
+		if (clearPlaneAsync(p)) plane = p;
+	}
+	~PlaneCommitScope() {
+		if (plane) *reinterpret_cast<uint32_t *>(plane + PlaneCtlCache) |= AsyncFlip;
+	}
+	bool changed() const { return plane != nullptr; }
+	PlaneCommitScope(const PlaneCommitScope &) = delete;
+	PlaneCommitScope &operator=(const PlaneCommitScope &) = delete;
+};
 
 // PerformFlipTransaction duration buckets: <1, <4, <8, <12, <16, >=16 ms.
 constexpr unsigned Buckets = 6;

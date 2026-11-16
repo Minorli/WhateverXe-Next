@@ -376,7 +376,8 @@ recovery calls 与新增 GPU 报告均为 0。这只是当前窗口，不否定�
 **成立〔静态 / CPU / 本机构建〕：**G83 1.4.6 已合入本机维护线模板；实际机器 TF-only 与
 无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
 源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
-SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
+SyncFlip 初审1.0.1存在模式2缓存残留；后续1.0.2已修正并通过CPU回归、21处锚点及构建检查，
+尚未安装。最新UU并发故障及当前准入条件见下节。
 睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。
 随后经维护者批准，TF-only 配置已写入活动EFI；唯一语义变化为启用现有读卡器，
 同分区原配置备份与安装后 ocvalidate / 全文件差异核验通过，待手动重启与插卡验收。
@@ -384,3 +385,19 @@ SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入�
 
 完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
 及 [validation/integration-20261116.json](../validation/integration-20261116.json)。
+
+## 2026-11-16：SyncFlip 1.0.2 与新一轮真实 GPU hang
+
+- **成立〔静态 / CPU / 本机构建〕：**模式2改为仅在原生最终提交包取值期间临时清 async 位，
+  返回前恢复缓存；模式切换等活动事务返回后才准入，内核不等待。8组逻辑、9组trace、
+  真实SDK ABI回归通过，21处framebuffer锚点相符；持久清位变异被新测试拒绝。
+- **成立〔历史整机日志〕：**09:58与11:03两次故障的最初报告均指向WindowServer/RCS。
+  第二次随后出现Windows App/CCS同一上下文的反复报告：完成stamp未前进，末份提交值仍增加。
+  11:03:30–11:04:45内有3次Begin/End、4次Skipped、1次Deferred；End不等于硬件已恢复。
+- **部分成立〔用户对照〕：**两次卡死时UU与Windows App同时打开；维护者反馈Windows App单独、
+  Google RD单独似乎正常。因此优先区分UU单独触发与并发触发，不能按报告归属把Windows App当起因。
+- **证据不足〔根因 / 整机修复〕：**现有证据未证明首次RCS hang由async、POSH或共享复位域造成。
+  也未确认这两次发生watchdog panic，维护者报告的是强制重启。SyncFlip未安装，不能声称已修闪屏或卡死。
+
+候选SHA、验证边界、采样窗口与应用对照见
+[聚合记录](../validation/syncflip-102-20261116.json)；原始报告留在本机local。

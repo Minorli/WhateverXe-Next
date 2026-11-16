@@ -1,0 +1,145 @@
+{
+  "date": "2026-11-16",
+  "candidate": "TGLSyncFlip 1.0.2",
+  "evidence_levels": [
+    "static",
+    "CPU",
+    "local build/link",
+    "historical whole-machine incident"
+  ],
+  "build": {
+    "name": "TGLSyncFlip",
+    "version": "1.0.2",
+    "sha256": "3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec",
+    "deployment_target": "10.9",
+    "source_sha256": {
+      "TGLSyncFlip.cpp": "363adf04b0864ceb282fd9eb5ef6a99199678e46c1dfee209b5f774dc0196c6d",
+      "TGLSyncFlipLogic.hpp": "5423847653e590f2e91da7f81106204e404eab926d77628dc3142fad0ea18983"
+    }
+  },
+  "baseline_sha256": {
+    "WhateverXe": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "framebuffer": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "accelerator": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+    "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+  },
+  "semantics": {
+    "mode2": "Temporarily clear cached async bit only during syncPlaneUpdates(false); restore bit before returning, preserve other native edits. Native bounded polling and timeout remain unchanged.",
+    "mode_switch": "Atomic nonwaiting admission gate pins mode across active native calls; userspace retries Busy for at most approximately 2 seconds.",
+    "trace": "Classify each SURF by last observed CTL. Missing CTL or intersecting record gaps/reload is unavailable, never implicitly sync. Initial preparation CTL may remain async.",
+    "hardware_latch_proven": false,
+    "route_admission": "No experimental data changes until both routes report installed, including nonzero boot mode with partial route failure."
+  },
+  "checks": {
+    "logic_ASan_UBSan_cases_passed": 8,
+    "framebuffer_anchors_match": 21,
+    "old_11_anchors_preserved": true,
+    "SDK_ABI_regression_passed": true,
+    "root_cpu_test_passed": true,
+    "plane_trace_cases_passed": 9,
+    "kext_build_passed": true,
+    "ctl_build_passed": true,
+    "plane_trace_build_passed": true,
+    "persistent_cache_mutation_rejected": true,
+    "bash_syntax_check_passed": true,
+    "link": {
+      "undefined": 307,
+      "resolved_by_kmutil": 298,
+      "allowed_Lilu_only": [
+        "__ZN13KernelPatcher10clearErrorEv",
+        "__ZN13KernelPatcher11solveSymbolEmPKc",
+        "__ZN13KernelPatcher13routeMultipleEmPNS_12RouteRequestEmymbb",
+        "__ZN7LiluAPI10onKextLoadEPN13KernelPatcher8KextInfoEmPFvPvRS0_mymES3_",
+        "__ZN7LiluAPI10shouldLoadEPKcmjPS1_mS2_mS2_m13KernelVersionS3_Rb",
+        "__ZN7LiluAPI13releaseAccessEv",
+        "__ZN7LiluAPI13requestAccessEmb",
+        "_lilu",
+        "_lilu_os_log"
+      ],
+      "other_unresolved": []
+    },
+    "partial_routes_stay_passthrough": true,
+    "private_overlay_ocvalidate_1_0_8_passed": true
+  },
+  "private_evidence_sha256": {
+    "cpu-test.log": "67d94405212689a7ba518edc34f98fa9eee137e471bc6d2722d806a52a2f7702",
+    "syncflip-tests.log": "443874792eee9dc4ad167bd7097c3caac7d5d06e59ddc34240348a25772980e2",
+    "syncflip-build.log": "8113e7bcb32047c53d993d263bf660ff919b58ba2e8a8227819c43c36ea2c14b",
+    "syncflip-mutation.log": "d06e7ac9ba676fb71f3ca6839785c284cb767aeb9ac65c6e1ab70445a583c62f",
+    "syncflip-link-summary.json": "ce1b0760225069623cede07e18452028f544b62d0ce686ba0d81bb5c9ea03e75",
+    "cpu-final-test.log": "d1a2191d58109fa321b080f28f3a6610ce3dd606f6807409ff9d396fa19f3fee",
+    "syncflip-final-build-test.log": "0a0fd2c72c6d6a3756cc221e350580f391bae46bfc243f58191d4647a7c9642d"
+  },
+  "whole_machine_incident": {
+    "date": "2026-11-16",
+    "reported_lockups": 2,
+    "restart_report_count": 5,
+    "first_report_time_local": "09:58:14 +0800",
+    "second_initial_report_time_local": "11:03:42 +0800",
+    "initial_reported_client": "WindowServer",
+    "initial_engine": "RCS",
+    "subsequent_reported_client": "Windows App",
+    "subsequent_engine": "CCS",
+    "subsequent_reports_same_context": true,
+    "CCS_returned_stamp_unchanged_across_reports": true,
+    "CCS_submitted_increased_in_last_report": true,
+    "kernel_window_local": {
+      "start": "11:03:30 +0800",
+      "end": "11:04:45 +0800",
+      "GPURestartBegin": 3,
+      "GPURestartEnd": 3,
+      "GPURestartSkipped": 4,
+      "GPURestartDeferred": 1
+    },
+    "repeated_channel_errors_after_restart": true,
+    "new_watchdog_panic_confirmed": false,
+    "user_force_reboot_reported": true,
+    "restart_end_is_hardware_recovery_proof": false
+  },
+  "application_control": {
+    "source": "maintainer observations, not controlled same-load AB",
+    "UU_with_Windows_App": "lockups reported",
+    "Windows_App_alone": "appears normal",
+    "Google_Remote_Desktop_alone": "appears normal",
+    "UU_alone_recent_lockup_proven": false,
+    "earlier_UU_flicker_reported": true,
+    "conclusion": "UU and/or concurrent rendering remain trigger candidates. Report ownership does not establish causation."
+  },
+  "deployment": {
+    "installed": false,
+    "live_EFI_changed": false,
+    "Library_changed": false,
+    "VA_restored": false,
+    "automatic_reboot": false,
+    "hardware_AB_run": false,
+    "long_blind_AB_paused": true,
+    "new_reproduction_load_started": false,
+    "independent_boot_tested_backup_EFI_available": false,
+    "previously_tested_UEFI_Shell_available": true,
+    "Shell_substitution_for_graphics_approval_received": false,
+    "private_overlay_prepared": true,
+    "overlay_is_independently_bootable_EFI": false,
+    "default_mode": 0,
+    "overlay_changes": [
+      "add TGLSyncFlip 1.0.2 after existing WhateverXe entry",
+      "append -tglsync; no tglsyncmode"
+    ],
+    "baseline_active_EFI_config_unchanged_after_staging": true
+  },
+  "conclusion": {
+    "cache_restoration_fix": "established at CPU/static level; native trace pending",
+    "mode_transition_fix": "established at CPU level; kernel scheduling pending",
+    "new_incident_is_real_GPU_hang": "established from historical machine reports",
+    "Windows_App_is_primary_cause": "insufficient evidence",
+    "async_candidate_fixes_hang_or_flicker": "not established"
+  },
+  "not_executed": [
+    "new kernel installation",
+    "mode switching on live GPU",
+    "new stress reproduction",
+    "controlled application matrix",
+    "long-running hardware AB",
+    "gpurec/nomc deployment"
+  ],
+  "incident_document": "../docs/Incident-20261116.md"
+}

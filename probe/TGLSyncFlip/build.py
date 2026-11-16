@@ -5,7 +5,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-NAME, VERSION, IDENT = 'TGLSyncFlip', '1.0.1', 'org.whateverxe-next.TGLSyncFlip'
+NAME, VERSION, IDENT = 'TGLSyncFlip', '1.0.2', 'org.whateverxe-next.TGLSyncFlip'
 MIN_TARGET = '10.9'
 
 

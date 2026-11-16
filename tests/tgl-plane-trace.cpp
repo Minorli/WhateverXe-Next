@@ -134,6 +134,37 @@ static void absentRecorderNeverCovers() {
 	assert(!rep.counted[1] && rep.marks.size() == 1 && !rep.marks[0].covered);
 }
 
+static void finalCommitCtl() {
+	seq = 0; Trace t;
+	std::vector<Record> v {
+		W(20, P(0, SURF), 0x1000), // no preceding CTL: unavailable, not sync
+		W(30, P(0, CTL), 0x82000608), // initial double-buffer disable
+		W(40, P(0, CTL), 0x82000400), // final synchronous commit
+		W(50, P(0, SURF), 0x2000),
+		W(60, P(0, CTL), 0x82000600), // next native/pass-through commit
+		W(70, P(0, SURF), 0x3000)
+	};
+	t.ingest(S(10, 0, 0), {}); t.ingest(S(80, 0, v.size()), v);
+	const auto rep = analyze(t);
+	assert(rep.plane[0].asyncCtl == 2); // all CTL writes are still reported
+	assert(rep.plane[0].surfAsyncCtl == 1 && rep.plane[0].surfSyncCtl == 1);
+	assert(rep.plane[0].surfCtlUnavailable == 1);
+	const auto j = toJSON(rep);
+	assert(j.find("\"surf_ctl_unavailable\":1") != std::string::npos);
+}
+
+static void gapInvalidatesCtl() {
+	seq = 0; Trace t;
+	t.ingest(S(10, 0, 0), {});
+	t.ingest(S(30, 0, 1), {W(20, P(0, CTL), 0x82000600)});
+	t.ingest(S(55, 0, 10), {W(50, P(0, SURF), 0x1000)}); // missing plane writes may include CTL
+	t.ingest(S(80, 0, 12), {W(60, P(0, CTL), 0x82000400), W(70, P(0, SURF), 0x2000)});
+	const auto rep = analyze(t);
+	assert(rep.lost[1] == 8 && rep.plane[0].surf == 2);
+	assert(rep.plane[0].surfCtlUnavailable == 1 && rep.plane[0].surfAsyncCtl == 0);
+	assert(rep.plane[0].surfSyncCtl == 1); // a fresh CTL restores observation
+}
+
 int main() {
 	decoding();
 	dedupeGapsAndWindow();
@@ -142,6 +173,8 @@ int main() {
 	marksAndGroup0();
 	lostRecordsUncoverMark();
 	absentRecorderNeverCovers();
-	puts("tgl-plane-trace logic: 7 cases passed (CPU only).");
+	finalCommitCtl();
+	gapInvalidatesCtl();
+	puts("tgl-plane-trace logic: 9 cases passed (CPU only).");
 	return 0;
 }

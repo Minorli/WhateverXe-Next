@@ -642,7 +642,8 @@ nomc 有第二处高地址 reservation 修改，作者没有证明它必要，�
 **成立〔静态 / CPU / 本机构建〕：**G83 1.4.6 已合入本机维护线模板；实际机器 TF-only 与
 无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
 源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
-SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
+SyncFlip 初审1.0.1存在模式2缓存残留；后续1.0.2已修正并通过CPU回归、21处锚点及构建检查，
+尚未安装。最新UU并发故障及当前准入条件见下节。
 睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。
 随后经维护者批准，TF-only 配置已写入活动EFI；唯一语义变化为启用现有读卡器，
 同分区原配置备份与安装后 ocvalidate / 全文件差异核验通过，待手动重启与插卡验收。
@@ -650,3 +651,24 @@ SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入�
 
 完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
 及 [validation/integration-20261116.json](../validation/integration-20261116.json)。
+
+## 2026-11-16：可回退的 async 实验载体与挂起复发
+
+**成立〔静态 / CPU / 本机构建〕：**TGLSyncFlip 1.0.2不再持久改configurePlane缓存，
+而是在syncPlaneUpdates(false)复制CTL/SURF提交值期间临时清位、返回前恢复。
+保留原生其他位，旧11处守卫全部保留并扩至21处。模式门控覆盖整个原生事务及嵌套调用，
+活动调用期间返回Busy；重试在用户态进行。8组逻辑与9组trace测试、ABI反例和链接检查通过。
+仍不能把原生轮询超时当成真实锁存，模式2缓冲生命周期的整机安全性未获证明。
+
+**成立〔CPU / 静态〕：**准备阶段CTL允许仍带async；新trace按每个SURF前最后可见CTL分类。
+无前值或跨日志缺口/重载时记unavailable。不能再用整个块async_ctl=0作为模式2生效条件，
+更不能把请求写入记录当作硬件锁存证明。
+
+**成立〔历史整机日志〕：**两次首次报告均为WindowServer/RCS；第二次后续CCS报告归属Windows App，
+同一上下文returned未前进而submitted继续增加。恢复Begin/End均3次，但同通道再报错，
+不能以函数返回正常宣称恢复成功。**证据不足〔因果〕：**CCS报告的客户端是否引发最初RCS hang。
+维护者对照为UU与Windows App并发时卡死，单独Windows App或Google RD似乎正常；
+尚不是同一负载的受控AB。继续沿首次RCS挂起和后续共享复位状态分别调查，不混为一个已证实根因。
+
+没有安装、自动重启或启动新的压力负载。候选及故障聚合证据见
+[syncflip-102-20261116.json](../validation/syncflip-102-20261116.json)。

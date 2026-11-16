@@ -4,7 +4,7 @@
 // untouched.
 //
 //  * Without -tglsync nothing is routed (control boot).
-//  * With -tglsync, PerformFlipTransaction and configurePlane are routed after a
+//  * With -tglsync, PerformFlipTransaction and syncPlaneUpdates are routed after a
 //    symbol + offset + byte-anchor check against framebuffer 115a4616...888e.
 //    The mode starts at tglsyncmode=N (default 0 = pass-through).
 //  * An administrator can change the mode at runtime through setProperties
@@ -34,8 +34,9 @@ static KernelPatcher::KextInfo kextFb {"com.apple.driver.AppleIntelTGLGraphicsFr
 
 namespace {
 Stats gStats {};
-uint32_t gMode = Off;
-mach_vm_address_t orgPerformFlip {}, orgConfigurePlane {};
+ModeGate gMode;
+uint32_t gRoutesReady {};
+mach_vm_address_t orgPerformFlip {}, orgSyncPlaneUpdates {};
 
 uint64_t nowNs() {
 	uint64_t t, ns;
@@ -48,18 +49,18 @@ void raiseMax(uint64_t &m, uint64_t v) {
 	uint64_t cur = __atomic_load_n(&m, __ATOMIC_RELAXED);
 	while (v > cur && !__atomic_compare_exchange_n(&m, &cur, v, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) {}
 }
-void setMode(uint32_t mode) {
-	__atomic_store_n(&gMode, mode, __ATOMIC_RELEASE);
-	__atomic_store_n(&gStats.mode, mode, __ATOMIC_RELAXED);
+bool setMode(uint32_t mode) {
+	if (!gMode.set(mode)) return false;
 	add(gStats.modeChanges);
 	__atomic_store_n(&gStats.lastModeChangeNs, nowNs(), __ATOMIC_RELAXED);
+	return true;
 }
 
 using PerformFlip = IOReturn (*)(void *, void *, unsigned long long, uint8_t *);
-using ConfigurePlane = uint64_t (*)(uint8_t *, void *);
+using SyncPlaneUpdates = uint64_t (*)(uint8_t *, bool);
 
 IOReturn wrapPerformFlip(void *fb, void *tx, unsigned long long arg, uint8_t *params) {
-	const uint32_t mode = __atomic_load_n(&gMode, __ATOMIC_ACQUIRE);
+	const uint32_t mode = activeMode(gMode.enter(), __atomic_load_n(&gRoutesReady, __ATOMIC_ACQUIRE));
 	bool forced = false;
 	if (mode == Transaction) {
 		if (!params) add(gStats.nullParams);
@@ -75,16 +76,23 @@ IOReturn wrapPerformFlip(void *fb, void *tx, unsigned long long arg, uint8_t *pa
 	add(gStats.flips[mode]);
 	add(gStats.hist[mode][bucketOf(elapsed)]);
 	raiseMax(gStats.maxNs[mode], elapsed);
+	gMode.leave();
 	return result;
 }
 
-// configurePlane's return value is passed through untouched in rax.
-uint64_t wrapConfigurePlane(uint8_t *plane, void *args) {
-	const uint64_t result = reinterpret_cast<ConfigurePlane>(orgConfigurePlane)(plane, args);
-	if (__atomic_load_n(&gMode, __ATOMIC_ACQUIRE) == PlaneCtl && plane) {
-		add(gStats.planeCalls);
-		if (clearPlaneAsync(plane)) add(gStats.planeCleared);
+// Native queueing copies CTL, then SURF, into trigger packets. Restore the
+// cache before the native caller resumes, even on its early-return branch.
+// No updatePlane route: the current downstream WEX already owns that route.
+uint64_t wrapSyncPlaneUpdates(uint8_t *plane, bool enable) {
+	const uint32_t mode = activeMode(gMode.enter(), __atomic_load_n(&gRoutesReady, __ATOMIC_ACQUIRE));
+	uint64_t result;
+	{
+		PlaneCommitScope scope(plane, !enable && mode == PlaneCtl);
+		if (!enable && mode == PlaneCtl) add(gStats.planeCalls);
+		if (scope.changed()) add(gStats.planeCleared);
+		result = reinterpret_cast<SyncPlaneUpdates>(orgSyncPlaneUpdates)(plane, enable);
 	}
+	gMode.leave();
 	return result;
 }
 
@@ -94,8 +102,10 @@ void processFramebuffer(void *, KernelPatcher &patcher, size_t index, mach_vm_ad
 	patcher.clearError();
 	const auto cp = patcher.solveSymbol<mach_vm_address_t>(index, ConfigurePlaneSymbol, address, size);
 	patcher.clearError();
-	if (!pf || !cp) { gStats.state = SymbolMissing; return; }
-	if (pf != address + PerformFlipOffset || cp != address + ConfigurePlaneOffset ||
+	const auto sp = patcher.solveSymbol<mach_vm_address_t>(index, SyncPlaneUpdatesSymbol, address, size);
+	patcher.clearError();
+	if (!pf || !cp || !sp) { gStats.state = SymbolMissing; return; }
+	if (pf != address + PerformFlipOffset || cp != address + ConfigurePlaneOffset || sp != address + SyncPlaneUpdatesOffset ||
 		!matches(reinterpret_cast<const uint8_t *>(address), size)) {
 		gStats.state = ShapeMismatch;
 		SYSLOG("tglsync", "framebuffer shape mismatch; not routing");
@@ -103,12 +113,13 @@ void processFramebuffer(void *, KernelPatcher &patcher, size_t index, mach_vm_ad
 	}
 	KernelPatcher::RouteRequest requests[] {
 		{PerformFlipSymbol, wrapPerformFlip, orgPerformFlip},
-		{ConfigurePlaneSymbol, wrapConfigurePlane, orgConfigurePlane},
+		{SyncPlaneUpdatesSymbol, wrapSyncPlaneUpdates, orgSyncPlaneUpdates},
 	};
 	const bool ok = patcher.routeMultiple(index, requests, arrsize(requests), address, size);
 	patcher.clearError();
-	gStats.state = ok && orgPerformFlip && orgConfigurePlane ? Routed : RouteFailed;
-	SYSLOG("tglsync", "routes %s, mode %u", gStats.state == Routed ? "ready" : "FAILED", gMode);
+	gStats.state = ok && orgPerformFlip && orgSyncPlaneUpdates ? Routed : RouteFailed;
+	__atomic_store_n(&gRoutesReady, gStats.state == Routed, __ATOMIC_RELEASE);
+	SYSLOG("tglsync", "routes %s, mode %u", gStats.state == Routed ? "ready" : "FAILED", gMode.mode());
 }
 
 void pluginStart() {
@@ -116,7 +127,7 @@ void pluginStart() {
 	gStats.armed = checkKernelArgument("-tglsync");
 	if (!gStats.armed) { gStats.state = Disarmed; return; }
 	uint32_t mode = Off;
-	if (lilu_get_boot_args("tglsyncmode", &mode, sizeof(mode)) && validMode(mode)) gMode = gStats.mode = mode;
+	if (lilu_get_boot_args("tglsyncmode", &mode, sizeof(mode)) && validMode(mode)) gMode.set(mode);
 	lilu.onKextLoadForce(&kextFb, 1, processFramebuffer, nullptr);
 }
 }
@@ -145,8 +156,9 @@ void PRODUCT_NAME::publish() {
 	Stats snapshot;
 	for (size_t i = 0; i < sizeof(Stats) / sizeof(uint64_t); ++i)
 		reinterpret_cast<uint64_t *>(&snapshot)[i] = __atomic_load_n(reinterpret_cast<uint64_t *>(&gStats) + i, __ATOMIC_RELAXED);
+	snapshot.mode = gMode.mode();
 	setProperty("TGLSyncFlipStats", &snapshot, sizeof(snapshot));
-	setProperty("TGLSyncFlipMode", __atomic_load_n(&gMode, __ATOMIC_ACQUIRE), 32);
+	setProperty("TGLSyncFlipMode", snapshot.mode, 32);
 	setProperty("TGLSyncFlipRouted", snapshot.state == Routed);
 }
 
@@ -172,7 +184,7 @@ IOReturn PRODUCT_NAME::setProperties(OSObject *properties) {
 	if (auto mode = OSDynamicCast(OSNumber, dict->getObject("Mode"))) {
 		if (gStats.state != Routed) return kIOReturnNotReady;
 		if (!validMode(mode->unsigned32BitValue())) return kIOReturnBadArgument;
-		setMode(mode->unsigned32BitValue());
+		if (!setMode(mode->unsigned32BitValue())) return kIOReturnBusy;
 	} else if (!OSDynamicCast(OSBoolean, dict->getObject("Refresh"))) {
 		return kIOReturnUnsupported;
 	}
@@ -185,7 +197,7 @@ extern kern_return_t _start(kmod_info_t *, void *);
 extern kern_return_t _stop(kmod_info_t *, void *);
 extern kern_return_t TGLSyncFlip_kern_start(kmod_info_t *, void *);
 extern kern_return_t TGLSyncFlip_kern_stop(kmod_info_t *, void *);
-__attribute__((visibility("default"))) KMOD_EXPLICIT_DECL(org.whateverxe-next.TGLSyncFlip, "1.0.1", _start, _stop)
+__attribute__((visibility("default"))) KMOD_EXPLICIT_DECL(org.whateverxe-next.TGLSyncFlip, "1.0.2", _start, _stop)
 __attribute__((visibility("hidden"))) kmod_start_func_t *_realmain = TGLSyncFlip_kern_start;
 __attribute__((visibility("hidden"))) kmod_stop_func_t *_antimain = TGLSyncFlip_kern_stop;
 __attribute__((visibility("hidden"))) int _kext_apple_cc = __APPLE_CC__;
