@@ -7,17 +7,14 @@
 int main() {
     using namespace TGLPlaneCtl;
 
-    // Primary-plane CTL registers for pipes A/B/C and planes 1..3.
-    const unsigned long primary[] {
-        0x70180, 0x70280, 0x70380,
-        0x71180, 0x71280, 0x71380,
-        0x72180, 0x72280, 0x72380};
+    // Primary-plane CTL registers for pipes A/B/C only.
+    const unsigned long primary[] {0x70180, 0x71180, 0x72180};
     for (auto reg : primary) assert(isPrimaryPlaneControl(reg));
 
-    // Cursor control, plane data registers, pipe D, and unrelated banks are
-    // not the primary plane control.
+    // Cursor control, sprite planes, the LPVP shadow at +0x500, plane data
+    // registers, pipe D, and unrelated banks are not the primary plane control.
     const unsigned long other[] {
-        0x70080, 0x70084, 0x7019c, 0x7027c, 0x70340,
+        0x70080, 0x70084, 0x70280, 0x70380, 0x70680, 0x7019c, 0x7027c, 0x70340,
         0x73080, 0x73180, 0x44408, 0x45140, 0xFFFF80};
     for (auto reg : other) assert(!isPrimaryPlaneControl(reg));
 

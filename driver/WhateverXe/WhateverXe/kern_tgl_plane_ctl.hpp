@@ -14,13 +14,12 @@ constexpr uint32_t AsyncFlipBit = 1U << 9;
 constexpr uint32_t FirstPlaneCtl = 0x70180;
 constexpr uint32_t EndPlaneCtl = 0x73000; // pipe D starts here and is excluded
 
-// PLANE_CTL for the primary planes of pipes A/B/C: 0x70180/0x70280/0x70380,
-// 0x71180/..., 0x72180/... The cursor planar control at 0x70080 is a
-// different register and is never matched. Only the 0x100 plane stride is
-// accepted, so unrelated registers in the same 0x7xx00 bank are excluded.
+// PLANE_CTL of the primary plane for pipes A/B/C: 0x70180, 0x71180, 0x72180.
+// Only offset 0x180 within each 4 KiB pipe bank is accepted. This excludes the
+// cursor control at 0x70080, the sprite planes at 0x70280/0x70380, the LPVP
+// shadow register at 0x70680, and pipe D at 0x73180.
 inline bool isPrimaryPlaneControl(unsigned long reg) {
-    return reg >= FirstPlaneCtl && reg < EndPlaneCtl &&
-        ((reg - FirstPlaneCtl) & 0xFFU) == 0;
+    return reg >= FirstPlaneCtl && reg < EndPlaneCtl && (reg & 0xFFFU) == 0x180;
 }
 
 // Returns true only when the requested write was an async flip and has been
