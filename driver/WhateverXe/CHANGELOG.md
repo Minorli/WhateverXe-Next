@@ -2,20 +2,19 @@
 
 ## 0.8.2
 
+Update WhateverXe and [WhateverXe Graphics](https://github.com/b00t0x/WhateverXe-Graphics/releases) together.
+
 ### Fixed
 
 - Avoid diagnostic snapshot allocation and registry writes on display update and framebuffer attribute paths unless display tracing is explicitly enabled.
 - Skip the 10-bit gamma LUT readback (palette index writes and data-port reads on a live pipe) and its registry records unless display tracing is explicitly enabled.
+- Fix a regression introduced in 0.8.1 that could leave displays black after macOS starts.
 
-## 0.8.1
-
-Update WhateverXe and [WhateverXe Graphics](https://github.com/b00t0x/WhateverXe-Graphics/releases) together.
-
-### Added
+### Added in 0.8.1
 
 - Add experimental 10-bit framebuffer support for the supported MIPI DSI panels.
 
-### Fixed
+### Fixes from 0.8.1
 
 - Preserve firmware display output when only one of the two graphics components is installed.
 - Correct missing or duplicate display wake notifications after system sleep.

@@ -82,3 +82,9 @@ python3 tools/test.py
 
 继承源码的 README / CHANGELOG 保留其自己的版本语义。本项目品牌不改写原作者标识、
 bundle identifier、ABI floor 或来源许可证。细则见根 NOTICE。
+
+## 2026-11-16 组件更新核对
+
+官方 main `2bad7171` 相对本仓库已集成 `4512191b` 仅变更 CHANGELOG，已吸收说明。
+下游0.8.2、Graphics0.4.4、S0ixStandby0.5.4、G83的来源、完整指纹与候选状态见
+[Integration-20261116.md](Integration-20261116.md)；仓库集成不等于当前机器安装。

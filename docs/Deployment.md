@@ -387,3 +387,14 @@ WindowServer physical footprint首尾287.28→392.40MiB，峰值577.09MiB；
 只保留实际返回的CPU值作为估计。启动后台负载和工具log扫描的短时CPU开销已保存在原始记录。
 所有采集进程已正常停止，未退出UU、改布局、自动睡眠或重启。
 完整摘要见[验证JSON](../validation/tgldisplayprobe-postboot-20261113.json)。
+
+## 2026-11-16：上游集成与部署分组
+
+**成立〔静态 / CPU / 本机构建〕：**G83 1.4.6 已合入本机维护线模板；实际机器 TF-only 与
+无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
+源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
+SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
+睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。没有安装、改活动EFI、恢复VA或重启。
+
+完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
+及 [validation/integration-20261116.json](../validation/integration-20261116.json)。

@@ -4,6 +4,10 @@ TGLSyncFlip 是一个独立的 Lilu 插件，用来在同一次启动里对比 a
 
 它是诊断候选，不是修复。没做整机 A/B 之前，不能说它解决了闪烁。
 
+**2026-11-16 部署暂停：**模式2清除的是持久 plane CTL 缓存，切回0后 native 参数命中快路径时
+可能沿用被清掉的 bit9，污染对照组。当前尚未修正，不能开始0/1/2盲测；构建/ABI通过不解除此门槛。
+详见 [本轮审查](../../docs/Integration-20261116.md#syncflip-新发现模式2的缓存回退门槛)。
+
 ## 原理（静态依据，framebuffer `115a4616…888e`）
 
 - `PerformFlipTransaction`（`0x2B602`）读取 `params+0x34` 的 bit0，它就是 `configurePlane` 读的 `args+0x2C`。原生代码在 `0x2B7F4` 只接受单 plane，所以 `args[0] = params+8`。
@@ -23,7 +27,7 @@ TGLSyncFlip 是一个独立的 Lilu 插件，用来在同一次启动里对比 a
 | --- | --- | --- | --- | --- |
 | 0 off | 透传，只计时 | 原样 | 原样 | 无 |
 | 1 transaction | 调用前置 `params+0x34` bit0，返回后只清回这一位 | sync | 完整 sync 路径，不再在 sync/async 之间切换 | 调用方（IOAccel）怎么理解返回，没有静态证据 |
-| 2 plane-ctl | `configurePlane` 返回后清 plane `+0x100` 的 bit9 | sync | 仍按 async 处理：忙等直到真实锁存 | 每次 flip 最多约一帧的 `IODelay` 忙等；完整 setup 仍会发生 |
+| 2 plane-ctl | `configurePlane` 返回后清 plane `+0x100` 的 bit9 | sync | 仍按 async 处理：忙等但存在超时出口 | 每次 flip 最多约一帧的 `IODelay` 忙等；完整 setup 仍会发生 |
 
 区分方式：
 - 模式 2 有效，说明问题在硬件 async 扫描；

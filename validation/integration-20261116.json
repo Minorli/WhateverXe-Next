@@ -1,0 +1,203 @@
+{
+  "date": "2026-11-16",
+  "status": "staged_not_installed",
+  "system": "macOS 26.7.3 (25G342), Darwin 25.6.0",
+  "machine": "i7-1165G7, Iris Xe 96EU, DDR4 24GB, RTS522A 10ec:522a",
+  "sources": {
+    "WhateverXe_main": "2bad71718c6b4f9887e2a504a19a24c3593ea1db",
+    "WhateverXe_source_base_already_integrated": "4512191b9643e2391431fbd9639305b61568ee32",
+    "G83_upstream": "ed57bf051d97578ce8c1afb8e6f2338335be2de1",
+    "S0ixStandby": "c52f172b934c0f906fccb74ad2bce0a974ca5bb1"
+  },
+  "live_sha256": {
+    "WhateverXe": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "framebuffer": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+  },
+  "candidate_sha256": {
+    "downstream_WhateverXe_082": "fbd0495dde8242fe11ed13d7bd2b62d6d4407eb58201259105818f5d2b5d1e79",
+    "Graphics_044_pkg": "f4c2d680a7c52c33a3f038ce6945da0aa2cc044e62b935a52ea046c7c473cfec",
+    "S0ixStandby_054": "6eba0d32066ab0fed8ed7e2c20d2a5d65d2c4dd01b9523a7aa1f0232bf60991b",
+    "RealtekCardReader_097": "9788705dbe8c812924956e5c82591d17d57d327f4b018701c20ab2aff00cfa64"
+  },
+  "Graphics_044_payload_comparison": [
+    {
+      "part": "Common.pkg",
+      "file": "Library/Extensions/AppleIntelTGLCompat.kext/Contents/MacOS/AppleIntelTGLCompat",
+      "candidate_sha256": "796e041f7a923706bf5ea47933297d8a72ea22aeb6535809cba099727dc6232c",
+      "live_sha256": "5f83bc96c73aed10c60b03a6593f6eb3abc04efc672e9564be907d876ef4fba7"
+    },
+    {
+      "part": "Common.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsGLDriver.bundle/Contents/MacOS/AppleIntelTGLGraphicsGLDriver",
+      "candidate_sha256": "b0791039b77df44784b63ba36d37c266055092acbcc3b0c29ad1f9a5e8fb6008",
+      "live_sha256": "b0791039b77df44784b63ba36d37c266055092acbcc3b0c29ad1f9a5e8fb6008"
+    },
+    {
+      "part": "Common.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsGLDriver.bundle/Contents/MacOS/libigdmd.dylib",
+      "candidate_sha256": "0001b5ce2ebb30cf31f0ea31a1c3d67ba4d2a8b29d5fc7fd363b3ca21cca2a88",
+      "live_sha256": "0001b5ce2ebb30cf31f0ea31a1c3d67ba4d2a8b29d5fc7fd363b3ca21cca2a88"
+    },
+    {
+      "part": "Common.pkg",
+      "file": "Library/GPUBundles/XeCompilerAdapter.bundle/Contents/MacOS/adapter.dylib",
+      "candidate_sha256": "11609123ce5b930aee500736f8bd504cd0280c37654f8e9f353fcc9fc876aff0",
+      "live_sha256": "11609123ce5b930aee500736f8bd504cd0280c37654f8e9f353fcc9fc876aff0"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/Extensions/AppleIntelTGLGraphics.kext/Contents/MacOS/AppleIntelTGLGraphics",
+      "candidate_sha256": "6c8ab6cce50b9529679ee4fdf5b1c37d091677d945076f41cb4b7f8196c51449",
+      "live_sha256": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/Extensions/AppleIntelTGLGraphics.kext/Contents/MacOS/AppleIntelTGLGraphics_kasan",
+      "candidate_sha256": "9f764c740be2213faaa2c2357a403869ccfb3ee8442b58d771601af58c56c5ea",
+      "live_sha256": "9f764c740be2213faaa2c2357a403869ccfb3ee8442b58d771601af58c56c5ea"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/Extensions/AppleIntelTGLGraphicsFramebuffer.kext/Contents/MacOS/AppleIntelTGLGraphicsFramebuffer",
+      "candidate_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+      "live_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsMTLDriver.bundle/Contents/MacOS/AppleIntelTGLGraphicsMTLDriver",
+      "candidate_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+      "live_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsMTLDriver.bundle/Contents/MacOS/descriptor.dylib",
+      "candidate_sha256": "fe6aa99b5a854373a261d8cfff634f890fa068f1965b4a220dd54bb93188d76b",
+      "live_sha256": "fe6aa99b5a854373a261d8cfff634f890fa068f1965b4a220dd54bb93188d76b"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsMTLDriver.bundle/Contents/MacOS/impostor.dylib",
+      "candidate_sha256": "cd415a30e111d9ad48e6dd1936d848c1e809821aa3770c93ae7c759a4454567c",
+      "live_sha256": "cd415a30e111d9ad48e6dd1936d848c1e809821aa3770c93ae7c759a4454567c"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsMTLDriver.bundle/Contents/MacOS/libigdmd.dylib",
+      "candidate_sha256": "bb53c2f9494cd5485b9e5324f418d4f681b7d20af9eb0b91c859ef06b80c7512",
+      "live_sha256": "bb53c2f9494cd5485b9e5324f418d4f681b7d20af9eb0b91c859ef06b80c7512"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsVADriver.bundle/Contents/MacOS/AppleIntelTGLGraphicsVADriver",
+      "candidate_sha256": "8d4303ea9c502191ebd725a31af25277cad6105857b1ba21a6500dff9c47437a",
+      "live_sha256": null
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/AppleIntelTGLGraphicsVADriver.bundle/Contents/MacOS/TGLVA",
+      "candidate_sha256": "18e32dd5fd02d192ab3e13961239f304e1d7e1bf9855c6b8bf1137aa51cb7a4e",
+      "live_sha256": null
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/XeCompilerAdapter.bundle/Contents/MacOS/libigc-tgl.dylib",
+      "candidate_sha256": "a27eaea380aee524a1972927cb44774da1affe0cea93e94c307927f38d41aaf4",
+      "live_sha256": "a27eaea380aee524a1972927cb44774da1affe0cea93e94c307927f38d41aaf4"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/XeCompilerAdapter.bundle/Contents/MacOS/runtime.igc64.bc",
+      "candidate_sha256": "da68b4fb83ed8c06dadd6b84e6983d1ee5262e8bdd5a83b57eafb00bb033370c",
+      "live_sha256": "da68b4fb83ed8c06dadd6b84e6983d1ee5262e8bdd5a83b57eafb00bb033370c"
+    },
+    {
+      "part": "Tahoe.pkg",
+      "file": "Library/GPUBundles/XeOpenCL/libCLVMIGCPlugin.dylib",
+      "candidate_sha256": "88cdf5bbc18137dc2f03e414aa3ca3a6d3e91e0cacdc162582d04de91808f9eb",
+      "live_sha256": "88cdf5bbc18137dc2f03e414aa3ca3a6d3e91e0cacdc162582d04de91808f9eb"
+    }
+  ],
+  "syncflip": {
+    "build": {
+      "name": "TGLSyncFlip",
+      "version": "1.0.1",
+      "sha256": "b41e3e234f3b9547d400a7f3fdf8f092038dd65c42661f80bddee27648a41792",
+      "deployment_target": "10.9",
+      "source_sha256": {
+        "TGLSyncFlip.cpp": "91570bd4bf5866717b745282b89dfbc0911b44519e5de7fcf3489a6e76d5a710",
+        "TGLSyncFlipLogic.hpp": "89cf17c0e1720f510a2bca47c1cca65bcfdc9d71b6c7befbf14ab411e9253155"
+      }
+    },
+    "anchors_match": true,
+    "cpu_cases_passed": 4,
+    "installed": false,
+    "hardware_AB_run": false,
+    "mode2_to_off_cache_restoration": "requires_native_fast_path_review_before_AB",
+    "ABI_regression_test": "old 10.6 imports removed IOService slots 0/1; 10.9 selected to consume IOReport slots",
+    "ABI_fix_commit": "450d305",
+    "native_AB_admitted": false,
+    "cpu_SDK_vtable_regression_test_passed": true
+  },
+  "DeepSeek": {
+    "provided_files": [
+      "review/2026-11-16/README.md",
+      "review/2026-11-16/review-prompt.md",
+      "validation/plane-trace-async-20261116.json"
+    ],
+    "independent_completed_findings_located": false
+  },
+  "sleep": {
+    "bundled_but_disabled_in_public_template": true,
+    "live_power_settings_changed": false,
+    "firmware_LPS0_device_present": true,
+    "LPS0_LXEN_method_collision_audit_complete": false,
+    "HDMI_across_wake_passed_on_this_machine": false
+  },
+  "deployment": {
+    "live_EFI_changed": false,
+    "Library_changed": false,
+    "VA_restored": false,
+    "independently_boot_tested_backup_EFI_available": false,
+    "UEFI_Shell_previous_user_test": true
+  },
+  "link_checks": {
+    "TGLSyncFlip": {
+      "undefined": 307,
+      "resolved_by_kmutil": 298,
+      "allowed_Lilu_not_listed": [
+        "__ZN13KernelPatcher10clearErrorEv",
+        "__ZN13KernelPatcher11solveSymbolEmPKc",
+        "__ZN13KernelPatcher13routeMultipleEmPNS_12RouteRequestEmymbb",
+        "__ZN7LiluAPI10onKextLoadEPN13KernelPatcher8KextInfoEmPFvPvRS0_mymES3_",
+        "__ZN7LiluAPI10shouldLoadEPKcmjPS1_mS2_mS2_m13KernelVersionS3_Rb",
+        "__ZN7LiluAPI13releaseAccessEv",
+        "__ZN7LiluAPI13requestAccessEmb",
+        "_lilu",
+        "_lilu_os_log"
+      ],
+      "other_unresolved": []
+    },
+    "RealtekCardReader": {
+      "undefined": 443,
+      "resolved_by_kmutil": 443,
+      "allowed_Lilu_not_listed": [],
+      "other_unresolved": []
+    },
+    "S0ixStandby": {
+      "undefined": 338,
+      "resolved_by_kmutil": 338,
+      "allowed_Lilu_not_listed": [],
+      "other_unresolved": []
+    }
+  },
+  "checks": {
+    "public_ocvalidate_1_0_8": true,
+    "TF_only_ocvalidate_1_0_8": true,
+    "graphics_ocvalidate_1_0_8": true,
+    "live_EFI_matches_backup": true,
+    "private_ids_ACPI_USB_WiFi_preserved_in_staged_profiles": true
+  },
+  "source_commit_reviewed": "eeace38",
+  "G83_integration_commit": "154d13f"
+}

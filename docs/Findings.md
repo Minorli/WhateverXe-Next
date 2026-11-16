@@ -351,3 +351,14 @@ recovery calls 与新增 GPU 报告均为 0。这只是当前窗口，不否定�
 解释为 GPU 硬件模块再次崩溃。Wi-Fi RSSI=0 的统计错误、Chrome 的 host_statistics64 参数
 数量警告、taskgated 的 DetachedSignatures 查询失败分别保留，尚无与 BCS 卡死的因果证据。
 这些行不作为删除系统数据库、关闭同步或停用工作软件的依据。
+
+## 2026-11-16：上游集成与部署分组
+
+**成立〔静态 / CPU / 本机构建〕：**G83 1.4.6 已合入本机维护线模板；实际机器 TF-only 与
+无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
+源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
+SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
+睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。没有安装、改活动EFI、恢复VA或重启。
+
+完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
+及 [validation/integration-20261116.json](../validation/integration-20261116.json)。
