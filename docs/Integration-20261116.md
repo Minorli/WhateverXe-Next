@@ -45,7 +45,7 @@ G83 配套整合见 [机器集成记录](https://github.com/Minorli/g83-11gen-ha
 
 1. **TF-only** 从实际 EFI 生成，只启用现有 RealtekCardReader 0.9.7；本机 PCI RTS522A 已匹配。
    经批准已写入活动 EFI，安装后 ocvalidate 与逐文件核验通过，尚待手动重启和插卡验收。
-2. **闪屏对照**仍用当前 WEX 和 Metal；SyncFlip 1.0.2 已修正上述回退问题，尚未安装，
+2. **闪屏对照**仍用当前 WEX 和 Metal；SyncFlip 1.0.2 已修正上述回退问题，后续已安装并启动，
    新出现的 RCS/CCS 故障先做短时验收，不直接开始长时盲测。不得以新下游替代同 SHA 对照。
 3. **图形 0.8.2 + 0.4.4 无 VA 更新**已在私人目录暂存；它是多组件版本验收，不能用来证明 async 因果。
    有 Library / KC 变化，必须具备可挂载系统卷的回退路径，单有 EFI config 备份不够。
@@ -55,9 +55,10 @@ G83 配套整合见 [机器集成记录](https://github.com/Minorli/g83-11gen-ha
    不自动开启合盖/空闲睡眠；硬件 SLP_S0=0 也不能宣称完整 S0ix。
 
 维护者明确只有曾进入过的 UEFI Shell，没有独立启动测试的备用 EFI。
-原 SyncFlip 任务要求备用 EFI，因此当前没有安装；EFI-only 变更若改用 Shell 同分区回退，
+原 SyncFlip 任务要求备用 EFI，因此初审阶段没有安装；EFI-only 变更若改用 Shell 同分区回退，
 需维护者明确接受该替代方案。维护者已单独批准 TF-only 的 Shell 同分区回退；
-该授权不覆盖 SyncFlip、图形或睡眠安装。所有新候选和实际 EFI 备份均在权限700的本机私人目录。
+该次授权不覆盖 SyncFlip、图形或睡眠安装；维护者随后另行接受Shell回退并批准SyncFlip，见下方记录。
+所有新候选和实际 EFI 备份均在权限700的本机私人目录。
 
 ## TF-only 安装落盘结果
 
@@ -102,7 +103,7 @@ RCS→CCS及stamp不前进支持继续核对#109恢复链，但没有证明共�
 [本轮验证](../validation/syncflip-102-20261116.json)，详细事故时间线见
 [Incident-20261116.md](Incident-20261116.md)，原始报告只在本机local。
 
-## SyncFlip 1.0.2 已安装，等待维护者手动重启
+## SyncFlip 1.0.2安装与启动记录
 
 **成立〔磁盘部署〕：**维护者明确接受已使用过的UEFI Shell作为回退入口后，
 已安装精确候选`3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec`。
@@ -110,9 +111,19 @@ RCS→CCS及stamp不前进支持继续核对#109恢复链，但没有证明共�
 启动默认0。新增完整插件两文件与原config备份；其余168个既有EFI文件逐项SHA不变。
 安装后ocvalidate 1.0.8通过；未换WEX/Graphics、恢复VA、改镜像或自动重启。
 
-**证据不足〔启动 / GPU〕：**本次启动尚未加载插件，没有切换模式或执行实机A/B。
-维护者保存工作后自行重启，先不连接UU/Windows App远端；核对state=routed、mode=0、
-显示正常后再开始短时冒烟。持久回退恢复`OC/config.plist.pre-tglsync-20261116-102`。
+**成立〔整机启动 / 请求写入〕：**维护者在11:54手动重启，插件1.0.2为routed/armed、默认0。
+加载UUID与候选及原有WEX/framebuffer/accelerator文件相符，完整SHA未变。
+桌面模式2/1短测后均返回0；随后维护者连接UU进行0→1→0，每段约60秒trace。
+SURF前async/sync分别2497/506、0/2850、2439/425，无缺口或未知CTL；
+证明模式1实际改变UU提交，切回0恢复原生async请求。240秒健康窗口恢复调用及新增GPU报告均0。
+该轮症状观察被维护者撤回，遥测保留。随后逐段确认重测0→1→0：SURF前async/sync
+2350/1300、0/3826、377/911；用户观察为至少3次、没看到、不确定。
+回切后又有段外闪烁报告，未混入第3段。300秒健康窗口无恢复调用或新增GPU报告。
+**部分成立〔短时整机 / 用户观察〕：**同步候选有初步信号，但第3段SURF/s从约61–64降至21，
+不构成同负载明确复现；疗效仍证据不足，未验证卡死修复或长时稳定。
+当前保持模式0，未执行UU模式2或Windows App并发压力。详细统计见
+[启动与短测](../validation/syncflip-postboot-20261116.json)。
+持久回退恢复`OC/config.plist.pre-tglsync-20261116-102`。
 安装记录见[磁盘核验](../validation/syncflip-install-20261116.json)。
 
 ## 来源

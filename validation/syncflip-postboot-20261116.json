@@ -1,0 +1,469 @@
+{
+  "schema": "syncflip-postboot/1",
+  "date": "2026-11-16",
+  "timezone": "Asia/Shanghai",
+  "boot_at": "2026-11-16T11:54:40+08:00",
+  "plugin_version": "1.0.2",
+  "component_sha256": {
+    "WhateverXe": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "TGLSyncFlip": "3d772787d294c4ed29a516de3ba66ee7a3da603f28c9b4f2a8f674c2bbfab5ec",
+    "framebuffer": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "accelerator": "567511bed855a5165cbc3615f61be7b4fcf607fde4fc5c48567fb127726d496e",
+    "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
+  },
+  "evidence_level": "whole-machine boot, desktop smoke and short UU requested-write 0/1/0 check; not long-running acceptance",
+  "loaded_uuid_matches_file": {
+    "TGLSyncFlip": true,
+    "WhateverXe": true,
+    "framebuffer": true,
+    "accelerator": true
+  },
+  "initial_status": {
+    "sample_uptime_ns": 358008452759,
+    "forced": 0,
+    "already_sync": 0,
+    "plane_calls": 0,
+    "plane_cleared": 0,
+    "mode_changes": 0,
+    "mode": 0,
+    "modes": {
+      "0": {
+        "flips": 11803,
+        "max_ms": 16.842,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          11797,
+          0,
+          0,
+          0,
+          0,
+          6
+        ]
+      },
+      "1": {
+        "flips": 0,
+        "max_ms": 0.0,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "2": {
+        "flips": 0,
+        "max_ms": 0.0,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "desktop_smoke": {
+    "2": {
+      "mode_selected_seconds": 42.959305321,
+      "counter_delta": 346,
+      "max_ms": 0.142,
+      "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+        346,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "trace": {
+        "window_seconds": 29.944587899,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "plane1": {
+          "surf": 294,
+          "surf_async_ctl": 0,
+          "surf_sync_ctl": 294,
+          "surf_ctl_unavailable": 0
+        }
+      },
+      "restored_mode": 0
+    },
+    "1": {
+      "mode_selected_seconds": 30.526854848,
+      "counter_delta": 210,
+      "max_ms": 0.187,
+      "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+        210,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "trace": {
+        "window_seconds": 29.93265479,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "plane1": {
+          "surf": 200,
+          "surf_async_ctl": 0,
+          "surf_sync_ctl": 200,
+          "surf_ctl_unavailable": 0
+        }
+      },
+      "restored_mode": 0
+    },
+    "interpretation": "Native desktop was already sync: forced=0 and plane_cleared=0. This exercises hooks and mode changes, not UU async conversion or flicker efficacy."
+  },
+  "desktop_log_gpu_errors": 0,
+  "desktop_new_gpu_reports": 0,
+  "display_layout_changed": false,
+  "VA_restored": false,
+  "WEX_replaced": false,
+  "automatic_reboot": false,
+  "flicker_or_hang_fixed": "not established",
+  "UU_short_test": {
+    "order": [
+      0,
+      1,
+      0
+    ],
+    "formal_blinded_trial": false,
+    "scope": "same UU remote session; no Windows App process observed in process samples; layout unchanged",
+    "blocks": [
+      {
+        "block": 1,
+        "mode": 0,
+        "trace_seconds": 59.916232628,
+        "counter_interval_seconds": 72.265414376,
+        "participant_flicker_count": null,
+        "participant_observation": "uncertain; withdrawn",
+        "surf_async_ctl": 2497,
+        "surf_sync_ctl": 506,
+        "surf_ctl_unavailable": 0,
+        "forced_delta": 0,
+        "plane_cleared_delta": 0,
+        "flips_delta": 3298,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          3297,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "mode_max_ms_cumulative": 17.03,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "gpu_errors": "see shared health window",
+        "cpu_sys_percent": null,
+        "temperature_c": null,
+        "plane_enable_disable_transitions": 0,
+        "ctl_changes": 3002,
+        "definition": "Successive primary-plane CTL value changes within sampled window; not enable transitions, hardware latches or full setups.",
+        "gpu_error_log_matches": 0,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 560.46811077
+      },
+      {
+        "block": 2,
+        "mode": 1,
+        "trace_seconds": 59.878831744,
+        "counter_interval_seconds": 77.198939602,
+        "participant_flicker_count": null,
+        "participant_observation": "uncertain; withdrawn",
+        "surf_async_ctl": 0,
+        "surf_sync_ctl": 2850,
+        "surf_ctl_unavailable": 0,
+        "forced_delta": 2958,
+        "plane_cleared_delta": 0,
+        "flips_delta": 3392,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          3388,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        "mode_max_ms_cumulative": 16.886,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "gpu_errors": "see shared health window",
+        "cpu_sys_percent": 18.4,
+        "temperature_c": null,
+        "cpu_idle_percent": 69.9,
+        "plane_enable_disable_transitions": 0,
+        "ctl_changes": 2631,
+        "definition": "Successive primary-plane CTL value changes within sampled window; not enable transitions, hardware latches or full setups.",
+        "gpu_error_log_matches": 0,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 667.312911446
+      },
+      {
+        "block": 3,
+        "mode": 0,
+        "trace_seconds": 59.878186702,
+        "counter_interval_seconds": 63.638296927,
+        "participant_flicker_count": null,
+        "participant_observation": "uncertain; withdrawn",
+        "surf_async_ctl": 2439,
+        "surf_sync_ctl": 425,
+        "surf_ctl_unavailable": 0,
+        "forced_delta": 0,
+        "plane_cleared_delta": 0,
+        "flips_delta": 2786,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          2785,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "mode_max_ms_cumulative": 17.1,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "gpu_errors": "see shared health window",
+        "cpu_sys_percent": 18.94,
+        "temperature_c": null,
+        "cpu_idle_percent": 68.15,
+        "plane_enable_disable_transitions": 0,
+        "ctl_changes": 2863,
+        "definition": "Successive primary-plane CTL value changes within sampled window; not enable transitions, hardware latches or full setups.",
+        "gpu_error_log_matches": 0,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 744.522315263
+      }
+    ],
+    "monitor": {
+      "start_wallclock": "2026-11-16T12:04:53.119439+08:00",
+      "recovery_calls_max": 0,
+      "new_gpu_reports_max": 0,
+      "report_monitor_continuous": true,
+      "halt_monitor_available": false,
+      "end_wallclock": "2026-11-16T12:08:54.066479+08:00",
+      "samples_saved": 25,
+      "elapsed_seconds": 240
+    },
+    "requested_write_conversion_and_return_to_async": "established in this short capture; not hardware latch proof",
+    "mode2_UU_load_tested": false,
+    "efficacy_verdict": "evidence insufficient; participant flicker counts pending",
+    "poisson": {
+      "baseline_flickers_per_minute": null,
+      "expected_sync_flickers": null,
+      "probability_of_zero_sync_flickers": null,
+      "reason": "No participant count means unknown, not zero; this short non-random trial cannot establish efficacy."
+    },
+    "cpu_comparison": "One short top sample in selected blocks, not a controlled performance benchmark; baseline CPU sample unavailable.",
+    "automatic_load_started": false,
+    "final_mode": 0,
+    "trace_window_total_seconds": 179.673251074,
+    "participant_observation_status": "Previous coarse counts withdrawn by participant as uncertain; no symptom efficacy conclusion. Retry requested."
+  },
+  "current_state": {
+    "mode": 0,
+    "mode_confirmed_after_test": true,
+    "formal_AB_pending": true,
+    "runtime_default_changed": false
+  },
+  "UU_retest": {
+    "state": "completed; final mode0",
+    "order": [
+      0,
+      1,
+      0
+    ],
+    "block_seconds_requested": 60,
+    "formal_blinded_randomized_AB": false,
+    "participant_requested": true,
+    "protocol": "Each block start/end announced; next block awaited participant response. Observation counts are self-report, not video-verified.",
+    "blocks": [
+      {
+        "trace_seconds": 59.979873958,
+        "plane1": {
+          "surf": 3650,
+          "surf_async_ctl": 2350,
+          "surf_sync_ctl": 1300,
+          "surf_ctl_unavailable": 0
+        },
+        "ctl_changes": 3649,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "donor_underrun_delta": {
+          "entry": 0,
+          "pipe_a": 0
+        },
+        "block": 1,
+        "mode": 0,
+        "observer_report": "observed; count is a lower bound",
+        "flickers_exact": null,
+        "flickers_minimum": 3,
+        "counter_interval_seconds": 74.256183506,
+        "forced_delta": 0,
+        "plane_cleared_delta": 0,
+        "flips_delta": 3818,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          3817,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "mode_max_ms_cumulative": 17.1,
+        "surface_requests_per_second": 60.85374575071394,
+        "cpu_sys_percent": 20.3,
+        "temperature_c": null,
+        "cpu_idle_percent": 65.78,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 1140.177884804
+      },
+      {
+        "trace_seconds": 59.932778807,
+        "plane1": {
+          "surf": 3826,
+          "surf_async_ctl": 0,
+          "surf_sync_ctl": 3826,
+          "surf_ctl_unavailable": 0
+        },
+        "ctl_changes": 3291,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "donor_underrun_delta": {
+          "entry": 0,
+          "pipe_a": 0
+        },
+        "block": 2,
+        "mode": 1,
+        "observer_report": "participant reported no observed flicker; not video-verified",
+        "flickers_exact": 0,
+        "flickers_minimum": 0,
+        "counter_interval_seconds": 74.323431651,
+        "forced_delta": 1520,
+        "plane_cleared_delta": 0,
+        "flips_delta": 4064,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          4060,
+          0,
+          0,
+          0,
+          0,
+          4
+        ],
+        "mode_max_ms_cumulative": 17.032,
+        "surface_requests_per_second": 63.83818798592287,
+        "cpu_sys_percent": 20.78,
+        "temperature_c": null,
+        "cpu_idle_percent": 63.28,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 1264.688479852
+      },
+      {
+        "trace_seconds": 59.944215414,
+        "plane1": {
+          "surf": 1288,
+          "surf_async_ctl": 377,
+          "surf_sync_ctl": 911,
+          "surf_ctl_unavailable": 0
+        },
+        "ctl_changes": 1287,
+        "ring0_lost": 0,
+        "ring1_lost": 0,
+        "gap_count": 0,
+        "publish_failures": 0,
+        "donor_underrun_delta": {
+          "entry": 0,
+          "pipe_a": 0
+        },
+        "block": 3,
+        "mode": 0,
+        "observer_report": "uncertain; no confirmed zero count",
+        "flickers_exact": null,
+        "flickers_minimum": 0,
+        "counter_interval_seconds": 64.773319652,
+        "forced_delta": 0,
+        "plane_cleared_delta": 0,
+        "flips_delta": 1176,
+        "duration_hist_ms_lt1_lt4_lt8_lt12_lt16_ge16": [
+          1176,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "mode_max_ms_cumulative": 17.1,
+        "surface_requests_per_second": 21.486643725412527,
+        "cpu_sys_percent": 13.71,
+        "temperature_c": null,
+        "cpu_idle_percent": 78.77,
+        "ctl_changes_definition": "Successive CTL value changes across records.csv, already filtered by native collector to its exact analysis window. Includes native bit3 toggles; not a full-setup count.",
+        "collector_start_uptime_seconds": 1379.532503077
+      }
+    ],
+    "followup": {
+      "mode": 0,
+      "trace_seconds": 14.907049167,
+      "surf_async_ctl": 626,
+      "surf_sync_ctl": 197,
+      "surf_ctl_unavailable": 0,
+      "ring1_lost": 0,
+      "observation": "Participant reported flicker after block3 while mode0 was active. Not inside the block3 counting window; followup trace started after report, not an image capture of that event.",
+      "flickers_minimum": 1,
+      "flickers_exact": null,
+      "capture_started_after_report": true,
+      "recovery_calls_max": 0,
+      "new_gpu_reports_max": 0
+    },
+    "health": {
+      "saved_samples": 31,
+      "elapsed_seconds": 300,
+      "wallclock": {
+        "start_wallclock": "2026-11-16T12:13:39.038519+08:00",
+        "end_wallclock": "2026-11-16T12:18:40.176258+08:00"
+      },
+      "recovery_calls_max": 0,
+      "recovery_returns_max": 0,
+      "new_gpu_reports_max": 0,
+      "report_monitor_continuous": true,
+      "halt_monitor_available": false
+    },
+    "mode0_flickers_in_fixed_blocks_minimum": 3,
+    "mode0_observed_minutes_confirmed_count_window": 0.9996645659666666,
+    "mode0_second_block_observation": "uncertain; excluded from observed-count exposure",
+    "mode1_flickers_reported": 0,
+    "mode1_observed_minutes": 0.9988796467833333,
+    "poisson_exploratory": {
+      "baseline_rate_minimum_per_minute": 3.0010066397612354,
+      "expected_sync_flickers_lower_bound_using_baseline_count_lower_bound_as_point_estimate": 2.9976444523191406,
+      "probability_zero_upper_bound_under_that_plug_in_model": 0.04990448241419659,
+      "conditional_equal_rate_probability_all_events_in_baseline_upper_bound_for_at_least_three_events": 0.12514733740166978,
+      "assumptions_and_limits": "Illustrative stationary independent Poisson model only. First count is censored at >=3; third observation is uncertain and its SURF rate fell. The plug-in probability omits baseline-rate uncertainty. The conditional value is about 0.125, not proof of efficacy. No Poisson rate is inferred from the out-of-window report."
+    },
+    "load_comparability": "Third block SURF/s fell versus blocks1/2; no demonstrated matched-load reappearance within its fixed window.",
+    "verdict": "Partial signal only: transaction sync converted UU requests and no flicker was observed in that block; native async returned, with later out-of-window flicker. Not enough evidence to declare causal repair or stability.",
+    "final_mode": 0,
+    "persistent_default_changed": false,
+    "mode2_UU_tested": false,
+    "gpu_error_log_matches": 0,
+    "next_gate": "Candidate remains opt-in with persistent default0. A matched-load repeat with reliable observer/video marks and longer safety observation is needed before selecting a default; this is not a GPU-hang recovery test."
+  }
+}

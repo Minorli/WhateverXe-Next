@@ -33,5 +33,7 @@
     "Metal": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa"
   },
   "whole_machine_AB_run": false,
-  "flicker_or_hang_fixed": "not established"
+  "flicker_or_hang_fixed": "not established",
+  "snapshot_scope": "Historical disk installation snapshot; later boot and short-test results are in postboot_validation",
+  "postboot_validation": "syncflip-postboot-20261116.json"
 }
