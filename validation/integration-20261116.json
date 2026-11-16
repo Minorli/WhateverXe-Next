@@ -1,6 +1,6 @@
 {
   "date": "2026-11-16",
-  "status": "staged_not_installed",
+  "status": "TF_only_installed_pending_manual_reboot_other_candidates_staged",
   "system": "macOS 26.7.3 (25G342), Darwin 25.6.0",
   "machine": "i7-1165G7, Iris Xe 96EU, DDR4 24GB, RTS522A 10ec:522a",
   "sources": {
@@ -155,11 +155,31 @@
     "HDMI_across_wake_passed_on_this_machine": false
   },
   "deployment": {
-    "live_EFI_changed": false,
+    "live_EFI_changed": true,
     "Library_changed": false,
     "VA_restored": false,
     "independently_boot_tested_backup_EFI_available": false,
-    "UEFI_Shell_previous_user_test": true
+    "UEFI_Shell_previous_user_test": true,
+    "TF_only": {
+      "approved_by_maintainer": true,
+      "installed": true,
+      "semantic_changes": [
+        "/Kernel/Add/26/Enabled"
+      ],
+      "RealtekCardReader_enabled": true,
+      "RealtekCardReaderFriend_enabled": false,
+      "same_partition_preinstall_config_backup_verified": true,
+      "backup_path_relative_to_EFI": "OC/config.plist.pre-tf-20261116",
+      "active_config_equals_authorized_candidate": true,
+      "all_other_preexisting_EFI_files_unchanged": true,
+      "WEX_WiFi_identity_ACPI_USB_CPUID_bootargs_preserved": true,
+      "ocvalidate_1_0_8_passed_after_install": true,
+      "new_kext_files_installed": false,
+      "manual_reboot_pending": true,
+      "postboot_load_verified": false,
+      "card_IO_verified": false,
+      "evidence_level": "disk verification, not boot or card acceptance"
+    }
   },
   "link_checks": {
     "TGLSyncFlip": {
@@ -195,8 +215,10 @@
     "public_ocvalidate_1_0_8": true,
     "TF_only_ocvalidate_1_0_8": true,
     "graphics_ocvalidate_1_0_8": true,
-    "live_EFI_matches_backup": true,
-    "private_ids_ACPI_USB_WiFi_preserved_in_staged_profiles": true
+    "live_EFI_matches_backup": false,
+    "private_ids_ACPI_USB_WiFi_preserved_in_staged_profiles": true,
+    "preinstall_EFI_matched_baseline": true,
+    "postinstall_only_expected_config_change_and_backup": true
   },
   "source_commit_reviewed": "eeace38",
   "G83_integration_commit": "154d13f"

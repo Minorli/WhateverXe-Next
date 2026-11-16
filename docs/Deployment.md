@@ -394,7 +394,10 @@ WindowServer physical footprint首尾287.28→392.40MiB，峰值577.09MiB；
 无 VA 的图形升级候选已分开暂存并通过 ocvalidate。WhateverXe 官方当前 main 相对已集成
 源码只新增发行说明。0.4.4 Metal / framebuffer 与本机现用文件相同，不能当作新增闪屏修复。
 SyncFlip 已完成本机锚点与构建检查，但发现模式2缓存可带入后续模式0，尚不准入盲测。
-睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。没有安装、改活动EFI、恢复VA或重启。
+睡眠组件收录但不启用，HDMI / 接电唤醒限制保留。
+随后经维护者批准，TF-only 配置已写入活动EFI；唯一语义变化为启用现有读卡器，
+同分区原配置备份与安装后 ocvalidate / 全文件差异核验通过，待手动重启与插卡验收。
+没有安装新 kext、替换 Library、恢复 VA 或重启，显卡与睡眠候选仍未安装。
 
 完整正反结论、来源、精确SHA、候选范围和回退门槛见 [Integration-20261116.md](Integration-20261116.md)
 及 [validation/integration-20261116.json](../validation/integration-20261116.json)。

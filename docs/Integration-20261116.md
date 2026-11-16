@@ -1,6 +1,8 @@
 # 2026-11-16：上游整合与本机部署候选
 
-本轮把图形、TF 和睡眠更新分开准备，没有安装 kext、替换 Library、恢复 VA、改变镜像或重启。
+本轮把图形、TF 和睡眠更新分开准备。审查阶段未改活动系统；随后经维护者明确批准，
+仅写入 TF-only 配置以启用 EFI 中已有读卡器，待其手动重启验证。
+没有安装新 kext、替换 Library、恢复 VA、改变镜像或重启。
 G83 配套整合见 [机器集成记录](https://github.com/Minorli/g83-11gen-hackintosh-tahoe-efi/blob/main/docs/Integration-20261116.md)。
 确切输入与输出 SHA 见 [脱敏清单](../validation/integration-20261116.json)。
 
@@ -42,7 +44,8 @@ G83 配套整合见 [机器集成记录](https://github.com/Minorli/g83-11gen-ha
 
 ## 部署顺序
 
-1. **TF-only** 候选从实际 EFI 生成，只启用现有 RealtekCardReader 0.9.7；本机 PCI RTS522A 已匹配。
+1. **TF-only** 从实际 EFI 生成，只启用现有 RealtekCardReader 0.9.7；本机 PCI RTS522A 已匹配。
+   经批准已写入活动 EFI，安装后 ocvalidate 与逐文件核验通过，尚待手动重启和插卡验收。
 2. **闪屏对照**仍用当前 WEX 和 Metal，先修正上述 SyncFlip 回退问题；不得以新下游替代同 SHA 对照。
 3. **图形 0.8.2 + 0.4.4 无 VA 更新**已在私人目录暂存；它是多组件版本验收，不能用来证明 async 因果。
    有 Library / KC 变化，必须具备可挂载系统卷的回退路径，单有 EFI config 备份不够。
@@ -53,7 +56,17 @@ G83 配套整合见 [机器集成记录](https://github.com/Minorli/g83-11gen-ha
 
 维护者明确只有曾进入过的 UEFI Shell，没有独立启动测试的备用 EFI。
 原 SyncFlip 任务要求备用 EFI，因此当前没有安装；EFI-only 变更若改用 Shell 同分区回退，
-需维护者明确接受该替代方案。所有新候选和实际 EFI 备份均在权限700的本机私人目录。
+需维护者明确接受该替代方案。维护者已单独批准 TF-only 的 Shell 同分区回退；
+该授权不覆盖 SyncFlip、图形或睡眠安装。所有新候选和实际 EFI 备份均在权限700的本机私人目录。
+
+## TF-only 安装落盘结果
+
+**成立〔落盘核验〕**：活动 EFI 相对 baseline 只有 `OC/config.plist` 改变，
+唯一语义变化为 `/Kernel/Add/26/Enabled`（RealtekCardReader false→true）；Friend 仍为 false。
+同分区新增 `OC/config.plist.pre-tf-20261116`，内容与原配置逐字节一致。
+WEX、企业无线及全部其他 EFI 文件未变，临时配置不存在，活动配置通过 ocvalidate 1.0.8。
+重启加载、卡片读取和弹出尚未验证，不能把落盘核验称作 TF 修复通过。
+具体 Shell 回退步骤见 G83 集成记录；本机私人目录保存完整核验收据。
 
 ## 来源
 
