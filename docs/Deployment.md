@@ -532,3 +532,46 @@ cp \EFI\OC\config.plist.pre-sync-default1-20261116-141953 \EFI\OC\config.plist
 **证据不足〔RCS／CCS卡死修复〕：**本次无恢复调用、返回或新增GPU报告；但没有逐客户端
 submitted/returned stamp、受控并发故障复现或长期验收。模式1没有修改复位、POSH或GPU完成值。
 这项固化是本机呈现改善，不解除既有0.4.3/POSH风险，也不把仓库0.8.2模板视为已实测配置。
+
+## 本机卡死证据采集：不依赖 SSH
+
+2026-11-16维护者明确选择不开远程登录，且公司网络不具备SSH条件。
+本入口不打开服务、不安装常驻采样、不主动触发故障，不改变当前模式1或VA状态。
+
+1. **终端仍能操作时**运行：
+
+   ```sh
+   /Users/minorli/Documents/Projects/WhateverXe-Next/tools/hang-capture.sh
+   ```
+
+2. 告诉维护者助手发生时间、当时UU/Windows App是否正在显示画面。
+   输出在本仓库`local/hang-时间戳/`，目录0700、文件0600。完成前已有文件也有价值；
+   `manifest.json`逐项记录成功、超时、权限不足或工具缺失，不把不可读数据写成0。
+3. **整机完全无响应时**不要求继续尝试终端；由维护者决定何时强制重启。
+   回到桌面后尽快运行下式，并告知故障时间：
+
+   ```sh
+   /Users/minorli/Documents/Projects/WhateverXe-Next/tools/hang-capture.sh --minutes 60
+   ```
+
+   `--minutes`控制历史日志与报告窗口（1–1440分钟）。重启后registry/status是**新启动**，
+   不能当故障瞬间状态；统一日志也可能因强制断电没有刷盘。该命令不能补回等待队列、
+   原始CSB历史或IRQ交付；因此不把“采集完成”当根因已找到。
+
+只列将采集的项目、不运行工具或创建目录：
+
+```sh
+/Users/minorli/Documents/Projects/WhateverXe-Next/tools/hang-capture.sh --dry-run
+```
+
+采集现有诊断报告、过滤统一日志、root/WEX现存registry属性、两个探针属性、同步插件
+status、进程CPU/RSS和目标进程footprint、电源/温度状态及显示枚举。默认CPU模式的
+`tgl-capture`只读取现存registry，不使用会发布显示记录器的`--display/--probe`。
+各命令有超时，仅结束自己启动的诊断子进程，不终止工作软件；`sudo -n`不弹密码框。
+报告最多24个、每个16MiB、合计64MiB，超限或不可读项保留原因。无权限不会自动放权。
+原始数据只留local，不直接推送；Python测试夹具崩溃报告须与自然GPU/整机事故分开。
+
+**成立〔CPU契约测试＋本机采集〕：**dry-run无副作用、数值PID传递、权限不足及超时
+仍可完成其它项目、私有文件权限均已核对；`shellcheck`、`bash -n`及`make cpu-test`通过。
+本机试跑不是在卡死时进行，**证据不足〔故障现场可用性〕**：整机无响应时本进程也可能
+无法调度，脚本不能保证留下新的内核现场。本轮没有部署驱动或安排重启。

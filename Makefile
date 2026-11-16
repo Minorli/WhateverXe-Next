@@ -68,6 +68,7 @@ cpu-test: build/bounded-count build/posh-atomic-code build/recovery-state build/
 	./build/capture-reports
 	./build/tgl-plane-trace-test
 	./build/tglsyncflip-test
+	python3 tests/hang-capture.py
 
 clean:
 	rm -rf build
