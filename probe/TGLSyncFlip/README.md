@@ -50,7 +50,11 @@ make -C probe/TGLSyncFlip            # 需要 driver/WhateverXe/MacKernelSDK 和
 make -C probe/TGLSyncFlip ctl
 ```
 
-`build/build-manifest.json` 记录二进制 SHA，安装前后都要核对。
+构建目标为 10.9：使用 IOService 的 configureReport/updateReport 槽位，同时避开 DriverKit ABI。
+旧目标 10.6 会导入 Darwin25 不再导出的 `_RESERVEDIOService0/1`。`make test` 额外用真实
+MacKernelSDK 编译新旧 vtable，复现旧导入并检查新产物；本机 kmutil 还须独立核对。
+
+`build/build-manifest.json` 记录二进制 SHA 与 deployment target，安装前后都要核对。
 
 ## 运行时
 

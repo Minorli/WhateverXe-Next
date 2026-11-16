@@ -12,6 +12,7 @@ test:
 	mkdir -p build
 	xcrun clang++ -std=c++17 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined tests/logic_test.cpp -o build/logic_test
 	./build/logic_test $(if $(FB),--framebuffer $(FB))
+	python3 tests/build_abi_test.py --sdk $(SDK)
 ctl:
 	mkdir -p build
 	xcrun clang++ -std=c++17 -O2 -Wall -Wextra -Werror tools/tglsync-ctl.cpp -framework IOKit -framework CoreFoundation -o build/tglsync-ctl

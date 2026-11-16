@@ -185,7 +185,7 @@ extern kern_return_t _start(kmod_info_t *, void *);
 extern kern_return_t _stop(kmod_info_t *, void *);
 extern kern_return_t TGLSyncFlip_kern_start(kmod_info_t *, void *);
 extern kern_return_t TGLSyncFlip_kern_stop(kmod_info_t *, void *);
-__attribute__((visibility("default"))) KMOD_EXPLICIT_DECL(org.whateverxe-next.TGLSyncFlip, "1.0.0", _start, _stop)
+__attribute__((visibility("default"))) KMOD_EXPLICIT_DECL(org.whateverxe-next.TGLSyncFlip, "1.0.1", _start, _stop)
 __attribute__((visibility("hidden"))) kmod_start_func_t *_realmain = TGLSyncFlip_kern_start;
 __attribute__((visibility("hidden"))) kmod_stop_func_t *_antimain = TGLSyncFlip_kern_stop;
 __attribute__((visibility("hidden"))) int _kext_apple_cc = __APPLE_CC__;
