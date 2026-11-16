@@ -266,9 +266,15 @@ framebuffer `115a4616…888e`，偏移均为文件偏移：
   controller `+0x1B79` 与 path `+0xE4` 同时非零时，才在 `0x224B/0x2252` 取
   `0x80000400`。两值在 `0x2257` OR 进 CTL，并在 `0x239E` 存回 plane `+0x100`。
   `syncPlaneUpdates`（`0x33AE`）只改 bit3 arm 标记，不决定 async。
+- **对照〔整机只读〕：**同一工具在 Google Remote Desktop 画面下采集 58.7 秒，
+  232 次发布、2,436 条记录、`lost=0`；1,218 次 CTL 写入中 **async=0**，
+  没有人工标记。UU 的 4,403 次 async 与 GRD 的 0 次形成明确差异。
+  但 UU 为 60.39 SURF/s 且伴随 829 次完整 plane setup，GRD 为 20.76 SURF/s
+  且没有 setup；应用、帧率和 setup 频率同时不同，不是严格单变量。
 - **候选：**`-wex-tgl-no-async` 在原生写前清除 PLANE_CTL bit9，保留 bit3 和其他
   所有位，把 async 地址更新改成 vblank 锁存；计数器发布为 `TGLNoAsyncFlip`。
+  只覆盖 `0x?0180` 主平面直接写，不覆盖 trigger-packet 路径和 LPVP 影子。
   默认关闭、未安装、未做硬件 A/B，不是已验收修复。
-- **仍缺：**人工标记是 −2 s/+0.5 s 窗口，不能精确归因到某一次 flip；需要
-  Google Remote Desktop 对照和强制 sync 的 A/B。若仍闪，剩余方向是合成内容或
-  扫描输出缓冲内容本身错误，而不是平面编程时序。
+- **仍缺：**人工标记是 −2 s/+0.5 s 窗口，不能精确归因到某一次 flip；GRD 对照
+  满足“无 async、无闪烁”但存在上述混杂。需要强制 sync 的 A/B 才能确认因果；
+  若仍闪，剩余方向是合成内容或扫描输出缓冲内容本身错误。

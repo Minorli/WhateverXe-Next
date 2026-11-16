@@ -1,0 +1,121 @@
+{
+  "schema": "plane-trace-async/1",
+  "generated": "2026-11-16",
+  "level": "host-readonly + static + CPU + build",
+  "hardware": {
+    "pci": "8086:9A49 revision 1",
+    "os": "macOS 26.7.3 build 25G342 / Darwin 25.6.0",
+    "display": "2560x1440@60 mirrored, XRGB2101010"
+  },
+  "components": {
+    "whateverxe_loaded_sha256": "df96a2cac5c68fb5a1540045da53b9871729561bba1c4714e03ae700466f4ed3",
+    "metal_bundle_sha256": "25b6c72ee23fb71f91384982fb591d6d1e514c73be3fea99831b4559d0ec4faa",
+    "framebuffer_sha256": "115a4616e862228a8c82df6e52ba41ac02b9750f116352ff3575aadcc950888e",
+    "display_probe": "TGLDisplayProbe 1.0.1"
+  },
+  "tool": {
+    "source_commit": "c2a6421",
+    "schema": "tgl-plane-trace/1",
+    "interval_ms": 250,
+    "scope": "pipe A planes 1-3 requested writes at the WEX wrapper; not a hardware latch proof"
+  },
+  "captures": {
+    "idle_baseline": {
+      "seconds": 11.8,
+      "samples": 47,
+      "records_in_window": 960,
+      "ring_lost": 0,
+      "publish_failures": 0,
+      "surf_writes": 480,
+      "surf_per_s": 41.08,
+      "ctl_writes": 480,
+      "async_ctl_writes": 0,
+      "distinct_surfaces": 3,
+      "reuse_depth_hist": [240, 173, 64, 0, 0],
+      "full_plane_setups": 0,
+      "marks": 0,
+      "bit31_ack_delta": 0,
+      "donor_underrun_delta": 0
+    },
+    "uu_remote": {
+      "seconds": 130.2,
+      "samples": 511,
+      "records_in_window": 32313,
+      "ring_lost": 0,
+      "publish_failures": 0,
+      "surf_writes": 7862,
+      "surf_per_s": 60.39,
+      "ctl_writes": 7859,
+      "async_ctl_writes": 4403,
+      "async_fraction": 0.560,
+      "distinct_surfaces": 3,
+      "reuse_depth_hist": [4344, 1923, 1592, 0, 0],
+      "full_plane_setups": 829,
+      "marks": 23,
+      "mark_windows_with_plane_toggle": 0,
+      "mark_windows_with_position_or_size_change": 0,
+      "mark_windows_with_buf_cfg_change": 0,
+      "bit31_ack_delta": 0,
+      "donor_underrun_delta": 0
+    },
+    "google_remote_desktop": {
+      "seconds": 58.7,
+      "samples": 232,
+      "records_in_window": 2436,
+      "ring_lost": 0,
+      "publish_failures": 0,
+      "surf_writes": 1218,
+      "surf_per_s": 20.76,
+      "ctl_writes": 1218,
+      "async_ctl_writes": 0,
+      "distinct_surfaces": 3,
+      "reuse_depth_hist": [609, 408, 198, 0, 0],
+      "full_plane_setups": 0,
+      "marks": 0,
+      "bit31_ack_delta": 0,
+      "donor_underrun_delta": 0
+    }
+  },
+  "static": {
+    "framebuffer_configurePlane_offset": "0x2198",
+    "default_ctl": "0x80000600 (async address update, bit9 set)",
+    "synchronous_ctl": "0x80000400 (bit9 clear)",
+    "async_default_site": "0x2229",
+    "sync_selection_sites": ["0x224b", "0x2252"],
+    "ctl_or_and_store": ["0x2257", "0x239e"],
+    "sync_plane_updates_offset": "0x33ae",
+    "note": "syncPlaneUpdates only changes CTL bit3 (arm marker); it does not decide async. The flip transaction +0x2C bit0 or controller/path feature bytes select the synchronous CTL."
+  },
+  "candidate": {
+    "commit": "15b3d90",
+    "narrowing_fix": "34dbf4d",
+    "boot_arg": "-wex-tgl-no-async",
+    "default": "off",
+    "effect": "clear PLANE_CTL bit9 on writes to 0x70180/0x71180/0x72180 only; preserve bit3 and all other bits",
+    "publication": "TGLNoAsyncFlip = [enabled, suppressed] on a type-1 framebuffer client open",
+    "installed": false,
+    "hardware_ab": false
+  },
+  "conclusions": {
+    "established_host": [
+      "During the UU window the primary plane used async address updates; the idle and GRD windows did not.",
+      "No pipe A FIFO underrun was reported by the unmasked native chain or the WEX bit31 ACK path in any capture.",
+      "Around all 23 manual UU marks there was no plane enable/disable, position/size change, DDB/buf_cfg change, or observation-ring loss.",
+      "All fast same-buffer reuses in the UU capture were at full plane setups, not steady-state shallow reuse.",
+      "No overlay plane was in use; the primary plane covered the full 2560x1440 screen."
+    ],
+    "not_proven": [
+      "That async address update is the cause of the user-visible flicker.",
+      "That the UU/GRD difference is due to async rather than the application, its frame/content cadence, or the 829 full plane setups seen only in UU.",
+      "That clearing bit9 removes the artifact; the candidate is not installed and has no hardware A/B.",
+      "That the manual marks align with a specific flip; marks are -2 s/+0.5 s windows, not frame-synchronized."
+    ]
+  },
+  "confounders": [
+    "UU updated at 60.39 SURF/s with 829 full plane setups; GRD at 20.76 SURF/s with none. This is not a strict single-variable comparison.",
+    "The two applications differ in decoder, renderer and surface presentation; content-level corruption cannot be excluded without synchronized capture.",
+    "The GRD capture had no manual marks, consistent with the user's report but not an independent pixel proof.",
+    "The candidate only covers direct PLANE_CTL writes through WEX's register-write wrappers; the trigger-packet path is not converted. No LPVP shadow register 0x70680 was observed in this capture."
+  ],
+  "raw_data": "Only under ignored local/ on the maintainer's machine; not published."
+}

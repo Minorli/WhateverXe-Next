@@ -101,6 +101,12 @@ bit9），而同机空闲基线全部为 sync；23 个闪烁标记窗口内没�
 所有位，把 async 地址更新改成正常 vblank 锁存。打开一次 type-1 客户端后，
 `TGLNoAsyncFlip = [enabled, suppressed]` 报告被转换的写入数。
 
+2026-11-16 的 Google Remote Desktop 对照（58.7 秒，1,218 次 CTL，async=0，
+无闪烁标记）与 UU（4,403 次 async，23 个标记）形成明确差异，但应用、帧率和完整
+setup 次数不同，不能据此确认因果。候选只覆盖通过 WEX 包装的直接 PLANE_CTL 写；
+未观察到 trigger-packet 路径或 LPVP 影子寄存器 `0x70680` 写入，覆盖缺口需在
+A/B 中记录。
+
 这是单变量候选，**未安装、未做硬件 A/B**。它可能把呈现延迟增加最多一帧，
 也可能不解决闪烁；不能把它当作已验证修复。必须先合入保留现有 HDMI/CDCLK/DCOff
 增强的同一二进制，再与控制组使用相同 UU 画面、帧率、分辨率做 A/B。若强制 sync

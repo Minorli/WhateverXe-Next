@@ -243,8 +243,11 @@ CI 随后明确使用 Intel runner，并在开始检查 x86_64 ABI，保留全�
 
 `tools/tgl-plane-trace` 在 UU 期间采集 130.2 秒、511 次发布、32,313 条窗口记录，
 `lost=0`。主平面 SURF 60.39/s，3 个 surface；23 个人工标记窗口内没有平面开关、
-尺寸/DDB 变化或欠载，async CTL 4,403 次而空闲基线为 0。详细数据只保留在本机
-`local/plane-trace-uu-20261114/`，公开摘要见 [Findings](Findings.md#2026-11-16uu-平面编程捕获与-async-flip)。
+尺寸/DDB 变化或欠载，async CTL 4,403 次而空闲基线为 0。同一工具在 Google Remote
+Desktop 画面下采集 58.7 秒、232 次发布、2,436 条记录，`lost=0`；1,218 次 CTL
+全部 sync，无人工标记。对照的聚合数据见
+[validation/plane-trace-async-20261116.json](../validation/plane-trace-async-20261116.json)；
+原始记录只保留在本机 `local/`，不上传。
 
 新增 `WhateverXe/kern_tgl_plane_ctl.hpp` 与默认关闭的 `-wex-tgl-no-async` 候选。
 它只清除主平面 PLANE_CTL bit9；CPU 测试覆盖识别与位保持，构建通过。没有安装、

@@ -50,6 +50,11 @@
   快速同 buffer 复用 43 次，均在完整 plane setup 附近，不是稳态浅复用。
   这排除了 overlay 平面、尺寸/位置变化、DDB 重配、观测环丢失和 pipe A 欠载，
   **async 地址更新成为当前最重要的剩余解释**。
+- **成立〔整机只读对照〕：**同一工具在 Google Remote Desktop 画面下采集 58.7 秒，
+  232 次发布、2,436 条记录、`lost=0`；主平面 1,218 次 CTL 写入中 **async=0**，
+  1,218 次 SURF（20.76/s），没有人工闪烁标记。UU 与 GRD 在 async 使用上形成
+  明确差异：4,403 次 vs 0 次。注意这不是严格单变量：UU 为 60.39 SURF/s 且伴随
+  829 次完整 plane setup，GRD 为 20.76 SURF/s 且没有 setup。
 - **成立〔静态〕：**framebuffer `115a4616…888e` 的
   `AppleIntelPlane::configurePlane`（`0x2198`）默认把 PLANE_CTL 设为
   `0x80000600`（async）；只有当 flip transaction 的 `+0x2C` bit0 置位，或
@@ -62,9 +67,9 @@
   锁存，保留 bit3 和其他所有位；计数器通过现有 type-1 客户端发布为
   `TGLNoAsyncFlip`。这是单变量候选，**未安装、未做硬件 A/B**，不能称为已修复。
 - **证据不足：**标记是人工按键，窗口为 −2 s/+0.5 s，不能把某次闪烁精确归到
-  某一次 async flip；还需要 Google Remote Desktop 对照（用户报告不闪）和
-  强制 sync 的 A/B 才能确认因果。若 async 不是原因，剩余方向是合成内容或
-  扫描输出缓冲内容本身错误。
+  某一次 async flip。GRD 对照已满足“无 async、无闪烁”，但应用、帧率和完整
+  setup 次数同时不同；仍需要强制 sync 的 A/B 才能确认因果。若强制 sync 后
+  仍闪，剩余方向是合成内容或扫描输出缓冲内容本身错误。
 
 ## 2026-11-13：`ig=0x20` 重启后验证
 
